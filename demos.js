@@ -1183,6 +1183,498 @@ function toggleActivity(idx) {
 }
 
 /* ============================================================
+   PRODUCT COMPASS DEMO
+   ============================================================ */
+
+DEMO_RENDERERS.compass = function(container) {
+  container.innerHTML = '';
+
+  // Module data
+  var modules = [
+    {
+      id: 'onboarding',
+      name: 'Onboarding',
+      pct: 100,
+      lessons: 8,
+      hours: 2,
+      items: [
+        'Company Overview', 'Compliance Basics', 'CRM Setup',
+        'Product Categories', 'Client Onboarding Flow', 'First Meeting Framework',
+        'Documentation Standards', 'Week 1 Checklist',
+      ],
+    },
+    {
+      id: 'm9',
+      name: 'M9 — Life Insurance',
+      pct: 72,
+      lessons: 12,
+      hours: 6,
+      items: [
+        'Term vs Whole Life', 'Policy Structures', 'Underwriting Basics',
+        'Premium Calculations', 'Riders & Add-ons', 'Claims Process',
+        'Case Studies', 'Practice Questions', 'Key Ratios',
+        'Regulatory Framework', 'Ethics & Disclosure', 'Mock Exam',
+      ],
+    },
+    {
+      id: 'm9a',
+      name: 'M9A — General Insurance',
+      pct: 45,
+      lessons: 10,
+      hours: 5,
+      items: [
+        'Introduction to General Insurance', 'Property Insurance', 'Motor Insurance',
+        'Travel Insurance', 'Liability Coverage', 'Marine & Cargo',
+        'Policy Terms & Conditions', 'Claims Handling', 'Underwriting Principles',
+        'Mock Exam',
+      ],
+    },
+    {
+      id: 'hi',
+      name: 'HI — Health Insurance',
+      pct: 18,
+      lessons: 8,
+      hours: 4,
+      items: [
+        'Health Insurance Basics', 'Medishield Life', 'Integrated Shield Plans',
+        'Critical Illness Coverage', 'Disability Income', 'Hospital Cash Plans',
+        'Claims & Pre-Auth', 'Mock Exam',
+      ],
+    },
+    {
+      id: 'res5',
+      name: 'RES5 — Investments',
+      pct: 0,
+      lessons: 14,
+      hours: 8,
+      items: [
+        'Investment Basics', 'Unit Trusts', 'ILPs — Investment-Linked Policies',
+        'Bonds & Fixed Income', 'Equities Overview', 'Portfolio Construction',
+        'Risk Profiling', 'CPF Investment Schemes', 'Suitability Framework',
+        'Market Cycles', 'Tax Considerations', 'Regulatory Requirements',
+        'Case Studies', 'Mock Exam',
+      ],
+    },
+  ];
+
+  // ===== MODULE BROWSER =====
+  var modulesSection = document.createElement('div');
+  modulesSection.style.cssText = 'margin-bottom:24px;';
+
+  var modulesHeading = document.createElement('div');
+  modulesHeading.className = 'demo-section-heading';
+  modulesHeading.textContent = 'Training Modules';
+  modulesSection.appendChild(modulesHeading);
+
+  var grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;';
+
+  modules.forEach(function(mod) {
+    var card = document.createElement('div');
+    card.className = 'chart-container';
+    card.style.cssText = 'cursor:pointer;padding:14px;transition:border-color 0.2s;';
+    card.id = 'compassCard_' + mod.id;
+    card.onclick = function() { toggleModule(mod.id); };
+
+    var cardName = document.createElement('h4');
+    cardName.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.3;';
+    cardName.textContent = mod.name;
+
+    // Progress bar wrapper
+    var barWrap = document.createElement('div');
+    barWrap.style.cssText = 'background:var(--bg3);border-radius:99px;height:6px;margin-bottom:8px;overflow:hidden;';
+    var bar = document.createElement('div');
+    var barColor = mod.pct === 100 ? 'var(--green-bright)' : mod.pct > 0 ? 'var(--primary-light)' : 'var(--border)';
+    bar.style.cssText = 'height:100%;border-radius:99px;width:' + mod.pct + '%;background:' + barColor + ';transition:width 0.4s;';
+    barWrap.appendChild(bar);
+
+    var meta = document.createElement('div');
+    meta.style.cssText = 'font-size:0.72rem;color:var(--text3);';
+    meta.textContent = mod.pct + '% complete \u00B7 ' + mod.lessons + ' lessons \u00B7 ' + mod.hours + 'h';
+
+    // Lesson list (hidden by default)
+    var lessonList = document.createElement('div');
+    lessonList.id = 'compassLessons_' + mod.id;
+    lessonList.style.cssText = 'display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:10px;';
+
+    var doneLessons = Math.round(mod.pct / 100 * mod.lessons);
+    mod.items.forEach(function(lesson, i) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.75rem;';
+
+      var icon = document.createElement('span');
+      if (i < doneLessons) {
+        icon.style.cssText = 'color:var(--green-bright);font-size:0.85rem;flex-shrink:0;';
+        icon.textContent = '\u2713';
+      } else {
+        icon.style.cssText = 'width:14px;height:14px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:inline-block;';
+      }
+
+      var lbl = document.createElement('span');
+      lbl.style.cssText = i < doneLessons
+        ? 'color:var(--text2);'
+        : 'color:var(--text3);';
+      lbl.textContent = lesson;
+
+      row.appendChild(icon);
+      row.appendChild(lbl);
+      lessonList.appendChild(row);
+    });
+
+    card.appendChild(cardName);
+    card.appendChild(barWrap);
+    card.appendChild(meta);
+    card.appendChild(lessonList);
+    grid.appendChild(card);
+  });
+
+  modulesSection.appendChild(grid);
+  container.appendChild(modulesSection);
+
+  // ===== TWO-COLUMN SECTION (Roleplay + Exam) =====
+  var twoCol = document.createElement('div');
+  twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+
+  // --- LEFT: AI Roleplay Chat ---
+  var chatSection = document.createElement('div');
+  chatSection.className = 'chart-container';
+  chatSection.style.cssText = 'padding:16px;';
+
+  var chatHeading = document.createElement('div');
+  chatHeading.className = 'demo-section-heading';
+  chatHeading.style.cssText = 'margin-top:0;margin-bottom:12px;';
+  chatHeading.textContent = 'AI Roleplay Coach';
+  chatSection.appendChild(chatHeading);
+
+  // Scenario label
+  var scenarioLabel = document.createElement('div');
+  scenarioLabel.style.cssText = 'font-size:0.72rem;color:var(--purple);font-weight:600;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;';
+  scenarioLabel.textContent = 'Scenario: Retirement Planning';
+  chatSection.appendChild(scenarioLabel);
+
+  // Chat bubbles container
+  var chatBubbles = document.createElement('div');
+  chatBubbles.style.cssText = 'background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;min-height:80px;';
+  chatBubbles.id = 'compassChatBubbles';
+
+  // Client message
+  var clientBubble = document.createElement('div');
+  clientBubble.style.cssText = 'margin-bottom:10px;';
+
+  var clientLabel = document.createElement('div');
+  clientLabel.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-bottom:4px;';
+  clientLabel.textContent = 'Client';
+
+  var clientMsg = document.createElement('div');
+  clientMsg.style.cssText = [
+    'background:var(--bg3)',
+    'border-radius:0 8px 8px 8px',
+    'padding:10px 12px',
+    'font-size:0.78rem',
+    'color:var(--text)',
+    'line-height:1.5',
+    'max-width:90%',
+  ].join(';');
+  clientMsg.textContent = "I\u2019m 35 years old with two young kids. My wife and I are both working but we\u2019re worried about our retirement. We have about $50,000 in savings but no investment plan. What should we be doing?";
+
+  clientBubble.appendChild(clientLabel);
+  clientBubble.appendChild(clientMsg);
+  chatBubbles.appendChild(clientBubble);
+  chatSection.appendChild(chatBubbles);
+
+  // Advisor response options
+  var optionsLabel = document.createElement('div');
+  optionsLabel.style.cssText = 'font-size:0.75rem;color:var(--text2);font-weight:600;margin-bottom:8px;';
+  optionsLabel.id = 'compassOptionsLabel';
+  optionsLabel.textContent = 'Choose your response as the advisor:';
+  chatSection.appendChild(optionsLabel);
+
+  var optionsList = document.createElement('div');
+  optionsList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+  optionsList.id = 'compassOptionsList';
+
+  var chatOptions = [
+    "You should invest in unit trusts \u2014 they give the best returns over the long term.",
+    "Let\u2019s first understand your full financial picture \u2014 income, expenses, insurance coverage, and goals. Then we can build a plan that balances protection and growth.",
+    "At 35, you still have 30 years before retirement. $50k is a good start. I\u2019d recommend putting it all into an ILP immediately.",
+  ];
+
+  chatOptions.forEach(function(text, idx) {
+    var btn = document.createElement('button');
+    btn.style.cssText = [
+      'background:var(--bg3)',
+      'border:1px solid var(--border)',
+      'border-radius:var(--radius-sm)',
+      'color:var(--text)',
+      'font-size:0.75rem',
+      'padding:10px 12px',
+      'text-align:left',
+      'cursor:pointer',
+      'line-height:1.4',
+      'transition:border-color 0.2s,background 0.2s',
+    ].join(';');
+    btn.textContent = 'Option ' + (idx + 1) + ': ' + text;
+    btn.onmouseover = function() { this.style.borderColor = 'var(--primary-light)'; };
+    btn.onmouseout  = function() { this.style.borderColor = 'var(--border)'; };
+    btn.onclick = function() { selectChatOption(idx); };
+    optionsList.appendChild(btn);
+  });
+
+  chatSection.appendChild(optionsList);
+
+  // AI feedback placeholder (hidden)
+  var aiFeedback = document.createElement('div');
+  aiFeedback.id = 'compassAiFeedback';
+  aiFeedback.style.cssText = 'display:none;margin-top:12px;border-radius:var(--radius-sm);padding:12px;font-size:0.78rem;line-height:1.5;';
+  chatSection.appendChild(aiFeedback);
+
+  twoCol.appendChild(chatSection);
+
+  // --- RIGHT: Exam Prep ---
+  var examSection = document.createElement('div');
+  examSection.className = 'chart-container';
+  examSection.style.cssText = 'padding:16px;';
+
+  var examHeading = document.createElement('div');
+  examHeading.className = 'demo-section-heading';
+  examHeading.style.cssText = 'margin-top:0;margin-bottom:12px;';
+  examHeading.textContent = 'Exam Prep';
+  chatSection.style.cssText += ';';
+
+  var examBadge = document.createElement('div');
+  examBadge.style.cssText = 'font-size:0.72rem;color:var(--primary-light);font-weight:600;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;';
+  examBadge.textContent = 'M9 Practice';
+
+  var progressRow = document.createElement('div');
+  progressRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:14px;';
+  var progressText = document.createElement('span');
+  progressText.style.cssText = 'font-size:0.72rem;color:var(--text3);white-space:nowrap;';
+  progressText.textContent = 'Question 3 of 10';
+  var progressBar = document.createElement('div');
+  progressBar.style.cssText = 'flex:1;height:5px;background:var(--bg3);border-radius:99px;overflow:hidden;';
+  var progressFill = document.createElement('div');
+  progressFill.style.cssText = 'height:100%;width:30%;background:var(--primary-light);border-radius:99px;';
+  progressBar.appendChild(progressFill);
+  progressRow.appendChild(progressText);
+  progressRow.appendChild(progressBar);
+
+  var question = document.createElement('div');
+  question.style.cssText = 'font-size:0.82rem;color:var(--text);font-weight:600;line-height:1.5;margin-bottom:14px;';
+  question.textContent = 'Which of the following is NOT a standard exclusion in a typical life insurance policy?';
+
+  var examOptions = [
+    { letter: 'A', text: 'Suicide within the first year' },
+    { letter: 'B', text: 'Death from pre-existing conditions after 2 years' },
+    { letter: 'C', text: 'Death due to war or military service' },
+    { letter: 'D', text: 'Death from illegal activities' },
+  ];
+
+  var examOptsList = document.createElement('div');
+  examOptsList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+  examOptsList.id = 'compassExamOptions';
+
+  examOptions.forEach(function(opt, idx) {
+    var row = document.createElement('div');
+    row.id = 'compassExamOpt_' + idx;
+    row.style.cssText = [
+      'display:flex',
+      'align-items:flex-start',
+      'gap:10px',
+      'background:var(--bg3)',
+      'border:1px solid var(--border)',
+      'border-radius:var(--radius-sm)',
+      'padding:10px 12px',
+      'cursor:pointer',
+      'transition:border-color 0.2s,background 0.2s',
+    ].join(';');
+
+    var letter = document.createElement('div');
+    letter.style.cssText = [
+      'width:24px',
+      'height:24px',
+      'border-radius:50%',
+      'background:var(--bg1)',
+      'border:1.5px solid var(--border)',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'font-size:0.72rem',
+      'font-weight:700',
+      'color:var(--text2)',
+      'flex-shrink:0',
+    ].join(';');
+    letter.textContent = opt.letter;
+    letter.id = 'compassExamLetter_' + idx;
+
+    var optText = document.createElement('span');
+    optText.style.cssText = 'font-size:0.78rem;color:var(--text);line-height:1.4;padding-top:2px;';
+    optText.textContent = opt.text;
+
+    row.onmouseover = function() {
+      if (!row.dataset.answered) row.style.borderColor = 'var(--primary-light)';
+    };
+    row.onmouseout = function() {
+      if (!row.dataset.answered) row.style.borderColor = 'var(--border)';
+    };
+    row.onclick = function() { selectExam(idx); };
+
+    row.appendChild(letter);
+    row.appendChild(optText);
+    examOptsList.appendChild(row);
+  });
+
+  var examExplanation = document.createElement('div');
+  examExplanation.id = 'compassExamExplanation';
+  examExplanation.style.cssText = 'display:none;margin-top:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:0.78rem;color:var(--text2);line-height:1.5;';
+  examExplanation.textContent = "After the 2-year contestability period, pre-existing conditions are generally covered under most life insurance policies. The incontestability clause protects policyholders from claim denial after this period.";
+
+  examSection.appendChild(examHeading);
+  examSection.appendChild(examBadge);
+  examSection.appendChild(progressRow);
+  examSection.appendChild(question);
+  examSection.appendChild(examOptsList);
+  examSection.appendChild(examExplanation);
+
+  twoCol.appendChild(examSection);
+  container.appendChild(twoCol);
+
+  // Responsive: stack on narrow
+  var mq = window.matchMedia('(max-width:640px)');
+  function applyMQ(e) {
+    twoCol.style.gridTemplateColumns = e.matches ? '1fr' : '1fr 1fr';
+  }
+  mq.addEventListener('change', applyMQ);
+  applyMQ(mq);
+};
+
+/* ---- Compass helpers (global) ---- */
+function toggleModule(id) {
+  var card    = document.getElementById('compassCard_' + id);
+  var lessons = document.getElementById('compassLessons_' + id);
+  if (!lessons) return;
+  var open = lessons.style.display !== 'none';
+  lessons.style.display = open ? 'none' : 'block';
+  if (card) card.style.borderColor = open ? '' : 'var(--primary-light)';
+}
+
+function selectChatOption(idx) {
+  var optionsList  = document.getElementById('compassOptionsList');
+  var optionsLabel = document.getElementById('compassOptionsLabel');
+  var chatBubbles  = document.getElementById('compassChatBubbles');
+  var aiFeedback   = document.getElementById('compassAiFeedback');
+  if (!optionsList || !chatBubbles || !aiFeedback) return;
+
+  var chatOptions = [
+    "You should invest in unit trusts \u2014 they give the best returns over the long term.",
+    "Let\u2019s first understand your full financial picture \u2014 income, expenses, insurance coverage, and goals. Then we can build a plan that balances protection and growth.",
+    "At 35, you still have 30 years before retirement. $50k is a good start. I\u2019d recommend putting it all into an ILP immediately.",
+  ];
+
+  // Show advisor bubble
+  var advBubble = document.createElement('div');
+  advBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;';
+
+  var advLabel = document.createElement('div');
+  advLabel.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-bottom:4px;';
+  advLabel.textContent = 'You (Advisor)';
+
+  var advMsg = document.createElement('div');
+  advMsg.style.cssText = [
+    'background:var(--primary)',
+    'border-radius:8px 0 8px 8px',
+    'padding:10px 12px',
+    'font-size:0.78rem',
+    'color:#fff',
+    'line-height:1.5',
+    'max-width:90%',
+  ].join(';');
+  advMsg.textContent = chatOptions[idx];
+
+  advBubble.appendChild(advLabel);
+  advBubble.appendChild(advMsg);
+  chatBubbles.appendChild(advBubble);
+
+  // Hide options
+  optionsList.style.display = 'none';
+  if (optionsLabel) optionsLabel.style.display = 'none';
+
+  // Show AI feedback
+  var feedbacks = [
+    {
+      type: 'warning',
+      text: 'Too product-focused too early. You haven\u2019t assessed the client\u2019s needs yet. Always conduct a needs analysis before making any product recommendations.',
+    },
+    {
+      type: 'success',
+      text: 'Excellent response! You\u2019re following the needs-based advisory approach. By gathering a full financial picture first, you demonstrate professionalism and compliance with MAS suitability guidelines.',
+    },
+    {
+      type: 'warning',
+      text: 'Jumping straight to product recommendation without needs analysis is a compliance risk. Recommending a specific product (ILP) before assessing the client\u2019s risk profile and full financial situation may breach FAA suitability requirements.',
+    },
+  ];
+
+  var f = feedbacks[idx];
+  var isSuccess = f.type === 'success';
+  aiFeedback.style.cssText = [
+    'display:block',
+    'margin-top:12px',
+    'border-radius:var(--radius-sm)',
+    'padding:12px',
+    'font-size:0.78rem',
+    'line-height:1.5',
+    'background:' + (isSuccess ? 'rgba(52,211,153,0.1)' : 'rgba(245,158,11,0.1)'),
+    'border:1px solid ' + (isSuccess ? 'var(--green-bright)' : 'var(--amber)'),
+    'color:' + (isSuccess ? 'var(--green-bright)' : 'var(--amber)'),
+  ].join(';');
+
+  var icon = isSuccess ? '\u2713 AI Feedback: ' : '\u26A0 AI Feedback: ';
+  aiFeedback.textContent = icon + f.text;
+}
+
+function selectExam(idx) {
+  var optsList = document.getElementById('compassExamOptions');
+  var explanation = document.getElementById('compassExamExplanation');
+  if (!optsList) return;
+
+  // Prevent re-clicking
+  var opts = optsList.querySelectorAll('[id^="compassExamOpt_"]');
+  if (opts[0] && opts[0].dataset.answered) return;
+
+  var correctIdx = 1; // Option B
+
+  opts.forEach(function(opt, i) {
+    opt.dataset.answered = '1';
+    opt.style.cursor = 'default';
+    opt.onmouseover = null;
+    opt.onmouseout  = null;
+    opt.onclick     = null;
+
+    var letter = document.getElementById('compassExamLetter_' + i);
+
+    if (i === correctIdx) {
+      opt.style.background    = 'rgba(52,211,153,0.1)';
+      opt.style.borderColor   = 'var(--green-bright)';
+      if (letter) {
+        letter.style.background   = 'var(--green-bright)';
+        letter.style.borderColor  = 'var(--green-bright)';
+        letter.style.color        = '#0a0f1a';
+      }
+    } else if (i === idx && idx !== correctIdx) {
+      opt.style.background    = 'rgba(239,68,68,0.1)';
+      opt.style.borderColor   = 'var(--red)';
+      if (letter) {
+        letter.style.background   = 'var(--red)';
+        letter.style.borderColor  = 'var(--red)';
+        letter.style.color        = '#fff';
+      }
+    }
+  });
+
+  if (explanation) explanation.style.display = 'block';
+}
+
+/* ============================================================
    MOBILE MENU TOGGLE
    ============================================================ */
 function toggleMobileMenu() {
