@@ -3439,33 +3439,53 @@ DEMO_RENDERERS.launchpad = function(container) {
   leadPanel.className = 'lp-tab-panel';
   leadPanel.style.display = window._lpTab === 'leads' ? 'block' : 'none';
 
-  // Summary bar
+  // Top bar: summary + Export CSV button
+  var leadTopBar = _lp_el('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;');
   var summaryBar = _lp_el('div',
-    'display:flex;gap:24px;padding:12px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:20px;font-size:13px;color:rgba(255,255,255,0.6);flex-wrap:wrap;');
+    'display:flex;gap:24px;padding:10px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:13px;color:rgba(255,255,255,0.6);flex-wrap:wrap;align-items:center;');
   ['142 leads','38 qualified','12 converted','$30.14 avg CPL'].forEach(function(s, i) {
     if (i > 0) summaryBar.appendChild(_lp_el('span', 'color:rgba(255,255,255,0.15);', '|'));
     summaryBar.appendChild(_lp_el('span', 'color:#fff;font-weight:600;', s));
   });
-  leadPanel.appendChild(summaryBar);
+  leadTopBar.appendChild(summaryBar);
+  var exportBtn = _lp_el('button',
+    'padding:8px 16px;border-radius:8px;border:1px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.1);color:#34d399;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;',
+    '↓ Export CSV');
+  exportBtn.onmouseenter = function() { exportBtn.style.background = 'rgba(52,211,153,0.2)'; };
+  exportBtn.onmouseleave = function() { exportBtn.style.background = 'rgba(52,211,153,0.1)'; };
+  exportBtn.onclick = function() { _lp_toast('142 leads exported to leads_export_2026-04-02.csv'); };
+  leadTopBar.appendChild(exportBtn);
+  leadPanel.appendChild(leadTopBar);
+
+  // Pipeline value
+  leadPanel.appendChild(_lp_el('div',
+    'font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px;',
+    'Estimated pipeline value: \u0024' + '42,600'));
 
   // Table header
   var ltWrap = _lp_el('div', 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;');
   var ltHead = _lp_el('div',
-    'display:grid;grid-template-columns:1.5fr 2fr 1.4fr 1.6fr 1fr 1.2fr 1fr;' +
+    'display:grid;grid-template-columns:1.5fr 2fr 1.4fr 1.6fr 0.9fr 1fr 1.2fr 1fr;' +
     'padding:10px 16px;background:rgba(255,255,255,0.05);font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;gap:8px;');
-  ['Name','Email','Phone','Campaign','Quality','Status','Date'].forEach(function(h) { ltHead.appendChild(_lp_el('div','',h)); });
+  ['Name','Email','Phone','Campaign','Source','Quality','Status','Date'].forEach(function(h) { ltHead.appendChild(_lp_el('div','',h)); });
   ltWrap.appendChild(ltHead);
 
   var leadsData = [
-    { name:'Ahmad Razif',     email:'ahmad.r@gmail.com',   phone:'+65 9123 4567', campaign:'Insurance Lead Gen',  quality:92, date:'Mar 30' },
-    { name:'Sarah Lim',       email:'sarah.lim@yahoo.com', phone:'+65 8234 5678', campaign:'Seminar Registration',quality:78, date:'Mar 30' },
-    { name:'David Chen',      email:'dchen@hotmail.com',   phone:'+65 9345 6789', campaign:'Retirement Planning', quality:65, date:'Mar 29' },
-    { name:'Priya Nair',      email:'priya.n@gmail.com',   phone:'+65 8456 7890', campaign:'Health Shield Promo', quality:88, date:'Mar 29' },
-    { name:'Kevin Tan',       email:'ktan@outlook.com',    phone:'+65 9567 8901', campaign:'Insurance Lead Gen',  quality:45, date:'Mar 28' },
-    { name:'Michelle Wong',   email:'mwong@gmail.com',     phone:'+65 8678 9012', campaign:'Brand Story',         quality:72, date:'Mar 27' },
-    { name:'Raj Sharma',      email:'raj.s@gmail.com',     phone:'+65 9789 0123', campaign:'Insurance Lead Gen',  quality:28, date:'Mar 27' },
-    { name:'Hui Ling Chua',   email:'hlchua@yahoo.com',    phone:'+65 8890 1234', campaign:'Retirement Planning', quality:81, date:'Mar 26' },
+    { name:'Ahmad Razif',     email:'ahmad.r@gmail.com',   phone:'+65 9123 4567', campaign:'Insurance Lead Gen',  source:'Facebook',  quality:92, date:'Mar 30' },
+    { name:'Sarah Lim',       email:'sarah.lim@yahoo.com', phone:'+65 8234 5678', campaign:'Seminar Registration',source:'Instagram',  quality:78, date:'Mar 30' },
+    { name:'David Chen',      email:'dchen@hotmail.com',   phone:'+65 9345 6789', campaign:'Retirement Planning', source:'Lead Form',  quality:65, date:'Mar 29' },
+    { name:'Priya Nair',      email:'priya.n@gmail.com',   phone:'+65 8456 7890', campaign:'Health Shield Promo', source:'Facebook',   quality:88, date:'Mar 29' },
+    { name:'Kevin Tan',       email:'ktan@outlook.com',    phone:'+65 9567 8901', campaign:'Insurance Lead Gen',  source:'Instagram',  quality:45, date:'Mar 28' },
+    { name:'Michelle Wong',   email:'mwong@gmail.com',     phone:'+65 8678 9012', campaign:'Brand Story',         source:'Facebook',   quality:72, date:'Mar 27' },
+    { name:'Raj Sharma',      email:'raj.s@gmail.com',     phone:'+65 9789 0123', campaign:'Insurance Lead Gen',  source:'Lead Form',  quality:28, date:'Mar 27' },
+    { name:'Hui Ling Chua',   email:'hlchua@yahoo.com',    phone:'+65 8890 1234', campaign:'Retirement Planning', source:'Facebook',   quality:81, date:'Mar 26' },
   ];
+
+  var sourceStyles = {
+    'Facebook':  { bg:'rgba(24,119,242,0.15)', color:'#4a90f5' },
+    'Instagram': { bg:'rgba(225,48,108,0.15)', color:'#e1306c' },
+    'Lead Form': { bg:'rgba(168,85,247,0.15)', color:'#a855f7' },
+  };
 
   var qualityConfig = [
     { min:90, label:'Excellent', color:'#34d399', bg:'rgba(52,211,153,0.12)' },
@@ -3486,13 +3506,17 @@ DEMO_RENDERERS.launchpad = function(container) {
   leadsData.forEach(function(lead, idx) {
     var qConf = qualityConfig.find(function(q) { return lead.quality >= q.min; }) || qualityConfig[4];
     var row = _lp_el('div',
-      'display:grid;grid-template-columns:1.5fr 2fr 1.4fr 1.6fr 1fr 1.2fr 1fr;padding:11px 16px;gap:8px;align-items:center;font-size:12px;' +
+      'display:grid;grid-template-columns:1.5fr 2fr 1.4fr 1.6fr 0.9fr 1fr 1.2fr 1fr;padding:11px 16px;gap:8px;align-items:center;font-size:12px;' +
       (idx % 2 === 1 ? 'background:rgba(255,255,255,0.02);' : '') +
       'border-top:1px solid rgba(255,255,255,0.05);');
     row.appendChild(_lp_el('div','color:#fff;font-weight:500;', lead.name));
     row.appendChild(_lp_el('div','color:rgba(255,255,255,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;', lead.email));
     row.appendChild(_lp_el('div','color:rgba(255,255,255,0.5);', lead.phone));
     row.appendChild(_lp_el('div','color:rgba(255,255,255,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;', lead.campaign));
+    var sStyle = sourceStyles[lead.source] || sourceStyles['Facebook'];
+    row.appendChild(_lp_el('span',
+      'padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;background:' + sStyle.bg + ';color:' + sStyle.color + ';',
+      lead.source));
     var qBadge = _lp_el('span',
       'padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;background:' + qConf.bg + ';color:' + qConf.color + ';',
       qConf.label + ' ' + lead.quality);
@@ -3673,11 +3697,86 @@ DEMO_RENDERERS.launchpad = function(container) {
     return card;
   }
 
-  var rowTop = _lp_el('div','display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;');
-  rowTop.appendChild(_lp_mkFbFeed('s'));
-  rowTop.appendChild(_lp_mkIgStory('s'));
-  rowTop.appendChild(_lp_mkFbRight('s'));
-  previewsCol.appendChild(rowTop);
+  // Platform selector + mobile toggle
+  var studioControlBar = _lp_el('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;');
+
+  var platformBtns = _lp_el('div', 'display:flex;gap:6px;flex-wrap:wrap;');
+  var platforms = ['Facebook Feed', 'Instagram Story', 'Right Column'];
+  if (!window._lpStudioPlatform) window._lpStudioPlatform = 'Facebook Feed';
+  platforms.forEach(function(p) {
+    var active = window._lpStudioPlatform === p;
+    var pb = _lp_el('button',
+      'padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;' +
+      (active ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
+      p);
+    pb.onclick = function() {
+      window._lpStudioPlatform = p;
+      var previewArea = document.getElementById('studioPreviewArea');
+      if (previewArea) {
+        previewArea.innerHTML = '';
+        if (p === 'Facebook Feed') previewArea.appendChild(_lp_mkFbFeed('s'));
+        else if (p === 'Instagram Story') previewArea.appendChild(_lp_mkIgStory('s'));
+        else previewArea.appendChild(_lp_mkFbRight('s'));
+        _lp_applyMobilePreview(previewArea);
+      }
+      // update button states
+      platformBtns.querySelectorAll('button').forEach(function(btn) {
+        var sel = btn.textContent === p;
+        btn.style.background = sel ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.04)';
+        btn.style.borderColor = sel ? 'var(--blue-bright,#3b82f6)' : 'rgba(255,255,255,0.12)';
+        btn.style.color = sel ? '#3b82f6' : 'rgba(255,255,255,0.5)';
+      });
+    };
+    platformBtns.appendChild(pb);
+  });
+  studioControlBar.appendChild(platformBtns);
+
+  // Mobile toggle
+  if (window._lpStudioMobile === undefined) window._lpStudioMobile = false;
+  var mobileToggleWrap = _lp_el('div', 'display:flex;align-items:center;gap:8px;cursor:pointer;');
+  var mobileToggleTrack = _lp_el('div',
+    'width:36px;height:20px;border-radius:10px;transition:background .2s;position:relative;' +
+    (window._lpStudioMobile ? 'background:var(--blue-bright,#3b82f6);' : 'background:rgba(255,255,255,0.15);'));
+  var mobileToggleThumb = _lp_el('div',
+    'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left .2s;' +
+    (window._lpStudioMobile ? 'left:18px;' : 'left:2px;'));
+  mobileToggleTrack.appendChild(mobileToggleThumb);
+  mobileToggleWrap.appendChild(mobileToggleTrack);
+  mobileToggleWrap.appendChild(_lp_el('span', 'font-size:12px;color:rgba(255,255,255,0.55);', 'Preview on Mobile'));
+  mobileToggleWrap.onclick = function() {
+    window._lpStudioMobile = !window._lpStudioMobile;
+    mobileToggleTrack.style.background = window._lpStudioMobile ? 'var(--blue-bright,#3b82f6)' : 'rgba(255,255,255,0.15)';
+    mobileToggleThumb.style.left = window._lpStudioMobile ? '18px' : '2px';
+    var previewArea = document.getElementById('studioPreviewArea');
+    if (previewArea) _lp_applyMobilePreview(previewArea);
+  };
+  studioControlBar.appendChild(mobileToggleWrap);
+  previewsCol.appendChild(studioControlBar);
+
+  // Helper to apply mobile scaling
+  window._lp_applyMobilePreview = function(area) {
+    if (!area) return;
+    var inner = area.firstChild;
+    if (!inner) return;
+    if (window._lpStudioMobile) {
+      area.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.2);border-radius:12px;border:1px solid rgba(255,255,255,0.07);';
+      inner.style.transform = 'scale(0.82)';
+      inner.style.transformOrigin = 'top center';
+    } else {
+      area.style.cssText = '';
+      inner.style.transform = '';
+      inner.style.transformOrigin = '';
+    }
+  };
+
+  var studioPreviewArea = _lp_el('div', '');
+  studioPreviewArea.id = 'studioPreviewArea';
+  // Render the active platform
+  if (window._lpStudioPlatform === 'Facebook Feed') studioPreviewArea.appendChild(_lp_mkFbFeed('s'));
+  else if (window._lpStudioPlatform === 'Instagram Story') studioPreviewArea.appendChild(_lp_mkIgStory('s'));
+  else studioPreviewArea.appendChild(_lp_mkFbRight('s'));
+  _lp_applyMobilePreview(studioPreviewArea);
+  previewsCol.appendChild(studioPreviewArea);
   studioLayout.appendChild(previewsCol);
   prevPanel.appendChild(studioLayout);
   wrap.appendChild(prevPanel);
@@ -4967,6 +5066,30 @@ DEMO_RENDERERS.financehub = function(container) {
   cpfLifeSection.appendChild(cpfThresholds);
   cpfLifeSection.appendChild(cpfScheme);
   cpfPanel.appendChild(cpfLifeSection);
+
+  // What-If scenario section
+  var whatIfSection = document.createElement('div');
+  whatIfSection.style.cssText = 'margin-top:20px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.18);border-radius:12px;padding:14px 18px;';
+  var whatIfTitle = document.createElement('div');
+  whatIfTitle.textContent = 'What-If Scenario';
+  whatIfTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;';
+  whatIfSection.appendChild(whatIfTitle);
+  var whatIfRow = document.createElement('div');
+  whatIfRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;';
+  var whatIfLeft = document.createElement('div');
+  whatIfLeft.style.cssText = 'font-size:13px;color:rgba(255,255,255,0.55);line-height:1.5;';
+  whatIfLeft.textContent = 'If salary increases 3% annually \u2192 CPF at 65:';
+  var whatIfRight = document.createElement('div');
+  whatIfRight.style.cssText = 'font-size:22px;font-weight:700;color:#a78bfa;white-space:nowrap;';
+  whatIfRight.textContent = '$1,140,000';
+  whatIfRow.appendChild(whatIfLeft);
+  whatIfRow.appendChild(whatIfRight);
+  whatIfSection.appendChild(whatIfRow);
+  var whatIfNote = document.createElement('div');
+  whatIfNote.textContent = 'vs. $984,000 at flat salary \u2014 +$156k additional retirement savings';
+  whatIfNote.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;';
+  whatIfSection.appendChild(whatIfNote);
+  cpfPanel.appendChild(whatIfSection);
 
   // ============================================================
   // PANEL 6: PROJECTION CHART
