@@ -1219,10 +1219,13 @@ function openDemo(id) {
 
   const overlay = document.getElementById('modalOverlay');
   const titleEl = document.getElementById('modalTitle');
-  const bodyEl  = document.getElementById('modalBody');
+  // Use querySelector since demo renderers may overwrite the container ID
+  const bodyEl  = document.querySelector('.modal-body');
 
   titleEl.textContent = platform.icon + '  ' + platform.title + ' — Interactive Demo';
-  bodyEl.textContent  = '';
+  // Reset: clear all children and restore ID
+  while (bodyEl.firstChild) bodyEl.removeChild(bodyEl.firstChild);
+  bodyEl.id = 'modalBody';
 
   if (DEMO_RENDERERS[id]) {
     DEMO_RENDERERS[id](bodyEl);
