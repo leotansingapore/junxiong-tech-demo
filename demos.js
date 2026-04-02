@@ -2315,6 +2315,572 @@ function _renderWizardStep() {
 }
 
 /* ============================================================
+   FINANCE HUB DEMO
+   ============================================================ */
+
+DEMO_RENDERERS.financehub = function(container) {
+  container.innerHTML = '';
+  container.id = 'fhDemo';
+
+  // ---- Metric Cards ----
+  var metrics = [
+    { label: 'Total Assets',      value: '$892,400',  color: 'var(--green-bright, #34d399)' },
+    { label: 'Total Liabilities', value: '$423,600',  color: '#ef4444' },
+    { label: 'Net Worth',         value: '$468,800',  color: 'var(--primary-light, #6b9bdb)' },
+    { label: 'Monthly Surplus',   value: '$1,900',    color: 'var(--accent, #C4A24D)' },
+  ];
+
+  var cardsGrid = document.createElement('div');
+  cardsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;';
+
+  metrics.forEach(function(m) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 16px;';
+    var lbl = document.createElement('div');
+    lbl.textContent = m.label;
+    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;';
+    var val = document.createElement('div');
+    val.textContent = m.value;
+    val.style.cssText = 'font-size:20px;font-weight:700;color:' + m.color + ';';
+    card.appendChild(lbl);
+    card.appendChild(val);
+    cardsGrid.appendChild(card);
+  });
+
+  container.appendChild(cardsGrid);
+
+  // ---- Tab Bar ----
+  var tabBar = document.createElement('div');
+  tabBar.className = 'demo-tabs';
+
+  var tabDefs = [
+    { key: 'cashflow',   label: 'Cash Flow' },
+    { key: 'networth',   label: 'Net Worth' },
+    { key: 'insurance',  label: 'Insurance Coverage' },
+    { key: 'cpf',        label: 'CPF Projection' },
+  ];
+
+  tabDefs.forEach(function(def, i) {
+    var btn = document.createElement('button');
+    btn.className = 'demo-tab' + (i === 0 ? ' active' : '');
+    btn.dataset.tab = def.key;
+    btn.textContent = def.label;
+    btn.addEventListener('click', function() { fhTab(def.key); });
+    tabBar.appendChild(btn);
+  });
+
+  container.appendChild(tabBar);
+
+  // ---- Tab Panels ----
+
+  // -- Cash Flow Panel --
+  var cfPanel = document.createElement('div');
+  cfPanel.dataset.panel = 'cashflow';
+  cfPanel.style.cssText = 'padding:20px 0;';
+
+  var cfCols = document.createElement('div');
+  cfCols.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px;';
+
+  // Income side
+  var incomeCol = document.createElement('div');
+  var incomeTitle = document.createElement('div');
+  incomeTitle.textContent = 'Monthly Income';
+  incomeTitle.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:14px;text-align:center;';
+  incomeCol.appendChild(incomeTitle);
+
+  var incomeDonutWrap = document.createElement('div');
+  incomeDonutWrap.style.cssText = 'display:flex;justify-content:center;margin-bottom:14px;';
+  var incomeCanvas = document.createElement('canvas');
+  incomeCanvas.id = 'fhIncomeDonut';
+  incomeDonutWrap.appendChild(incomeCanvas);
+  incomeCol.appendChild(incomeDonutWrap);
+
+  var incomeItems = [
+    { label: 'Salary',       value: 8000, color: '#6b9bdb' },
+    { label: 'Investments',  value: 1200, color: '#00b894' },
+    { label: 'Side Income',  value: 500,  color: '#C4A24D' },
+  ];
+
+  var incomeLegend = document.createElement('div');
+  incomeLegend.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  incomeItems.forEach(function(item) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;font-size:12px;';
+    var left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    var dot = document.createElement('div');
+    dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + item.color + ';flex-shrink:0;';
+    var lbl = document.createElement('span');
+    lbl.textContent = item.label;
+    lbl.style.cssText = 'color:rgba(255,255,255,0.7);';
+    left.appendChild(dot);
+    left.appendChild(lbl);
+    var val = document.createElement('span');
+    val.textContent = '$' + item.value.toLocaleString();
+    val.style.cssText = 'color:#e2e8f0;font-weight:600;';
+    row.appendChild(left);
+    row.appendChild(val);
+    incomeLegend.appendChild(row);
+  });
+  incomeCol.appendChild(incomeLegend);
+
+  // Expense side
+  var expCol = document.createElement('div');
+  var expTitle = document.createElement('div');
+  expTitle.textContent = 'Monthly Expenses';
+  expTitle.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:14px;text-align:center;';
+  expCol.appendChild(expTitle);
+
+  var expDonutWrap = document.createElement('div');
+  expDonutWrap.style.cssText = 'display:flex;justify-content:center;margin-bottom:14px;';
+  var expCanvas = document.createElement('canvas');
+  expCanvas.id = 'fhExpDonut';
+  expDonutWrap.appendChild(expCanvas);
+  expCol.appendChild(expDonutWrap);
+
+  var expItems = [
+    { label: 'Housing',    value: 2500, color: '#ef4444' },
+    { label: 'Insurance',  value: 800,  color: '#f59e0b' },
+    { label: 'Living',     value: 2000, color: '#a78bfa' },
+    { label: 'Transport',  value: 800,  color: '#64748b' },
+    { label: 'Others',     value: 700,  color: '#94a3b8' },
+  ];
+
+  var expLegend = document.createElement('div');
+  expLegend.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  expItems.forEach(function(item) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;font-size:12px;';
+    var left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    var dot = document.createElement('div');
+    dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + item.color + ';flex-shrink:0;';
+    var lbl = document.createElement('span');
+    lbl.textContent = item.label;
+    lbl.style.cssText = 'color:rgba(255,255,255,0.7);';
+    left.appendChild(dot);
+    left.appendChild(lbl);
+    var val = document.createElement('span');
+    val.textContent = '$' + item.value.toLocaleString();
+    val.style.cssText = 'color:#e2e8f0;font-weight:600;';
+    row.appendChild(left);
+    row.appendChild(val);
+    expLegend.appendChild(row);
+  });
+  expCol.appendChild(expLegend);
+
+  cfCols.appendChild(incomeCol);
+  cfCols.appendChild(expCol);
+  cfPanel.appendChild(cfCols);
+
+  // Result cards row
+  var cfResults = [
+    { label: 'Total Income',    value: '$9,700',  color: '#34d399' },
+    { label: 'Total Expenses',  value: '$7,800',  color: '#ef4444' },
+    { label: 'Monthly Surplus', value: '$1,900',  color: '#C4A24D' },
+    { label: 'Savings Rate',    value: '19.6%',   color: '#6b9bdb' },
+  ];
+
+  var cfResultsGrid = document.createElement('div');
+  cfResultsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px;';
+  cfResults.forEach(function(r) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px;';
+    var lbl = document.createElement('div');
+    lbl.textContent = r.label;
+    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;';
+    var val = document.createElement('div');
+    val.textContent = r.value;
+    val.style.cssText = 'font-size:18px;font-weight:700;color:' + r.color + ';';
+    card.appendChild(lbl);
+    card.appendChild(val);
+    cfResultsGrid.appendChild(card);
+  });
+  cfPanel.appendChild(cfResultsGrid);
+
+  // -- Net Worth Panel --
+  var nwPanel = document.createElement('div');
+  nwPanel.dataset.panel = 'networth';
+  nwPanel.style.cssText = 'padding:20px 0;display:none;';
+
+  var nwTitle = document.createElement('div');
+  nwTitle.textContent = 'Assets & Liabilities Breakdown';
+  nwTitle.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:14px;';
+  nwPanel.appendChild(nwTitle);
+
+  var nwCanvasWrap = document.createElement('div');
+  var nwCanvas = document.createElement('canvas');
+  nwCanvas.id = 'fhNWBar';
+  nwCanvasWrap.appendChild(nwCanvas);
+  nwPanel.appendChild(nwCanvasWrap);
+
+  // Two-column breakdown tables
+  var nwTables = document.createElement('div');
+  nwTables.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;';
+
+  var assetItems = [
+    { label: 'Property',       value: '$420,000', pct: '47%', color: '#6b9bdb' },
+    { label: 'CPF',            value: '$186,000', pct: '20.8%', color: '#5b8fd4' },
+    { label: 'Investments',    value: '$152,400', pct: '17.1%', color: '#00b894' },
+    { label: 'Cash',           value: '$84,000',  pct: '9.4%', color: '#34d399' },
+    { label: 'Insurance CSV',  value: '$50,000',  pct: '5.6%', color: '#0ea5e9' },
+  ];
+
+  var liabItems = [
+    { label: 'HDB Loan',      value: '$380,000', pct: '89.7%', color: '#ef4444' },
+    { label: 'Car Loan',      value: '$35,600',  pct: '8.4%',  color: '#f59e0b' },
+    { label: 'Credit Card',   value: '$8,000',   pct: '1.9%',  color: '#f97316' },
+  ];
+
+  function buildNWTable(title, items, titleColor) {
+    var col = document.createElement('div');
+    var hdr = document.createElement('div');
+    hdr.textContent = title;
+    hdr.style.cssText = 'font-size:12px;color:' + titleColor + ';text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;font-weight:600;';
+    col.appendChild(hdr);
+    items.forEach(function(item) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.06);';
+      var left = document.createElement('div');
+      left.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      var dot = document.createElement('div');
+      dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + item.color + ';flex-shrink:0;';
+      var lbl = document.createElement('span');
+      lbl.textContent = item.label;
+      lbl.style.cssText = 'color:rgba(255,255,255,0.7);';
+      left.appendChild(dot);
+      left.appendChild(lbl);
+      var right = document.createElement('div');
+      right.style.cssText = 'display:flex;gap:12px;';
+      var val = document.createElement('span');
+      val.textContent = item.value;
+      val.style.cssText = 'color:#e2e8f0;font-weight:600;';
+      var pct = document.createElement('span');
+      pct.textContent = item.pct;
+      pct.style.cssText = 'color:rgba(255,255,255,0.35);width:38px;text-align:right;';
+      right.appendChild(val);
+      right.appendChild(pct);
+      row.appendChild(left);
+      row.appendChild(right);
+      col.appendChild(row);
+    });
+    return col;
+  }
+
+  nwTables.appendChild(buildNWTable('Assets', assetItems, '#34d399'));
+  nwTables.appendChild(buildNWTable('Liabilities', liabItems, '#ef4444'));
+  nwPanel.appendChild(nwTables);
+
+  // -- Insurance Panel --
+  var insPanel = document.createElement('div');
+  insPanel.dataset.panel = 'insurance';
+  insPanel.style.cssText = 'padding:20px 0;display:none;';
+
+  var insTitle = document.createElement('div');
+  insTitle.textContent = 'Coverage Gap Analysis';
+  insTitle.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:20px;';
+  insPanel.appendChild(insTitle);
+
+  var insCoverage = [
+    { category: 'Death',           recommended: 800000, actual: 500000, status: 'PARTIAL',   statusColor: '#f59e0b', pct: 500000/800000 },
+    { category: 'TPD',             recommended: 600000, actual: 600000, status: 'ADEQUATE',  statusColor: '#34d399', pct: 1.0 },
+    { category: 'Critical Illness',recommended: 400000, actual: 150000, status: 'GAP',       statusColor: '#ef4444', pct: 150000/400000 },
+    { category: 'Hospital',        recommended: null,   actual: null,   status: 'ADEQUATE',  statusColor: '#34d399', pct: 1.0, label: 'Private Hospital Plan' },
+  ];
+
+  var insBars = document.createElement('div');
+  insBars.style.cssText = 'display:flex;flex-direction:column;gap:18px;margin-bottom:24px;';
+
+  insCoverage.forEach(function(item) {
+    var row = document.createElement('div');
+
+    var rowHeader = document.createElement('div');
+    rowHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;';
+
+    var catLabel = document.createElement('div');
+    catLabel.textContent = item.category;
+    catLabel.style.cssText = 'font-size:13px;color:#e2e8f0;font-weight:600;';
+
+    var statusBadge = document.createElement('div');
+    statusBadge.textContent = item.status;
+    statusBadge.style.cssText = 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:0.06em;background:' + item.statusColor + '22;color:' + item.statusColor + ';border:1px solid ' + item.statusColor + '44;';
+
+    rowHeader.appendChild(catLabel);
+    rowHeader.appendChild(statusBadge);
+    row.appendChild(rowHeader);
+
+    var barTrack = document.createElement('div');
+    barTrack.style.cssText = 'background:rgba(255,255,255,0.07);border-radius:6px;height:10px;position:relative;overflow:hidden;';
+
+    var barFill = document.createElement('div');
+    barFill.style.cssText = 'position:absolute;left:0;top:0;height:100%;border-radius:6px;background:' + item.statusColor + ';width:' + Math.round(item.pct * 100) + '%;transition:width 0.6s ease;';
+
+    barTrack.appendChild(barFill);
+    row.appendChild(barTrack);
+
+    var subRow = document.createElement('div');
+    subRow.style.cssText = 'display:flex;justify-content:space-between;margin-top:5px;font-size:11px;color:rgba(255,255,255,0.4);';
+
+    var leftSub = document.createElement('span');
+    if (item.label) {
+      leftSub.textContent = item.label;
+    } else {
+      leftSub.textContent = 'Coverage: $' + (item.actual / 1000).toFixed(0) + 'k';
+    }
+    var rightSub = document.createElement('span');
+    if (item.recommended) {
+      rightSub.textContent = 'Recommended: $' + (item.recommended / 1000).toFixed(0) + 'k';
+    }
+
+    subRow.appendChild(leftSub);
+    subRow.appendChild(rightSub);
+    row.appendChild(subRow);
+
+    insBars.appendChild(row);
+  });
+
+  insPanel.appendChild(insBars);
+
+  // Legend
+  var insLegend = document.createElement('div');
+  insLegend.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;';
+  [
+    { label: 'Recommended', color: '#6b9bdb' },
+    { label: 'Adequate',    color: '#34d399' },
+    { label: 'Partial',     color: '#f59e0b' },
+    { label: 'Gap',         color: '#ef4444' },
+  ].forEach(function(l) {
+    var item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,0.5);';
+    var dot = document.createElement('div');
+    dot.style.cssText = 'width:10px;height:10px;border-radius:2px;background:' + l.color + ';';
+    var lbl = document.createElement('span');
+    lbl.textContent = l.label;
+    item.appendChild(dot);
+    item.appendChild(lbl);
+    insLegend.appendChild(item);
+  });
+  insPanel.appendChild(insLegend);
+
+  // Result cards
+  var insResults = [
+    { label: 'Death Gap',   value: '$300k',  color: '#f59e0b' },
+    { label: 'TPD',         value: 'Adequate', color: '#34d399' },
+    { label: 'CI Gap',      value: '$250k',  color: '#ef4444' },
+    { label: 'Hospital',    value: 'Covered', color: '#34d399' },
+  ];
+
+  var insResultsGrid = document.createElement('div');
+  insResultsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px;';
+  insResults.forEach(function(r) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px;';
+    var lbl = document.createElement('div');
+    lbl.textContent = r.label;
+    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;';
+    var val = document.createElement('div');
+    val.textContent = r.value;
+    val.style.cssText = 'font-size:18px;font-weight:700;color:' + r.color + ';';
+    card.appendChild(lbl);
+    card.appendChild(val);
+    insResultsGrid.appendChild(card);
+  });
+  insPanel.appendChild(insResultsGrid);
+
+  // -- CPF Panel --
+  var cpfPanel = document.createElement('div');
+  cpfPanel.dataset.panel = 'cpf';
+  cpfPanel.style.cssText = 'padding:20px 0;display:none;';
+
+  var cpfCols = document.createElement('div');
+  cpfCols.style.cssText = 'display:grid;grid-template-columns:3fr 2fr;gap:24px;';
+
+  // Left: stacked bar chart
+  var cpfChartCol = document.createElement('div');
+  var cpfChartTitle = document.createElement('div');
+  cpfChartTitle.textContent = 'CPF Growth Projection (Age 30–65)';
+  cpfChartTitle.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:14px;';
+  cpfChartCol.appendChild(cpfChartTitle);
+
+  var cpfCanvasWrap = document.createElement('div');
+  var cpfCanvas = document.createElement('canvas');
+  cpfCanvas.id = 'fhCPFBar';
+  cpfCanvasWrap.appendChild(cpfCanvas);
+  cpfChartCol.appendChild(cpfCanvasWrap);
+  cpfCols.appendChild(cpfChartCol);
+
+  // Right: result cards + milestone timeline
+  var cpfRightCol = document.createElement('div');
+
+  var cpfResultsData = [
+    { label: 'OA at Age 55',     value: '$285k',        color: '#6b9bdb' },
+    { label: 'SA at Age 55',     value: '$198k',        color: '#C4A24D' },
+    { label: 'MA at Age 65',     value: '$92k',         color: '#00b894' },
+    { label: 'Est. CPF Life',    value: '$1,450/mo',    color: '#34d399' },
+  ];
+
+  var cpfResultsGrid = document.createElement('div');
+  cpfResultsGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;';
+  cpfResultsData.forEach(function(r) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px;';
+    var lbl = document.createElement('div');
+    lbl.textContent = r.label;
+    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px;';
+    var val = document.createElement('div');
+    val.textContent = r.value;
+    val.style.cssText = 'font-size:16px;font-weight:700;color:' + r.color + ';';
+    card.appendChild(lbl);
+    card.appendChild(val);
+    cpfResultsGrid.appendChild(card);
+  });
+  cpfRightCol.appendChild(cpfResultsGrid);
+
+  // Milestone timeline
+  var milestoneTitle = document.createElement('div');
+  milestoneTitle.textContent = 'Key Milestones';
+  milestoneTitle.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;';
+  cpfRightCol.appendChild(milestoneTitle);
+
+  var milestones = [
+    { age: 'Age 55', label: 'Retirement Sum',       color: '#6b9bdb' },
+    { age: 'Age 60', label: 'Withdraw excess',       color: '#C4A24D' },
+    { age: 'Age 65', label: 'CPF Life begins',       color: '#00b894' },
+  ];
+
+  var timeline = document.createElement('div');
+  timeline.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+  milestones.forEach(function(m) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;';
+    var badge = document.createElement('div');
+    badge.textContent = m.age;
+    badge.style.cssText = 'font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:' + m.color + '22;color:' + m.color + ';border:1px solid ' + m.color + '44;white-space:nowrap;';
+    var lbl = document.createElement('div');
+    lbl.textContent = m.label;
+    lbl.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.7);';
+    row.appendChild(badge);
+    row.appendChild(lbl);
+    timeline.appendChild(row);
+  });
+  cpfRightCol.appendChild(timeline);
+
+  cpfCols.appendChild(cpfRightCol);
+  cpfPanel.appendChild(cpfCols);
+
+  // Append all panels
+  container.appendChild(cfPanel);
+  container.appendChild(nwPanel);
+  container.appendChild(insPanel);
+  container.appendChild(cpfPanel);
+
+  // Render initial tab charts after DOM is ready
+  setTimeout(function() {
+    _fhRenderCashFlow();
+  }, 100);
+};
+
+/* ---- Tab switcher ---- */
+function fhTab(tab) {
+  var tabs   = document.querySelectorAll('#fhDemo .demo-tab');
+  var panels = document.querySelectorAll('#fhDemo [data-panel]');
+
+  tabs.forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  panels.forEach(function(p) {
+    p.style.display = p.dataset.panel === tab ? '' : 'none';
+  });
+
+  setTimeout(function() {
+    if (tab === 'cashflow')  _fhRenderCashFlow();
+    if (tab === 'networth')  _fhRenderNetWorth();
+    if (tab === 'cpf')       _fhRenderCPF();
+  }, 50);
+}
+
+/* ---- Cash Flow charts ---- */
+function _fhRenderCashFlow() {
+  var incomeCanvas = document.getElementById('fhIncomeDonut');
+  var expCanvas    = document.getElementById('fhExpDonut');
+  if (incomeCanvas) {
+    Charts.donut(incomeCanvas, [
+      { value: 8000, color: '#6b9bdb', label: 'Salary' },
+      { value: 1200, color: '#00b894', label: 'Investments' },
+      { value: 500,  color: '#C4A24D', label: 'Side Income' },
+    ], { size: 140, centerText: '$9.7k', centerSub: 'monthly' });
+  }
+  if (expCanvas) {
+    Charts.donut(expCanvas, [
+      { value: 2500, color: '#ef4444', label: 'Housing' },
+      { value: 800,  color: '#f59e0b', label: 'Insurance' },
+      { value: 2000, color: '#a78bfa', label: 'Living' },
+      { value: 800,  color: '#64748b', label: 'Transport' },
+      { value: 700,  color: '#94a3b8', label: 'Others' },
+    ], { size: 140, centerText: '$7.8k', centerSub: 'monthly' });
+  }
+}
+
+/* ---- Net Worth chart ---- */
+function _fhRenderNetWorth() {
+  var canvas = document.getElementById('fhNWBar');
+  if (!canvas) return;
+
+  var items = [
+    { label: 'Property',      value: 420000, color: '#6b9bdb' },
+    { label: 'CPF',           value: 186000, color: '#5b8fd4' },
+    { label: 'Investments',   value: 152400, color: '#00b894' },
+    { label: 'Cash',          value: 84000,  color: '#34d399' },
+    { label: 'Insurance CSV', value: 50000,  color: '#0ea5e9' },
+    { label: 'HDB Loan',      value: 380000, color: '#ef4444' },
+    { label: 'Car Loan',      value: 35600,  color: '#f59e0b' },
+    { label: 'Credit Card',   value: 8000,   color: '#f97316' },
+  ];
+
+  Charts.horizontalBar(canvas, items, { maxValue: 420000 });
+}
+
+/* ---- CPF Projection chart ---- */
+function _fhRenderCPF() {
+  var canvas = document.getElementById('fhCPFBar');
+  if (!canvas) return;
+
+  // Simplified CPF compounding: OA 23%, SA 6%, MA 8% of $5k salary
+  // OA rate 2.5%pa, SA 4%pa, MA 4%pa (simplified)
+  var ages = [30, 35, 40, 45, 50, 55, 60, 65];
+  var salary = 5000;
+  var oaContrib  = salary * 0.23;
+  var saContrib  = salary * 0.06;
+  var maContrib  = salary * 0.08;
+  var oaRate = 0.025, saRate = 0.04, maRate = 0.04;
+
+  var cpfData = ages.map(function(age) {
+    var years = age - 30;
+    // Future value of contributions: FV = C * ((1+r)^n - 1) / r * 12
+    var oaFV = years === 0 ? 0 : oaContrib * 12 * ((Math.pow(1 + oaRate, years) - 1) / oaRate);
+    var saFV = years === 0 ? 0 : saContrib * 12 * ((Math.pow(1 + saRate, years) - 1) / saRate);
+    var maFV = years === 0 ? 0 : maContrib * 12 * ((Math.pow(1 + maRate, years) - 1) / maRate);
+    return {
+      label: '' + age,
+      segments: [
+        { value: Math.round(oaFV), color: '#6b9bdb' },
+        { value: Math.round(saFV), color: '#C4A24D' },
+        { value: Math.round(maFV), color: '#00b894' },
+      ]
+    };
+  });
+
+  Charts.stackedBar(canvas, cpfData, {
+    height: 220,
+    legend: [
+      { label: 'OA', color: '#6b9bdb' },
+      { label: 'SA', color: '#C4A24D' },
+      { label: 'MA', color: '#00b894' },
+    ],
+  });
+}
+
+/* ============================================================
    MOBILE MENU TOGGLE
    ============================================================ */
 function toggleMobileMenu() {
