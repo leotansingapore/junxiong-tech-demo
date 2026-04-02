@@ -1841,24 +1841,35 @@ DEMO_RENDERERS.compass = function(container) {
   (function() {
     var pane = panes.track;
 
-    /* Progress summary */
-    var summary = document.createElement('div');
-    summary.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;';
-    var summaryLeft = document.createElement('div');
-    var summaryTitle = document.createElement('div');
-    summaryTitle.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--text);';
-    summaryTitle.textContent = 'Phase 2 of 5 \u2014 47% complete';
-    var summarySubt = document.createElement('div');
-    summarySubt.style.cssText = 'font-size:0.72rem;color:var(--text3);margin-top:2px;';
-    summarySubt.textContent = 'Current focus: Product Knowledge';
-    summaryLeft.appendChild(summaryTitle);
-    summaryLeft.appendChild(summarySubt);
-    var summaryPct = document.createElement('div');
-    summaryPct.style.cssText = 'font-size:1.6rem;font-weight:800;color:var(--primary-light);line-height:1;';
-    summaryPct.textContent = '47%';
-    summary.appendChild(summaryLeft);
-    summary.appendChild(summaryPct);
-    pane.appendChild(summary);
+    /* YOUR PROGRESS summary card */
+    var progressCard = document.createElement('div');
+    progressCard.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px;';
+    var progressCardLabel = document.createElement('div');
+    progressCardLabel.style.cssText = 'font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--primary-light);margin-bottom:10px;';
+    progressCardLabel.textContent = 'Your Progress';
+    var progressCardRow = document.createElement('div');
+    progressCardRow.style.cssText = 'display:flex;align-items:center;gap:20px;flex-wrap:wrap;';
+    [
+      { val: '47%',      label: 'Complete',   color: 'var(--primary-light)' },
+      { val: '142/302',  label: 'Lessons',    color: 'var(--text)' },
+      { val: '~28h',     label: 'Remaining',  color: 'var(--amber)' },
+      { val: 'Phase 2/5',label: 'Phase',      color: 'var(--text)' },
+    ].forEach(function(pi) {
+      var item = document.createElement('div');
+      item.style.cssText = 'display:flex;flex-direction:column;';
+      var val = document.createElement('div');
+      val.style.cssText = 'font-size:1.1rem;font-weight:800;color:' + pi.color + ';line-height:1;';
+      val.textContent = pi.val;
+      var lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:0.62rem;color:var(--text3);margin-top:3px;';
+      lbl.textContent = pi.label;
+      item.appendChild(val);
+      item.appendChild(lbl);
+      progressCardRow.appendChild(item);
+    });
+    progressCard.appendChild(progressCardLabel);
+    progressCard.appendChild(progressCardRow);
+    pane.appendChild(progressCard);
 
     /* Stepper */
     var phases = [
@@ -1951,6 +1962,8 @@ DEMO_RENDERERS.compass = function(container) {
       { text: 'Complete Life Insurance module (Unit Trusts section)', done: true },
       { text: 'Read product comparison sheet: Term vs Whole Life', done: true },
       { text: 'Watch: CPF & Retirement Planning lecture (18:45)', done: true },
+      { text: 'Complete quiz: Life Insurance fundamentals (80% pass)', done: true },
+      { text: 'Review Health Insurance product comparison sheet', done: true },
       { text: 'Practice 20 M9 exam questions', done: false },
       { text: 'Submit case study: Mrs Lim retirement portfolio', done: false },
       { text: 'Roleplay session: Objection Handling with AI Coach', done: false },
@@ -1994,17 +2007,44 @@ DEMO_RENDERERS.compass = function(container) {
 
     var heading = document.createElement('div');
     heading.className = 'demo-section-heading';
-    heading.style.cssText = 'margin-top:0;margin-bottom:14px;';
+    heading.style.cssText = 'margin-top:0;margin-bottom:10px;';
     heading.textContent = 'Product Categories';
     pane.appendChild(heading);
 
+    /* Search bar */
+    var searchWrap = document.createElement('div');
+    searchWrap.style.cssText = 'position:relative;margin-bottom:14px;';
+    var searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Search products, concepts, keywords…';
+    searchInput.style.cssText = [
+      'width:100%',
+      'box-sizing:border-box',
+      'background:var(--bg3)',
+      'border:1px solid var(--border)',
+      'border-radius:var(--radius-sm)',
+      'color:var(--text)',
+      'font-size:0.78rem',
+      'padding:8px 12px 8px 34px',
+      'outline:none',
+      'transition:border-color 0.2s',
+    ].join(';');
+    searchInput.onfocus = function() { this.style.borderColor = 'var(--primary-light)'; };
+    searchInput.onblur  = function() { this.style.borderColor = 'var(--border)'; };
+    var searchIcon = document.createElement('div');
+    searchIcon.style.cssText = 'position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:0.85rem;pointer-events:none;';
+    searchIcon.textContent = '\uD83D\uDD0D';
+    searchWrap.appendChild(searchIcon);
+    searchWrap.appendChild(searchInput);
+    pane.appendChild(searchWrap);
+
     var categories = [
-      { id: 'life',    icon: '\uD83D\uDEE1\uFE0F', name: 'Life Insurance',     sub: 'Term, Whole Life, ILP',            items: ['Term Life \u2014 affordable pure protection', 'Whole Life \u2014 lifetime cover with cash value', 'ILP \u2014 investment + life cover combined', 'Key rider: Critical Illness, TPD, WOP'] },
-      { id: 'health',  icon: '\uD83C\uDFE5',       name: 'Health Insurance',   sub: 'Shield Plans, CI, Hospital',       items: ['MediShield Life \u2014 mandatory base layer', 'Integrated Shield Plans \u2014 private ward top-up', 'Critical Illness \u2014 lump sum on diagnosis', 'Hospital Cash \u2014 daily income benefit'] },
-      { id: 'invest',  icon: '\uD83D\uDCC8',       name: 'Investment Products',sub: 'Unit Trusts, ETFs, ILPs',          items: ['Unit Trusts \u2014 pooled managed funds', 'ETFs \u2014 index-tracking, exchange-listed', 'ILPs \u2014 insurance wrapper over funds', 'RSP \u2014 regular savings plan'] },
-      { id: 'retire',  icon: '\uD83C\uDFD6\uFE0F', name: 'Retirement',         sub: 'CPF, Annuities, RSP',              items: ['CPF Life \u2014 national annuity scheme', 'Supplementary Retirement Scheme (SRS)', 'Private annuities \u2014 guaranteed payout', 'Retirement Sum Scheme options'] },
-      { id: 'general', icon: '\uD83C\uDFE0',       name: 'General Insurance',  sub: 'Motor, Travel, Property',          items: ['Motor \u2014 TPFT and comprehensive', 'Travel \u2014 medical, cancellation, baggage', 'Home Contents & Fire insurance', 'Personal Accident \u2014 daily payout'] },
-      { id: 'biz',     icon: '\uD83D\uDCBC',       name: 'Business Solutions', sub: 'Group Insurance, Key Man',         items: ['Group Term Life \u2014 employee benefit', 'Key Man Insurance \u2014 protect key personnel', 'Business Continuity planning', 'Group health & hospitalisation'] },
+      { id: 'life',    icon: '\uD83D\uDEE1\uFE0F', name: 'Life Insurance',     count: 12, sub: '12 products',  items: ['Term Life \u2014 affordable pure protection', 'Whole Life \u2014 lifetime cover with cash value', 'ILP \u2014 investment + life cover combined', 'Endowment \u2014 savings with guaranteed maturity', 'Key rider: Critical Illness, TPD, WOP'] },
+      { id: 'health',  icon: '\uD83C\uDFE5',       name: 'Health Insurance',   count: 9,  sub: '9 products',   items: ['MediShield Life \u2014 mandatory base layer', 'Integrated Shield Plans \u2014 private ward top-up', 'Critical Illness \u2014 lump sum on diagnosis', 'Hospital Cash \u2014 daily income benefit', 'MultiPay CI \u2014 multiple claims allowed'] },
+      { id: 'invest',  icon: '\uD83D\uDCC8',       name: 'Investment Products',count: 7,  sub: '7 products',   items: ['Unit Trusts \u2014 pooled managed funds', 'ETFs \u2014 index-tracking, exchange-listed', 'ILPs \u2014 insurance wrapper over funds', 'RSP \u2014 regular savings plan', 'Structured deposits \u2014 capital-protected'] },
+      { id: 'retire',  icon: '\uD83C\uDFD6\uFE0F', name: 'Retirement',         count: 6,  sub: '6 products',   items: ['CPF Life \u2014 national annuity scheme', 'Supplementary Retirement Scheme (SRS)', 'Private annuities \u2014 guaranteed payout', 'Retirement Sum Scheme options', 'Income drawdown plans'] },
+      { id: 'general', icon: '\uD83C\uDFE0',       name: 'General Insurance',  count: 8,  sub: '8 products',   items: ['Motor \u2014 TPFT and comprehensive', 'Travel \u2014 medical, cancellation, baggage', 'Home Contents & Fire insurance', 'Personal Accident \u2014 daily payout', 'Domestic helper insurance'] },
+      { id: 'biz',     icon: '\uD83D\uDCBC',       name: 'Business Solutions', count: 5,  sub: '5 products',   items: ['Group Term Life \u2014 employee benefit', 'Key Man Insurance \u2014 protect key personnel', 'Business Continuity planning', 'Group health & hospitalisation', 'Directors & Officers liability'] },
     ];
 
     var grid = document.createElement('div');
@@ -2030,9 +2070,16 @@ DEMO_RENDERERS.compass = function(container) {
       nameEl.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:3px;';
       nameEl.textContent = cat.name;
 
+      var subRow = document.createElement('div');
+      subRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:0;';
       var subEl = document.createElement('div');
-      subEl.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-bottom:0;';
+      subEl.style.cssText = 'font-size:0.68rem;color:var(--text3);';
       subEl.textContent = cat.sub;
+      var countBadge = document.createElement('div');
+      countBadge.style.cssText = 'font-size:0.62rem;background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-pill);padding:1px 7px;color:var(--text3);';
+      countBadge.textContent = cat.count + ' products';
+      subRow.appendChild(subEl);
+      subRow.appendChild(countBadge);
 
       /* Expanded detail */
       var detail = document.createElement('div');
@@ -2054,7 +2101,7 @@ DEMO_RENDERERS.compass = function(container) {
 
       card.appendChild(iconEl);
       card.appendChild(nameEl);
-      card.appendChild(subEl);
+      card.appendChild(subRow);
       card.appendChild(detail);
 
       card.onmouseover = function() { card.style.borderColor = 'var(--primary-light)'; };
@@ -2086,11 +2133,30 @@ DEMO_RENDERERS.compass = function(container) {
     heading.className = 'demo-section-heading';
     heading.style.cssText = 'margin-top:0;margin-bottom:4px;';
     heading.textContent = 'Concept Cards';
+    var hintRow = document.createElement('div');
+    hintRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;';
     var hint = document.createElement('div');
-    hint.style.cssText = 'font-size:0.72rem;color:var(--text3);margin-bottom:16px;';
+    hint.style.cssText = 'font-size:0.72rem;color:var(--text3);';
     hint.textContent = 'Click a card to reveal the answer';
+    var navGroup = document.createElement('div');
+    navGroup.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    var cardCounter = document.createElement('div');
+    cardCounter.id = 'cpCardCounter';
+    cardCounter.style.cssText = 'font-size:0.72rem;color:var(--text3);font-weight:600;';
+    cardCounter.textContent = 'Card 1 of 5';
+    var prevBtn = document.createElement('button');
+    prevBtn.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:0.8rem;padding:3px 9px;cursor:pointer;';
+    prevBtn.textContent = '\u2039';
+    var nextBtn = document.createElement('button');
+    nextBtn.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text2);font-size:0.8rem;padding:3px 9px;cursor:pointer;';
+    nextBtn.textContent = '\u203A';
+    navGroup.appendChild(prevBtn);
+    navGroup.appendChild(cardCounter);
+    navGroup.appendChild(nextBtn);
+    hintRow.appendChild(hint);
+    hintRow.appendChild(navGroup);
     pane.appendChild(heading);
-    pane.appendChild(hint);
+    pane.appendChild(hintRow);
 
     /* Inject flip-card CSS once */
     if (!document.getElementById('compassFlipStyle')) {
@@ -2112,25 +2178,62 @@ DEMO_RENDERERS.compass = function(container) {
         q: 'What is the incontestability clause?',
         a: 'After 2 years, insurer cannot deny claims based on non-disclosure or misrepresentation. Protects policyholders from retroactive rejection.',
         diagram: 'Policy issued \u2192 2-year window \u2192 Incontestable \u2713',
+        difficulty: 'Basic',
       },
       {
         q: 'What is Dollar Cost Averaging?',
         a: 'Investing a fixed amount regularly regardless of market conditions. Buys more units when prices are low, fewer when high \u2014 reduces timing risk.',
         diagram: 'Jan $100 \u2192 10 units \u00B7 Feb $100 \u2192 12 units \u00B7 Avg cost < market price',
+        difficulty: 'Basic',
       },
       {
         q: 'Explain the Total Wealth Concept',
         a: 'Three pillars: Human Capital (earning power), Financial Capital (accumulated assets), and Passive Income (dividends, annuities). Goal: grow financial capital as human capital peaks then declines.',
         diagram: 'Human Capital \u2193 over time + Financial Capital \u2191 = Retirement readiness',
+        difficulty: 'Intermediate',
+      },
+      {
+        q: 'What is the difference between Term and Whole Life insurance?',
+        a: 'Term Life: pure protection for a fixed period, no cash value. Whole Life: lifetime coverage with a cash value component that accumulates over time. Term is cheaper; Whole Life has a savings element.',
+        diagram: 'Term = rent \u00B7 Whole Life = buy property \u2014 both protect, one builds equity',
+        difficulty: 'Basic',
+      },
+      {
+        q: 'How does MAS FAA suitability requirement affect your sales process?',
+        a: 'MAS Financial Advisers Act requires advisors to conduct a fact-find before recommending any product. You must assess income, liabilities, existing coverage, risk appetite, and investment horizon. Non-compliance can result in license suspension.',
+        diagram: 'Fact-Find \u2192 Needs Analysis \u2192 Product Match \u2192 Recommendation \u2192 Documentation',
+        difficulty: 'Advanced',
       },
     ];
 
+    var cpCardIndex = [0]; /* wrapped in array so closures can mutate */
+
+    function updateCardNav(idx, total) {
+      var counter = document.getElementById('cpCardCounter');
+      if (counter) counter.textContent = 'Card ' + (idx + 1) + ' of ' + total;
+      var scenes = document.querySelectorAll('.cp-flip-scene');
+      scenes.forEach(function(s, i) {
+        s.style.display = i === idx ? 'block' : 'none';
+        /* reset flip when navigating */
+        var fc = s.querySelector('.cp-flip-card');
+        if (fc && i !== idx) fc.classList.remove('flipped');
+      });
+    }
+
+    prevBtn.onclick = function() {
+      if (cpCardIndex[0] > 0) { cpCardIndex[0]--; updateCardNav(cpCardIndex[0], conceptCards.length); }
+    };
+    nextBtn.onclick = function() {
+      if (cpCardIndex[0] < conceptCards.length - 1) { cpCardIndex[0]++; updateCardNav(cpCardIndex[0], conceptCards.length); }
+    };
+
     var cardsGrid = document.createElement('div');
-    cardsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;';
+    cardsGrid.style.cssText = 'display:block;';
 
     conceptCards.forEach(function(cc, i) {
       var scene = document.createElement('div');
       scene.className = 'cp-flip-scene';
+      scene.style.display = i === 0 ? 'block' : 'none';
 
       var flipCard = document.createElement('div');
       flipCard.className = 'cp-flip-card';
@@ -2140,9 +2243,17 @@ DEMO_RENDERERS.compass = function(container) {
       var front = document.createElement('div');
       front.className = 'cp-flip-front';
 
+      var qTopRow = document.createElement('div');
+      qTopRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
       var qLabel = document.createElement('div');
       qLabel.style.cssText = 'font-size:0.62rem;color:var(--text3);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;';
       qLabel.textContent = 'Question';
+      var diffBadge = document.createElement('div');
+      var diffColor = cc.difficulty === 'Basic' ? 'var(--green-bright)' : cc.difficulty === 'Advanced' ? 'var(--red)' : 'var(--amber)';
+      diffBadge.style.cssText = 'font-size:0.58rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:' + diffColor + ';border:1px solid ' + diffColor + ';border-radius:var(--radius-pill);padding:1px 7px;';
+      diffBadge.textContent = cc.difficulty;
+      qTopRow.appendChild(qLabel);
+      qTopRow.appendChild(diffBadge);
 
       var qText = document.createElement('div');
       qText.style.cssText = 'font-size:0.8rem;font-weight:600;color:var(--text);line-height:1.4;flex:1;display:flex;align-items:center;';
@@ -2152,7 +2263,7 @@ DEMO_RENDERERS.compass = function(container) {
       tapHint.style.cssText = 'font-size:0.62rem;color:var(--primary-light);text-align:right;';
       tapHint.textContent = 'Click to flip \u2192';
 
-      front.appendChild(qLabel);
+      front.appendChild(qTopRow);
       front.appendChild(qText);
       front.appendChild(tapHint);
 
@@ -2188,6 +2299,8 @@ DEMO_RENDERERS.compass = function(container) {
     });
 
     pane.appendChild(cardsGrid);
+    /* Initialize nav - show first card */
+    setTimeout(function() { updateCardNav(0, conceptCards.length); }, 0);
   })();
 
   /* ============================================================
@@ -2206,22 +2319,22 @@ DEMO_RENDERERS.compass = function(container) {
       {
         label: 'Cold Calling',
         scripts: [
-          { title: 'New Grad Approach', uses: 284, lines: ['"Hi, is this [Name]? I\'m Leo from AIA. Congrats on graduating \u2014 I work with a lot of fresh graduates on getting their financial basics right..."', '"I know it might not be top of mind yet, but the best time to start is when you have zero commitments. Do you have 15 minutes this week?"'] },
-          { title: 'Working Professional Approach', uses: 512, lines: ['"Hi [Name], I noticed we\'re both connected through [mutual contact]. I help working professionals in their 30s make sure their income is protected and their savings are actually growing..."', '"A lot of my clients started with just a quick review \u2014 no commitment at all. Would that be useful for you?"'] },
-          { title: 'Parent Approach', uses: 196, lines: ['"Hi [Name], I specialise in working with young parents to make sure the family is covered if anything unexpected happens..."', '"Most parents I speak to don\'t realise there are gaps in their coverage until something happens. I can do a free coverage review \u2014 takes 20 minutes."'] },
+          { title: 'New Grad Approach', uses: 284, rating: 4.3, lines: ['"Hi, is this [Name]? I\'m Leo from AIA. Congrats on graduating \u2014 I work with a lot of fresh graduates on getting their financial basics right..."', '"I know it might not be top of mind yet, but the best time to start is when you have zero commitments. Do you have 15 minutes this week?"'] },
+          { title: 'Working Professional Approach', uses: 512, rating: 4.7, lines: ['"Hi [Name], I noticed we\'re both connected through [mutual contact]. I help working professionals in their 30s make sure their income is protected and their savings are actually growing..."', '"A lot of my clients started with just a quick review \u2014 no commitment at all. Would that be useful for you?"'] },
+          { title: 'Parent Approach', uses: 196, rating: 4.4, lines: ['"Hi [Name], I specialise in working with young parents to make sure the family is covered if anything unexpected happens..."', '"Most parents I speak to don\'t realise there are gaps in their coverage until something happens. I can do a free coverage review \u2014 takes 20 minutes."'] },
         ],
       },
       {
         label: 'SMS/WhatsApp',
         scripts: [
-          { title: 'Cold Introduction', uses: 341, lines: ['"Hi [Name], I\'m Leo, a financial consultant with AIA. I help young professionals with financial planning. Would you be open to a quick 20-min chat?"', '"No pressure at all \u2014 even if we decide it\'s not the right fit, you\'ll walk away with clarity on where you stand financially."'] },
-          { title: 'Post-Meeting Follow-up', uses: 228, lines: ['"Hi [Name]! Great meeting you today. As promised, I\'ve sent the proposal to your email. Let me know if you have questions \u2014 happy to walk through it."', '"I\'ll follow up in 3 days. In the meantime, feel free to WhatsApp me anytime \uD83D\uDE0A"'] },
+          { title: 'Cold Introduction', uses: 341, rating: 4.1, lines: ['"Hi [Name], I\'m Leo, a financial consultant with AIA. I help young professionals with financial planning. Would you be open to a quick 20-min chat?"', '"No pressure at all \u2014 even if we decide it\'s not the right fit, you\'ll walk away with clarity on where you stand financially."'] },
+          { title: 'Post-Meeting Follow-up', uses: 228, rating: 4.6, lines: ['"Hi [Name]! Great meeting you today. As promised, I\'ve sent the proposal to your email. Let me know if you have questions \u2014 happy to walk through it."', '"I\'ll follow up in 3 days. In the meantime, feel free to WhatsApp me anytime \uD83D\uDE0A"'] },
         ],
       },
       {
         label: 'Objection Handling',
         scripts: [
-          { title: '"I need to think about it"', uses: 673, lines: ['"Of course, this is an important decision. Can I ask what specifically you\'d like to think through? That way I can make sure you have all the info you need."', '"Usually when clients say that, there\'s either a concern about affordability, timing, or they\'re not 100% sure it\'s suitable. Which of those resonates most with you?"'] },
+          { title: '"I need to think about it"', uses: 673, rating: 4.8, lines: ['"Of course, this is an important decision. Can I ask what specifically you\'d like to think through? That way I can make sure you have all the info you need."', '"Usually when clients say that, there\'s either a concern about affordability, timing, or they\'re not 100% sure it\'s suitable. Which of those resonates most with you?"'] },
           { title: '"I\'m already covered through work"', uses: 445, lines: ['"Group coverage is a great starting point. The challenge is \u2014 if you leave the company, the coverage stops. Personal coverage follows you regardless."', '"Also, most group policies don\'t cover critical illness or total permanent disability. Can I do a quick gap analysis so you can see exactly where you stand?"'] },
           { title: '"I can\'t afford it right now"', uses: 389, lines: ['"I totally understand. The good news is protection doesn\'t have to start big. We can start with the essentials \u2014 sometimes as low as $80-100/month \u2014 and build from there."', '"The real risk is not having coverage and something happening. Let me show you what the bare minimum looks like."'] },
         ],
@@ -2236,8 +2349,8 @@ DEMO_RENDERERS.compass = function(container) {
       {
         label: 'Servicing',
         scripts: [
-          { title: 'Annual Policy Review', uses: 208, lines: ['"Hi [Name]! It\'s been about a year since we set up your policy. I\'d love to do a quick annual review \u2014 life changes and we want to make sure you\'re still fully covered."', '"Takes 30 minutes, and we can do it over Zoom. When works best for you this month?"'] },
-          { title: 'Birthday/Life Event', uses: 176, lines: ['"Happy birthday [Name]! \uD83C\uDF89 Hope you have an amazing year ahead. Just a quick check-in \u2014 any big life changes this year? New job, house, baby? Those can affect your coverage needs."', '"No rush to review now, but whenever you\'re ready, I\'m here. Take care!"'] },
+          { title: 'Annual Policy Review', uses: 208, rating: 4.4, lines: ['"Hi [Name]! It\'s been about a year since we set up your policy. I\'d love to do a quick annual review \u2014 life changes and we want to make sure you\'re still fully covered."', '"Takes 30 minutes, and we can do it over Zoom. When works best for you this month?"'] },
+          { title: 'Birthday/Life Event', uses: 176, rating: 4.3, lines: ['"Happy birthday [Name]! \uD83C\uDF89 Hope you have an amazing year ahead. Just a quick check-in \u2014 any big life changes this year? New job, house, baby? Those can affect your coverage needs."', '"No rush to review now, but whenever you\'re ready, I\'m here. Take care!"'] },
         ],
       },
     ];
@@ -2279,7 +2392,7 @@ DEMO_RENDERERS.compass = function(container) {
         card.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;';
 
         var cardTop = document.createElement('div');
-        cardTop.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
+        cardTop.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;';
 
         var cardTitle = document.createElement('div');
         cardTitle.style.cssText = 'font-size:0.8rem;font-weight:700;color:var(--text);';
@@ -2287,11 +2400,35 @@ DEMO_RENDERERS.compass = function(container) {
 
         var usageBadge = document.createElement('div');
         usageBadge.style.cssText = 'font-size:0.65rem;color:var(--text3);background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-pill);padding:2px 8px;';
-        usageBadge.textContent = sc.uses + ' uses';
+        usageBadge.textContent = 'Used ' + sc.uses + ' times';
 
         cardTop.appendChild(cardTitle);
         cardTop.appendChild(usageBadge);
         card.appendChild(cardTop);
+
+        /* Star rating */
+        if (sc.rating) {
+          var starRow = document.createElement('div');
+          starRow.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:8px;';
+          var starsEl = document.createElement('div');
+          starsEl.style.cssText = 'display:flex;gap:1px;';
+          var fullStars = Math.floor(sc.rating);
+          var hasHalf = (sc.rating - fullStars) >= 0.5;
+          for (var s = 0; s < 5; s++) {
+            var star = document.createElement('span');
+            star.style.cssText = 'font-size:0.65rem;';
+            if (s < fullStars) { star.textContent = '\u2605'; star.style.color = 'var(--amber)'; }
+            else if (s === fullStars && hasHalf) { star.textContent = '\u2BEA'; star.style.color = 'var(--amber)'; }
+            else { star.textContent = '\u2606'; star.style.color = 'var(--text3)'; }
+            starsEl.appendChild(star);
+          }
+          var ratingNum = document.createElement('span');
+          ratingNum.style.cssText = 'font-size:0.65rem;color:var(--text3);';
+          ratingNum.textContent = sc.rating.toFixed(1) + '/5';
+          starRow.appendChild(starsEl);
+          starRow.appendChild(ratingNum);
+          card.appendChild(starRow);
+        }
 
         sc.lines.forEach(function(line) {
           var lineEl = document.createElement('div');
@@ -2432,6 +2569,18 @@ DEMO_RENDERERS.compass = function(container) {
     qCard.className = 'chart-container';
     qCard.style.cssText = 'padding:16px;margin-bottom:0;';
 
+    var qTopBar = document.createElement('div');
+    qTopBar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;';
+    var qTopLabel = document.createElement('div');
+    qTopLabel.style.cssText = 'font-size:0.62rem;color:var(--text3);font-weight:600;';
+    qTopLabel.textContent = 'Life Insurance \u00B7 M9';
+    var qDiffBadge = document.createElement('div');
+    qDiffBadge.style.cssText = 'font-size:0.62rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--amber);border:1px solid var(--amber);border-radius:var(--radius-pill);padding:1px 8px;';
+    qDiffBadge.textContent = 'Medium';
+    qTopBar.appendChild(qTopLabel);
+    qTopBar.appendChild(qDiffBadge);
+    qCard.appendChild(qTopBar);
+
     var qText = document.createElement('div');
     qText.style.cssText = 'font-size:0.85rem;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:16px;';
     qText.textContent = 'Which of the following is NOT a standard exclusion in a typical life insurance policy?';
@@ -2489,6 +2638,47 @@ DEMO_RENDERERS.compass = function(container) {
     qExplain.textContent = '\u2713 Correct! After the 2-year contestability period, pre-existing conditions are generally covered. The incontestability clause protects policyholders from claim denial after this period.';
     qCard.appendChild(qExplain);
 
+    var nextQBtn = document.createElement('button');
+    nextQBtn.id = 'compassNextQBtn';
+    nextQBtn.style.cssText = [
+      'display:none',
+      'margin-top:12px',
+      'background:var(--primary)',
+      'border:none',
+      'border-radius:var(--radius-sm)',
+      'color:#fff',
+      'font-size:0.78rem',
+      'font-weight:700',
+      'padding:8px 16px',
+      'cursor:pointer',
+      'transition:opacity 0.2s',
+    ].join(';');
+    nextQBtn.textContent = 'Next Question \u2192';
+    nextQBtn.onclick = function() {
+      /* In a real app this would load the next question; here we reset */
+      var opts = document.getElementById('compassQBankOptions');
+      var expl = document.getElementById('compassQExplain');
+      var nb   = document.getElementById('compassNextQBtn');
+      if (opts) {
+        var rows = opts.querySelectorAll('[id^="compassQOpt_"]');
+        rows.forEach(function(r) {
+          delete r.dataset.answered;
+          r.style.background  = 'var(--bg1)';
+          r.style.borderColor = 'var(--border)';
+          r.style.cursor      = 'pointer';
+        });
+        var letters = opts.querySelectorAll('[id^="compassQLetter_"]');
+        letters.forEach(function(l) {
+          l.style.background  = 'var(--bg3)';
+          l.style.color       = 'var(--text2)';
+          l.style.borderColor = 'var(--border)';
+        });
+      }
+      if (expl) expl.style.display = 'none';
+      if (nb)   nb.style.display   = 'none';
+    };
+    qCard.appendChild(nextQBtn);
+
     pane.appendChild(qCard);
   })();
 
@@ -2506,9 +2696,49 @@ DEMO_RENDERERS.compass = function(container) {
 
     /* Scenario context */
     var scenarioBox = document.createElement('div');
-    scenarioBox.style.cssText = 'background:rgba(107,155,219,0.1);border:1px solid var(--primary-light);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:0.75rem;color:var(--primary-light);font-weight:600;';
-    scenarioBox.textContent = 'Scenario: Mr. Tan, 38, married with 2 kids. Employed, asking about retirement planning. No existing coverage review done.';
+    scenarioBox.style.cssText = 'background:rgba(107,155,219,0.1);border:1px solid var(--primary-light);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;';
+    var scenarioTitle = document.createElement('div');
+    scenarioTitle.style.cssText = 'font-size:0.75rem;color:var(--primary-light);font-weight:700;margin-bottom:6px;';
+    scenarioTitle.textContent = 'Scenario: Mr. Tan, 38, married with 2 kids. Employed, asking about retirement planning. No existing coverage review done.';
+    var scenarioMeta = document.createElement('div');
+    scenarioMeta.style.cssText = 'display:flex;gap:14px;flex-wrap:wrap;';
+    [
+      { label: 'Difficulty', val: 'Intermediate', color: 'var(--amber)' },
+      { label: 'Topic', val: 'Retirement Planning', color: 'var(--text2)' },
+      { label: 'Duration', val: '~5 min', color: 'var(--text2)' },
+    ].forEach(function(m) {
+      var metaEl = document.createElement('div');
+      metaEl.style.cssText = 'font-size:0.68rem;color:var(--text3);';
+      var metaLabel = document.createElement('span');
+      metaLabel.textContent = m.label + ': ';
+      var metaVal = document.createElement('span');
+      metaVal.style.cssText = 'font-weight:700;color:' + m.color + ';';
+      metaVal.textContent = m.val;
+      metaEl.appendChild(metaLabel);
+      metaEl.appendChild(metaVal);
+      scenarioMeta.appendChild(metaEl);
+    });
+    scenarioBox.appendChild(scenarioTitle);
+    scenarioBox.appendChild(scenarioMeta);
     pane.appendChild(scenarioBox);
+
+    /* Scoring rubric */
+    var rubricBox = document.createElement('div');
+    rubricBox.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;';
+    var rubricTitle = document.createElement('div');
+    rubricTitle.style.cssText = 'font-size:0.68rem;font-weight:700;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;';
+    rubricTitle.textContent = "You'll be scored on:";
+    var rubricCriteria = document.createElement('div');
+    rubricCriteria.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+    ['Needs Analysis', 'Product Knowledge', 'Compliance', 'Communication'].forEach(function(c) {
+      var chip = document.createElement('div');
+      chip.style.cssText = 'font-size:0.68rem;font-weight:600;background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-pill);padding:3px 10px;color:var(--text2);';
+      chip.textContent = c;
+      rubricCriteria.appendChild(chip);
+    });
+    rubricBox.appendChild(rubricTitle);
+    rubricBox.appendChild(rubricCriteria);
+    pane.appendChild(rubricBox);
 
     /* Chat window */
     var chatWin = document.createElement('div');
@@ -2596,15 +2826,40 @@ DEMO_RENDERERS.compass = function(container) {
 
     var heading = document.createElement('div');
     heading.className = 'demo-section-heading';
-    heading.style.cssText = 'margin-top:0;margin-bottom:14px;';
+    heading.style.cssText = 'margin-top:0;margin-bottom:10px;';
     heading.textContent = 'Video Lectures';
     pane.appendChild(heading);
 
+    /* Total stats bar */
+    var videoStatsBar = document.createElement('div');
+    videoStatsBar.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;';
+    [
+      { val: '48', label: 'Lectures', color: 'var(--text)' },
+      { val: '12h 30m', label: 'Total', color: 'var(--text)' },
+      { val: '8', label: 'Completed', color: 'var(--green-bright)' },
+      { val: '40', label: 'Remaining', color: 'var(--amber)' },
+    ].forEach(function(vs) {
+      var vsi = document.createElement('div');
+      vsi.style.cssText = 'display:flex;flex-direction:column;';
+      var vsv = document.createElement('div');
+      vsv.style.cssText = 'font-size:1rem;font-weight:800;color:' + vs.color + ';line-height:1;';
+      vsv.textContent = vs.val;
+      var vsl = document.createElement('div');
+      vsl.style.cssText = 'font-size:0.62rem;color:var(--text3);margin-top:3px;';
+      vsl.textContent = vs.label;
+      vsi.appendChild(vsv);
+      vsi.appendChild(vsl);
+      videoStatsBar.appendChild(vsi);
+    });
+    pane.appendChild(videoStatsBar);
+
     var lectures = [
-      { title: 'Understanding Whole Life Insurance', duration: '12:30', watched: 100, notes: 3 },
-      { title: 'CPF & Retirement Planning',          duration: '18:45', watched: 65,  notes: 5 },
-      { title: 'Objection Handling Masterclass',      duration: '24:12', watched: 30,  notes: 1 },
-      { title: 'First Client Meeting Framework',      duration: '09:58', watched: 0,   notes: 0 },
+      { title: 'Understanding Whole Life Insurance', instructor: 'Daniel Ng, CFP', duration: '12:30', watched: 100, notes: 3 },
+      { title: 'CPF & Retirement Planning',          instructor: 'Sarah Lim, FA',  duration: '18:45', watched: 65,  notes: 5 },
+      { title: 'Objection Handling Masterclass',      instructor: 'Marcus Tan',    duration: '24:12', watched: 30,  notes: 1 },
+      { title: 'First Client Meeting Framework',      instructor: 'Sarah Lim, FA', duration: '09:58', watched: 0,   notes: 0 },
+      { title: 'Investment Products Deep Dive',       instructor: 'Daniel Ng, CFP',duration: '21:05', watched: 0,   notes: 0 },
+      { title: 'Compliance & Ethics (MAS FAA)',        instructor: 'Rachel Chua',  duration: '15:40', watched: 0,   notes: 0 },
     ];
 
     var videoGrid = document.createElement('div');
@@ -2633,8 +2888,12 @@ DEMO_RENDERERS.compass = function(container) {
       info.style.cssText = 'padding:10px 12px 12px;';
 
       var vtitle = document.createElement('div');
-      vtitle.style.cssText = 'font-size:0.78rem;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:8px;';
+      vtitle.style.cssText = 'font-size:0.78rem;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:3px;';
       vtitle.textContent = lec.title;
+
+      var vinstructor = document.createElement('div');
+      vinstructor.style.cssText = 'font-size:0.65rem;color:var(--text3);margin-bottom:8px;';
+      vinstructor.textContent = lec.instructor;
 
       /* Progress bar */
       var vpWrap = document.createElement('div');
@@ -2655,6 +2914,7 @@ DEMO_RENDERERS.compass = function(container) {
       vMeta.appendChild(vNotes);
 
       info.appendChild(vtitle);
+      info.appendChild(vinstructor);
       info.appendChild(vpWrap);
       info.appendChild(vMeta);
 
@@ -2768,6 +3028,8 @@ function compassSelectQBank(idx, opts) {
       explanation.style.display = 'block';
     }
   }
+  var nextQBtn = document.getElementById('compassNextQBtn');
+  if (nextQBtn) nextQBtn.style.display = 'block';
 }
 
 function compassRoleplaySelect(opt) {
@@ -2967,6 +3229,13 @@ DEMO_RENDERERS.launchpad = function(container) {
 
   progressBar.appendChild(dotsRow);
   progressBar.appendChild(labelsRow);
+
+  // Step counter "Step X of 5"
+  var stepCounter = _lp_el('div',
+    'font-size:12px;color:rgba(255,255,255,0.35);margin-top:10px;letter-spacing:0.04em;',
+    'Step ' + (window._wizardStep + 1) + ' of 5 \u2014 ' + stepLabels[window._wizardStep]);
+  progressBar.appendChild(stepCounter);
+
   wizPanel.appendChild(progressBar);
 
   // ---- Step content ----
@@ -2998,6 +3267,25 @@ DEMO_RENDERERS.launchpad = function(container) {
   dashPanel.className = 'lp-tab-panel';
   dashPanel.style.display = window._lpTab === 'dashboard' ? 'block' : 'none';
 
+  // Date range selector
+  var dateRangeRow = _lp_el('div', 'display:flex;gap:8px;margin-bottom:20px;align-items:center;');
+  dateRangeRow.appendChild(_lp_el('span', 'font-size:12px;color:rgba(255,255,255,0.4);margin-right:4px;', 'Period:'));
+  var dateRanges = ['7 Days', '30 Days', '90 Days'];
+  if (!window._lpDashRange) window._lpDashRange = '30 Days';
+  dateRanges.forEach(function(r) {
+    var active = window._lpDashRange === r;
+    var btn = _lp_el('button',
+      'padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;' +
+      (active ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
+      r);
+    btn.onclick = function() {
+      window._lpDashRange = r;
+      launchpadTab('dashboard');
+    };
+    dateRangeRow.appendChild(btn);
+  });
+  dashPanel.appendChild(dateRangeRow);
+
   var dashMetrics = [
     { label: 'Total Spend',       value: '$4,280',  color: '#3b82f6' },
     { label: 'Total Leads',       value: '142',     color: '#34d399' },
@@ -3005,8 +3293,9 @@ DEMO_RENDERERS.launchpad = function(container) {
     { label: 'CTR',               value: '2.8%',    color: '#a78bfa' },
     { label: 'Active Campaigns',  value: '5',       color: '#34d399' },
     { label: 'ROAS',              value: '3.2x',    color: '#f59e0b' },
+    { label: 'Total ROI',         value: '+218%',   color: '#34d399' },
   ];
-  var dashGrid = _lp_el('div', 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;');
+  var dashGrid = _lp_el('div', 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;');
   dashMetrics.forEach(function(m) {
     var card = _lp_el('div', 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;');
     card.appendChild(_lp_el('div', 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;', m.label));
@@ -3025,12 +3314,20 @@ DEMO_RENDERERS.launchpad = function(container) {
   tbl.appendChild(tblHead);
 
   var campaigns = [
-    { name:'Retirement Planning',  status:'active',  budget:'$50/d', spend:'$1,820', leads:54,  cpl:33.70, target:35 },
-    { name:'Health Shield Promo',  status:'active',  budget:'$40/d', spend:'$1,120', leads:38,  cpl:29.47, target:35 },
-    { name:'Seminar Registration', status:'active',  budget:'$30/d', spend:'$690',   leads:23,  cpl:30.00, target:35 },
-    { name:'Brand Story Q2',       status:'paused',  budget:'$25/d', spend:'$450',   leads:15,  cpl:30.00, target:35 },
-    { name:'Insurance Retarget',   status:'active',  budget:'$20/d', spend:'$200',   leads:12,  cpl:16.67, target:25 },
+    { name:'Retirement Planning',  status:'active',    budget:'$50/d', spend:'$1,820', leads:54,  cpl:33.70, target:35 },
+    { name:'Health Shield Promo',  status:'active',    budget:'$40/d', spend:'$1,120', leads:38,  cpl:29.47, target:35 },
+    { name:'Seminar Registration', status:'learning',  budget:'$30/d', spend:'$690',   leads:23,  cpl:30.00, target:35 },
+    { name:'Brand Story Q2',       status:'paused',    budget:'$25/d', spend:'$450',   leads:15,  cpl:30.00, target:35 },
+    { name:'Insurance Retarget',   status:'active',    budget:'$20/d', spend:'$200',   leads:12,  cpl:16.67, target:25 },
+    { name:'Year-End Promo',       status:'completed', budget:'$60/d', spend:'$2,100', leads:68,  cpl:30.88, target:35 },
+    { name:'Wealth Planning Q1',   status:'learning',  budget:'$35/d', spend:'$310',   leads:9,   cpl:34.44, target:35 },
   ];
+  var statusStyles = {
+    'active':    { bg:'rgba(52,211,153,0.15)',  color:'#34d399' },
+    'paused':    { bg:'rgba(245,158,11,0.15)',  color:'#f59e0b' },
+    'completed': { bg:'rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.45)' },
+    'learning':  { bg:'rgba(59,130,246,0.15)',  color:'#3b82f6' },
+  };
   campaigns.forEach(function(c, i) {
     var cplColor = c.cpl < c.target * 0.9 ? '#34d399' : c.cpl > c.target ? '#ef4444' : '#f59e0b';
     var row = _lp_el('div',
@@ -3038,9 +3335,9 @@ DEMO_RENDERERS.launchpad = function(container) {
       (i % 2 === 1 ? 'background:rgba(255,255,255,0.02);' : '') +
       'border-top:1px solid rgba(255,255,255,0.05);');
     row.appendChild(_lp_el('div', 'color:#fff;font-weight:500;', c.name));
+    var ss = statusStyles[c.status] || statusStyles['completed'];
     var badge = _lp_el('div',
-      'display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;' +
-      (c.status === 'active' ? 'background:rgba(52,211,153,0.15);color:#34d399;' : 'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);'),
+      'display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:' + ss.bg + ';color:' + ss.color + ';',
       c.status.charAt(0).toUpperCase() + c.status.slice(1));
     row.appendChild(badge);
     row.appendChild(_lp_el('div', 'color:rgba(255,255,255,0.6);', c.budget));
@@ -3061,18 +3358,37 @@ DEMO_RENDERERS.launchpad = function(container) {
   bpPanel.style.display = window._lpTab === 'blueprints' ? 'block' : 'none';
 
   bpPanel.appendChild(_lp_el('div', 'font-size:18px;font-weight:700;color:#fff;margin-bottom:6px;', 'Blueprint Library'));
-  bpPanel.appendChild(_lp_el('div', 'font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:24px;', 'Pre-built campaign templates. Assign to any client in one click.'));
+  bpPanel.appendChild(_lp_el('div', 'font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px;', 'Pre-built campaign templates. Assign to any client in one click.'));
+
+  // Filter row
+  if (!window._lpBpFilter) window._lpBpFilter = 'All';
+  var bpFilterRow = _lp_el('div', 'display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;');
+  ['All', 'Lead Gen', 'Awareness', 'Events'].forEach(function(f) {
+    var active = window._lpBpFilter === f;
+    var fb = _lp_el('button',
+      'padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;' +
+      (active ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
+      f);
+    fb.onclick = function() { window._lpBpFilter = f; launchpadTab('blueprints'); };
+    bpFilterRow.appendChild(fb);
+  });
+  bpPanel.appendChild(bpFilterRow);
 
   var blueprints = [
-    { icon: '\ud83d\udcca', name: 'Insurance Lead Gen',   cat: 'Lead Gen',   catColor: '#3b82f6', budget: '$30/day', clients: 12 },
-    { icon: '\ud83c\udf93', name: 'Seminar Registration', cat: 'Event',      catColor: '#f59e0b', budget: '$25/day', clients: 8  },
-    { icon: '\ud83c\udf1f', name: 'Brand Story',          cat: 'Awareness',  catColor: '#a78bfa', budget: '$20/day', clients: 15 },
-    { icon: '\ud83c\udfe6', name: 'Retirement Planning',  cat: 'Lead Gen',   catColor: '#3b82f6', budget: '$40/day', clients: 11 },
-    { icon: '\ud83d\udee1\ufe0f', name: 'Health Shield Promo',  cat: 'Lead Gen',   catColor: '#3b82f6', budget: '$35/day', clients: 7  },
-    { icon: '\ud83d\udcc5', name: 'Year-End Campaign',    cat: 'Awareness',  catColor: '#a78bfa', budget: '$50/day', clients: 5  },
+    { icon: '\ud83d\udcca', name: 'Insurance Lead Gen',   cat: 'Lead Gen',   catColor: '#3b82f6', budget: '$30/day', clients: 12, created: 'Jan 2026', launched: 34, successRate: 84 },
+    { icon: '\ud83c\udf93', name: 'Seminar Registration', cat: 'Events',     catColor: '#f59e0b', budget: '$25/day', clients: 8,  created: 'Feb 2026', launched: 19, successRate: 72 },
+    { icon: '\ud83c\udf1f', name: 'Brand Story',          cat: 'Awareness',  catColor: '#a78bfa', budget: '$20/day', clients: 15, created: 'Dec 2025', launched: 42, successRate: 79 },
+    { icon: '\ud83c\udfe6', name: 'Retirement Planning',  cat: 'Lead Gen',   catColor: '#3b82f6', budget: '$40/day', clients: 11, created: 'Jan 2026', launched: 28, successRate: 88 },
+    { icon: '\ud83d\udee1\ufe0f', name: 'Health Shield Promo',  cat: 'Lead Gen',   catColor: '#3b82f6', budget: '$35/day', clients: 7,  created: 'Mar 2026', launched: 14, successRate: 77 },
+    { icon: '\ud83d\udcc5', name: 'Year-End Campaign',    cat: 'Awareness',  catColor: '#a78bfa', budget: '$50/day', clients: 5,  created: 'Nov 2025', launched: 11, successRate: 91 },
   ];
+  var bpFiltered = blueprints.filter(function(bp) {
+    if (window._lpBpFilter === 'All') return true;
+    if (window._lpBpFilter === 'Events') return bp.cat === 'Events';
+    return bp.cat === window._lpBpFilter;
+  });
   var bpGrid = _lp_el('div', 'display:grid;grid-template-columns:repeat(3,1fr);gap:16px;');
-  blueprints.forEach(function(bp) {
+  bpFiltered.forEach(function(bp) {
     var card = _lp_el('div', 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;transition:border-color .15s;');
     card.onmouseenter = function() { card.style.borderColor = 'rgba(59,130,246,0.4)'; };
     card.onmouseleave = function() { card.style.borderColor = 'rgba(255,255,255,0.08)'; };
@@ -3085,6 +3401,20 @@ DEMO_RENDERERS.launchpad = function(container) {
       bp.cat));
     top.appendChild(info);
     card.appendChild(top);
+    // Stats row: created date, campaigns launched, success rate
+    var stats = _lp_el('div', 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;');
+    var statItems = [
+      { label: 'Created', value: bp.created },
+      { label: 'Launched', value: bp.launched + ' campaigns' },
+      { label: 'Success', value: bp.successRate + '%' },
+    ];
+    statItems.forEach(function(s) {
+      var st = _lp_el('div', 'background:rgba(255,255,255,0.03);border-radius:6px;padding:6px 8px;');
+      st.appendChild(_lp_el('div', 'font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:2px;', s.label));
+      st.appendChild(_lp_el('div', 'font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);', s.value));
+      stats.appendChild(st);
+    });
+    card.appendChild(stats);
     var meta = _lp_el('div', 'display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.45);');
     meta.appendChild(_lp_el('span', '', 'Default: ' + bp.budget));
     meta.appendChild(_lp_el('span', '', bp.clients + ' clients'));
@@ -3452,10 +3782,10 @@ function _renderWizardStep() {
     content.appendChild(_lp_el('p','margin:0 0 24px;color:rgba(255,255,255,0.5);font-size:14px;','Select the goal that best fits your campaign objective.'));
 
     var templates = [
-      { id:'lead_gen',    icon:'\ud83d\udcca', name:'Lead Generation',  desc:'Collect qualified leads using a Facebook instant form. Best for insurance and financial advisory.', badge:'Most Popular' },
-      { id:'brand',       icon:'\ud83c\udf1f', name:'Brand Awareness',  desc:'Maximise reach and impressions. Best for building trust and visibility before events.' },
-      { id:'event',       icon:'\ud83d\udcc5', name:'Event Promotion',  desc:'Drive seminar and webinar registrations with urgency-based creative and countdown hooks.' },
-      { id:'retargeting', icon:'\ud83d\udd01', name:'Retargeting',      desc:'Re-engage website visitors and video viewers with personalised follow-up ads.' },
+      { id:'lead_gen',    icon:'\ud83d\udcca', name:'Lead Generation',  desc:'Collect qualified leads using a Facebook instant form. Best for insurance and financial advisory.', badge:'Most Popular', usedBy: 47 },
+      { id:'brand',       icon:'\ud83c\udf1f', name:'Brand Awareness',  desc:'Maximise reach and impressions. Best for building trust and visibility before events.', usedBy: 31 },
+      { id:'event',       icon:'\ud83d\udcc5', name:'Event Promotion',  desc:'Drive seminar and webinar registrations with urgency-based creative and countdown hooks.', usedBy: 22 },
+      { id:'retargeting', icon:'\ud83d\udd01', name:'Retargeting',      desc:'Re-engage website visitors and video viewers with personalised follow-up ads.', usedBy: 18 },
     ];
     var grid = _lp_el('div','display:grid;grid-template-columns:repeat(2,1fr);gap:14px;');
     templates.forEach(function(tpl) {
@@ -3470,7 +3800,8 @@ function _renderWizardStep() {
       }
       card.appendChild(_lp_el('div','font-size:28px;margin-bottom:10px;',tpl.icon));
       card.appendChild(_lp_el('div','font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;',tpl.name));
-      card.appendChild(_lp_el('div','font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;',tpl.desc));
+      card.appendChild(_lp_el('div','font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;margin-bottom:10px;',tpl.desc));
+      card.appendChild(_lp_el('div','font-size:11px;color:rgba(255,255,255,0.3);','Used by ' + tpl.usedBy + ' clients'));
       card.onclick = function() { selectTemplate(tpl.id); };
       card.onmouseenter = function() { if (!card.classList.contains('selected')) { card.style.borderColor='rgba(59,130,246,0.5)';card.style.background='rgba(59,130,246,0.07)'; } };
       card.onmouseleave = function() { if (!card.classList.contains('selected')) { card.style.borderColor='rgba(255,255,255,0.1)';card.style.background='rgba(255,255,255,0.04)'; } };
@@ -3891,9 +4222,70 @@ DEMO_RENDERERS.financehub = function(container) {
 
   detailsCard.appendChild(detailsGrid);
 
+  // Last Updated timestamp
+  var lastUpdated = document.createElement('div');
+  lastUpdated.style.cssText = 'margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.3);';
+  lastUpdated.textContent = 'Last Updated: 2 days ago';
+  detailsCard.appendChild(lastUpdated);
+
   profileTop.appendChild(avatarCard);
   profileTop.appendChild(detailsCard);
   profilePanel.appendChild(profileTop);
+
+  // Risk Assessment section
+  var riskSection = document.createElement('div');
+  riskSection.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 20px;margin-bottom:16px;';
+  var riskSectionTitle = document.createElement('div');
+  riskSectionTitle.textContent = 'Risk Assessment';
+  riskSectionTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
+  riskSection.appendChild(riskSectionTitle);
+
+  var riskMeter = document.createElement('div');
+  riskMeter.style.cssText = 'display:flex;gap:6px;';
+  var riskLevels = [
+    { label: 'Conservative', active: false, color: '#34d399' },
+    { label: 'Moderate',     active: true,  color: '#C4A24D' },
+    { label: 'Aggressive',   active: false, color: '#ef4444' },
+  ];
+  riskLevels.forEach(function(lvl) {
+    var seg = document.createElement('div');
+    seg.style.cssText = 'flex:1;padding:8px 10px;border-radius:8px;text-align:center;font-size:12px;font-weight:' + (lvl.active ? '700' : '500') + ';cursor:default;' +
+      (lvl.active
+        ? 'background:' + lvl.color + '25;border:2px solid ' + lvl.color + ';color:' + lvl.color + ';'
+        : 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);');
+    seg.textContent = lvl.label + (lvl.active ? ' \u2713' : '');
+    riskMeter.appendChild(seg);
+  });
+  riskSection.appendChild(riskMeter);
+  profilePanel.appendChild(riskSection);
+
+  // Advisor Notes section
+  var notesSection = document.createElement('div');
+  notesSection.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 20px;margin-bottom:16px;';
+  var notesSectionTitle = document.createElement('div');
+  notesSectionTitle.textContent = 'Advisor Notes';
+  notesSectionTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;';
+  notesSection.appendChild(notesSectionTitle);
+
+  var advisorNotes = [
+    { date: '31 Mar 2026', text: 'Client is open to increasing monthly savings by $500 once car loan is settled in 2028.' },
+    { date: '15 Mar 2026', text: 'Discussed CI coverage gap \u2014 client agreed to review upgrade to $400k at next meeting.' },
+    { date: '2 Mar 2026',  text: 'Salary increment expected in Q3 2026. Revisit CPF top-up strategy post-increment.' },
+  ];
+  advisorNotes.forEach(function(note) {
+    var noteRow = document.createElement('div');
+    noteRow.style.cssText = 'display:flex;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);';
+    var noteDateEl = document.createElement('div');
+    noteDateEl.textContent = note.date;
+    noteDateEl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);white-space:nowrap;padding-top:1px;min-width:76px;';
+    var noteTextEl = document.createElement('div');
+    noteTextEl.textContent = note.text;
+    noteTextEl.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.65);line-height:1.5;';
+    noteRow.appendChild(noteDateEl);
+    noteRow.appendChild(noteTextEl);
+    notesSection.appendChild(noteRow);
+  });
+  profilePanel.appendChild(notesSection);
 
   // Bottom: quick financial snapshot
   var snapshotTitle = document.createElement('div');
@@ -4027,8 +4419,14 @@ DEMO_RENDERERS.financehub = function(container) {
   var surplusCard = document.createElement('div');
   surplusCard.style.cssText = 'flex:1;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px 14px;';
   var surplusLbl = document.createElement('div');
-  surplusLbl.textContent = 'Monthly Surplus';
-  surplusLbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:3px;';
+  surplusLbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:3px;display:flex;align-items:center;gap:6px;';
+  var surplusLblText = document.createElement('span');
+  surplusLblText.textContent = 'Monthly Surplus';
+  var surplusTrendBadge = document.createElement('span');
+  surplusTrendBadge.textContent = '\u25b2 3.2% vs last month';
+  surplusTrendBadge.style.cssText = 'font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.25);';
+  surplusLbl.appendChild(surplusLblText);
+  surplusLbl.appendChild(surplusTrendBadge);
   var surplusVal = document.createElement('div');
   surplusVal.textContent = '$5,500';
   surplusVal.style.cssText = 'font-size:18px;font-weight:700;color:#34d399;';
@@ -4047,6 +4445,55 @@ DEMO_RENDERERS.financehub = function(container) {
   surplusRow.appendChild(surplusCard);
   surplusRow.appendChild(savingsCard);
   incomeRight.appendChild(surplusRow);
+
+  // Top 3 Expense Categories mini-ranking
+  var top3Title = document.createElement('div');
+  top3Title.textContent = 'Top 3 Expense Categories';
+  top3Title.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-top:16px;margin-bottom:8px;';
+  incomeRight.appendChild(top3Title);
+
+  var top3Data = [
+    { rank: '1', label: 'Housing',   value: '$1,800', pct: 43, color: '#ef4444' },
+    { rank: '2', label: 'Food',      value: '$800',   pct: 19, color: '#34d399' },
+    { rank: '3', label: 'Transport', value: '$600',   pct: 14, color: '#f59e0b' },
+  ];
+  top3Data.forEach(function(item) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:6px;';
+    var rankEl = document.createElement('div');
+    rankEl.textContent = item.rank;
+    rankEl.style.cssText = 'width:18px;height:18px;border-radius:50%;background:' + item.color + '25;border:1px solid ' + item.color + '50;color:' + item.color + ';font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+    var barWrap = document.createElement('div');
+    barWrap.style.cssText = 'flex:1;';
+    var barLabelRow = document.createElement('div');
+    barLabelRow.style.cssText = 'display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;';
+    var barLabel = document.createElement('span');
+    barLabel.textContent = item.label;
+    barLabel.style.cssText = 'color:rgba(255,255,255,0.6);';
+    var barValue = document.createElement('span');
+    barValue.textContent = item.value;
+    barValue.style.cssText = 'color:' + item.color + ';font-weight:600;';
+    barLabelRow.appendChild(barLabel);
+    barLabelRow.appendChild(barValue);
+    var barTrackT3 = document.createElement('div');
+    barTrackT3.style.cssText = 'background:rgba(255,255,255,0.07);border-radius:3px;height:4px;overflow:hidden;';
+    var barFillT3 = document.createElement('div');
+    barFillT3.style.cssText = 'height:100%;border-radius:3px;background:' + item.color + ';width:' + item.pct + '%;';
+    barTrackT3.appendChild(barFillT3);
+    barWrap.appendChild(barLabelRow);
+    barWrap.appendChild(barTrackT3);
+    row.appendChild(rankEl);
+    row.appendChild(barWrap);
+    incomeRight.appendChild(row);
+  });
+
+  // Income growth projection
+  var incomeGrowthCard = document.createElement('div');
+  incomeGrowthCard.style.cssText = 'margin-top:14px;padding:10px 14px;background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:10px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.5;';
+  var incomeGrowthText = document.createElement('span');
+  incomeGrowthText.innerHTML = 'Projected annual income at age 35: <strong style="color:#a78bfa;font-size:14px;">$132,000</strong>';
+  incomeGrowthCard.appendChild(incomeGrowthText);
+  incomeRight.appendChild(incomeGrowthCard);
 
   incomeCols.appendChild(incomeLeft);
   incomeCols.appendChild(incomeRight);
@@ -4085,12 +4532,31 @@ DEMO_RENDERERS.financehub = function(container) {
   goalsToast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 20px;font-size:13px;color:#e2e8f0;opacity:0;transition:opacity 0.3s;z-index:999;pointer-events:none;white-space:nowrap;';
   document.body.appendChild(goalsToast);
 
+  // Total Funding Required summary card
+  var totalFundingCard = document.createElement('div');
+  totalFundingCard.style.cssText = 'background:rgba(196,162,77,0.08);border:1px solid rgba(196,162,77,0.25);border-radius:12px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;';
+  var tfLeft = document.createElement('div');
+  var tfLabel = document.createElement('div');
+  tfLabel.textContent = 'Total Funding Required';
+  tfLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;';
+  var tfValue = document.createElement('div');
+  tfValue.textContent = '$1,945,000';
+  tfValue.style.cssText = 'font-size:22px;font-weight:700;color:#C4A24D;';
+  tfLeft.appendChild(tfLabel);
+  tfLeft.appendChild(tfValue);
+  var tfRight = document.createElement('div');
+  tfRight.textContent = 'across 5 goals';
+  tfRight.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.35);';
+  totalFundingCard.appendChild(tfLeft);
+  totalFundingCard.appendChild(tfRight);
+  goalsPanel.appendChild(totalFundingCard);
+
   var goalsData = [
-    { icon: '\uD83D\uDE97', name: 'Buy Car',      age: 28, year: 2028, cost: '$80,000',     saved: 15000, total: 80000,   sources: ['Cash'],         color: '#f59e0b' },
-    { icon: '\uD83C\uDFE0', name: 'Buy HDB',      age: 30, year: 2030, cost: '$600,000',    saved: 55000, total: 600000,  sources: ['CPF', 'Loan'],  color: '#6b9bdb' },
-    { icon: '\uD83D\uDC8D', name: 'Wedding',      age: 32, year: 2032, cost: '$50,000',     saved: 5000,  total: 50000,   sources: ['Cash'],         color: '#a78bfa' },
-    { icon: '\uD83D\uDC76', name: 'First Child',  age: 33, year: 2033, cost: '$15,000/yr',  saved: 0,     total: 15000,   sources: ['Cash'],         color: '#34d399' },
-    { icon: '\uD83C\uDFC6', name: 'Retirement',   age: 62, year: 2062, cost: '$1.2M target',saved: 142000,total: 1200000, sources: ['CPF', 'Cash'],  color: '#C4A24D' },
+    { icon: '\uD83D\uDE97', name: 'Buy Car',      age: 28, year: 2028, cost: '$80,000',     saved: 15000, total: 80000,   sources: ['Cash'],         color: '#f59e0b', priority: 'Medium' },
+    { icon: '\uD83C\uDFE0', name: 'Buy HDB',      age: 30, year: 2030, cost: '$600,000',    saved: 55000, total: 600000,  sources: ['CPF', 'Loan'],  color: '#6b9bdb', priority: 'High'   },
+    { icon: '\uD83D\uDC8D', name: 'Wedding',      age: 32, year: 2032, cost: '$50,000',     saved: 5000,  total: 50000,   sources: ['Cash'],         color: '#a78bfa', priority: 'Medium' },
+    { icon: '\uD83D\uDC76', name: 'First Child',  age: 33, year: 2033, cost: '$15,000/yr',  saved: 0,     total: 15000,   sources: ['Cash'],         color: '#34d399', priority: 'Low'    },
+    { icon: '\uD83C\uDFC6', name: 'Retirement',   age: 62, year: 2062, cost: '$1.2M target',saved: 142000,total: 1200000, sources: ['CPF', 'Cash'],  color: '#C4A24D', priority: 'High'   },
   ];
 
   var goalsTimeline = document.createElement('div');
@@ -4120,15 +4586,27 @@ DEMO_RENDERERS.financehub = function(container) {
     // Main info
     var info = document.createElement('div');
     info.style.cssText = 'flex:1;';
+    var goalNameRow = document.createElement('div');
+    goalNameRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;';
     var goalName = document.createElement('div');
     goalName.textContent = goal.name;
-    goalName.style.cssText = 'font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:6px;';
+    goalName.style.cssText = 'font-size:14px;font-weight:600;color:#e2e8f0;';
+    var priorityColors = { High: '#ef4444', Medium: '#f59e0b', Low: '#64748b' };
+    var priorityBadge = document.createElement('span');
+    priorityBadge.textContent = goal.priority;
+    var pColor = priorityColors[goal.priority] || '#64748b';
+    priorityBadge.style.cssText = 'font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:' + pColor + '20;color:' + pColor + ';border:1px solid ' + pColor + '40;';
+    goalNameRow.appendChild(goalName);
+    goalNameRow.appendChild(priorityBadge);
     var barTrack = document.createElement('div');
-    barTrack.style.cssText = 'background:rgba(255,255,255,0.07);border-radius:4px;height:6px;margin-bottom:6px;overflow:hidden;';
+    barTrack.style.cssText = 'background:rgba(255,255,255,0.07);border-radius:4px;height:6px;margin-bottom:4px;overflow:hidden;';
     var barFill = document.createElement('div');
     var pct = Math.min(goal.saved / goal.total * 100, 100);
     barFill.style.cssText = 'height:100%;border-radius:4px;background:' + goal.color + ';width:' + pct.toFixed(1) + '%;';
     barTrack.appendChild(barFill);
+    var pctLbl = document.createElement('div');
+    pctLbl.textContent = pct.toFixed(0) + '% funded';
+    pctLbl.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:5px;';
     var sourcesRow = document.createElement('div');
     sourcesRow.style.cssText = 'display:flex;gap:6px;';
     goal.sources.forEach(function(src) {
@@ -4137,8 +4615,9 @@ DEMO_RENDERERS.financehub = function(container) {
       badge.style.cssText = 'font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);';
       sourcesRow.appendChild(badge);
     });
-    info.appendChild(goalName);
+    info.appendChild(goalNameRow);
     info.appendChild(barTrack);
+    info.appendChild(pctLbl);
     info.appendChild(sourcesRow);
 
     // Cost
@@ -4225,6 +4704,26 @@ DEMO_RENDERERS.financehub = function(container) {
 
   // Right: active policies
   var insRight = document.createElement('div');
+
+  // Monthly Premium Total card
+  var premiumTotalCard = document.createElement('div');
+  premiumTotalCard.style.cssText = 'background:rgba(107,155,219,0.08);border:1px solid rgba(107,155,219,0.25);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;';
+  var ptLeft = document.createElement('div');
+  var ptLabel = document.createElement('div');
+  ptLabel.textContent = 'Monthly Premium Total';
+  ptLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;';
+  var ptValue = document.createElement('div');
+  ptValue.textContent = '$283/month';
+  ptValue.style.cssText = 'font-size:20px;font-weight:700;color:#6b9bdb;';
+  ptLeft.appendChild(ptLabel);
+  ptLeft.appendChild(ptValue);
+  var ptRight = document.createElement('div');
+  ptRight.textContent = 'across 3 policies';
+  ptRight.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.35);';
+  premiumTotalCard.appendChild(ptLeft);
+  premiumTotalCard.appendChild(ptRight);
+  insRight.appendChild(premiumTotalCard);
+
   var policiesTitle = document.createElement('div');
   policiesTitle.textContent = 'Active Policies';
   policiesTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;';
@@ -4274,6 +4773,30 @@ DEMO_RENDERERS.financehub = function(container) {
   });
   insRight.appendChild(gapGrid);
 
+  // Recommendations section
+  var recTitle = document.createElement('div');
+  recTitle.textContent = 'Recommendations';
+  recTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-top:16px;margin-bottom:10px;';
+  insRight.appendChild(recTitle);
+
+  var recommendations = [
+    { text: 'Increase CI coverage by $250k to close protection gap', icon: '\u2191', color: '#ef4444' },
+    { text: 'Consider adding disability income rider to Term Life policy', icon: '+', color: '#f59e0b' },
+  ];
+  recommendations.forEach(function(rec) {
+    var recRow = document.createElement('div');
+    recRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-left:3px solid ' + rec.color + ';border-radius:8px;margin-bottom:8px;';
+    var recIcon = document.createElement('div');
+    recIcon.textContent = rec.icon;
+    recIcon.style.cssText = 'font-size:12px;font-weight:700;color:' + rec.color + ';width:16px;text-align:center;flex-shrink:0;padding-top:1px;';
+    var recText = document.createElement('div');
+    recText.textContent = rec.text;
+    recText.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.6);line-height:1.4;';
+    recRow.appendChild(recIcon);
+    recRow.appendChild(recText);
+    insRight.appendChild(recRow);
+  });
+
   insCols.appendChild(insLeft);
   insCols.appendChild(insRight);
   insPanel.appendChild(insCols);
@@ -4318,6 +4841,50 @@ DEMO_RENDERERS.financehub = function(container) {
     cpfAccountsRow.appendChild(card);
   });
   cpfPanel.appendChild(cpfAccountsRow);
+
+  // Monthly Contribution + Readiness row
+  var cpfMetaRow = document.createElement('div');
+  cpfMetaRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;';
+
+  var cpfContribCard = document.createElement('div');
+  cpfContribCard.style.cssText = 'background:rgba(196,162,77,0.07);border:1px solid rgba(196,162,77,0.2);border-radius:12px;padding:12px 16px;';
+  var cpfContribLabel = document.createElement('div');
+  cpfContribLabel.textContent = 'Monthly CPF Contribution';
+  cpfContribLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;';
+  var cpfContribValue = document.createElement('div');
+  cpfContribValue.textContent = '$2,405/mo';
+  cpfContribValue.style.cssText = 'font-size:20px;font-weight:700;color:#C4A24D;';
+  var cpfContribSub = document.createElement('div');
+  cpfContribSub.textContent = 'Employee $1,300 + Employer $1,105';
+  cpfContribSub.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);margin-top:3px;';
+  cpfContribCard.appendChild(cpfContribLabel);
+  cpfContribCard.appendChild(cpfContribValue);
+  cpfContribCard.appendChild(cpfContribSub);
+
+  var cpfReadyCard = document.createElement('div');
+  cpfReadyCard.style.cssText = 'background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px 16px;';
+  var cpfReadyLabel = document.createElement('div');
+  cpfReadyLabel.textContent = 'Retirement Readiness';
+  cpfReadyLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;';
+  var cpfReadyBadge = document.createElement('div');
+  cpfReadyBadge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.35);';
+  var cpfReadyDot = document.createElement('div');
+  cpfReadyDot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:#34d399;';
+  var cpfReadyText = document.createElement('span');
+  cpfReadyText.textContent = 'On Track';
+  cpfReadyText.style.cssText = 'font-size:14px;font-weight:700;color:#34d399;';
+  cpfReadyBadge.appendChild(cpfReadyDot);
+  cpfReadyBadge.appendChild(cpfReadyText);
+  var cpfReadySub = document.createElement('div');
+  cpfReadySub.textContent = 'Projected to hit FRS by age 55';
+  cpfReadySub.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;';
+  cpfReadyCard.appendChild(cpfReadyLabel);
+  cpfReadyCard.appendChild(cpfReadyBadge);
+  cpfReadyCard.appendChild(cpfReadySub);
+
+  cpfMetaRow.appendChild(cpfContribCard);
+  cpfMetaRow.appendChild(cpfReadyCard);
+  cpfPanel.appendChild(cpfMetaRow);
 
   // CPF projection chart
   var cpfProjTitle = document.createElement('div');
