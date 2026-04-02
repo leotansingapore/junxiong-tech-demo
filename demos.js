@@ -2372,491 +2372,1060 @@ DEMO_RENDERERS.tracker = function(container) {
 
 DEMO_RENDERERS.compass = function(container) {
   container.innerHTML = '';
+  container.id = 'compassDemo';
 
-  // Module data
-  var modules = [
-    {
-      id: 'onboarding',
-      name: 'Onboarding',
-      pct: 100,
-      lessons: 8,
-      hours: 2,
-      items: [
-        'Company Overview', 'Compliance Basics', 'CRM Setup',
-        'Product Categories', 'Client Onboarding Flow', 'First Meeting Framework',
-        'Documentation Standards', 'Week 1 Checklist',
-      ],
-    },
-    {
-      id: 'm9',
-      name: 'M9 — Life Insurance',
-      pct: 72,
-      lessons: 12,
-      hours: 6,
-      items: [
-        'Term vs Whole Life', 'Policy Structures', 'Underwriting Basics',
-        'Premium Calculations', 'Riders & Add-ons', 'Claims Process',
-        'Case Studies', 'Practice Questions', 'Key Ratios',
-        'Regulatory Framework', 'Ethics & Disclosure', 'Mock Exam',
-      ],
-    },
-    {
-      id: 'm9a',
-      name: 'M9A — General Insurance',
-      pct: 45,
-      lessons: 10,
-      hours: 5,
-      items: [
-        'Introduction to General Insurance', 'Property Insurance', 'Motor Insurance',
-        'Travel Insurance', 'Liability Coverage', 'Marine & Cargo',
-        'Policy Terms & Conditions', 'Claims Handling', 'Underwriting Principles',
-        'Mock Exam',
-      ],
-    },
-    {
-      id: 'hi',
-      name: 'HI — Health Insurance',
-      pct: 18,
-      lessons: 8,
-      hours: 4,
-      items: [
-        'Health Insurance Basics', 'Medishield Life', 'Integrated Shield Plans',
-        'Critical Illness Coverage', 'Disability Income', 'Hospital Cash Plans',
-        'Claims & Pre-Auth', 'Mock Exam',
-      ],
-    },
-    {
-      id: 'res5',
-      name: 'RES5 — Investments',
-      pct: 0,
-      lessons: 14,
-      hours: 8,
-      items: [
-        'Investment Basics', 'Unit Trusts', 'ILPs — Investment-Linked Policies',
-        'Bonds & Fixed Income', 'Equities Overview', 'Portfolio Construction',
-        'Risk Profiling', 'CPF Investment Schemes', 'Suitability Framework',
-        'Market Cycles', 'Tax Considerations', 'Regulatory Requirements',
-        'Case Studies', 'Mock Exam',
-      ],
-    },
+  /* ---- Subtab definitions ---- */
+  var subtabs = [
+    { id: 'track',    label: 'Learning Track' },
+    { id: 'products', label: 'Product Knowledge' },
+    { id: 'cards',    label: 'Concept Cards' },
+    { id: 'scripts',  label: 'Script Database' },
+    { id: 'qbank',    label: 'Question Bank' },
+    { id: 'roleplay', label: 'AI Roleplay' },
+    { id: 'videos',   label: 'Video Lectures' },
   ];
 
-  // ===== MODULE BROWSER =====
-  var modulesSection = document.createElement('div');
-  modulesSection.style.cssText = 'margin-bottom:24px;';
+  /* ---- Header ---- */
+  var header = document.createElement('div');
+  header.style.cssText = 'margin-bottom:16px;';
+  var title = document.createElement('div');
+  title.style.cssText = 'font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:2px;';
+  title.textContent = 'Product Compass';
+  var subtitle = document.createElement('div');
+  subtitle.style.cssText = 'font-size:0.75rem;color:var(--text3);';
+  subtitle.textContent = 'All-in-one learning platform for financial advisors';
+  header.appendChild(title);
+  header.appendChild(subtitle);
+  container.appendChild(header);
 
-  var modulesHeading = document.createElement('div');
-  modulesHeading.className = 'demo-section-heading';
-  modulesHeading.textContent = 'Training Modules';
-  modulesSection.appendChild(modulesHeading);
+  /* ---- Subtab bar ---- */
+  var tabBar = document.createElement('div');
+  tabBar.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:4px;';
 
-  var grid = document.createElement('div');
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;';
+  var panes = {};
 
-  modules.forEach(function(mod) {
-    var card = document.createElement('div');
-    card.className = 'chart-container';
-    card.style.cssText = 'cursor:pointer;padding:14px;transition:border-color 0.2s;';
-    card.id = 'compassCard_' + mod.id;
-    card.onclick = function() { toggleModule(mod.id); };
+  subtabs.forEach(function(st) {
+    var btn = document.createElement('button');
+    btn.id = 'cpTab_' + st.id;
+    btn.style.cssText = [
+      'background:transparent',
+      'border:none',
+      'border-bottom:2px solid transparent',
+      'color:var(--text3)',
+      'font-size:0.75rem',
+      'font-weight:600',
+      'padding:6px 10px',
+      'cursor:pointer',
+      'transition:color 0.2s,border-color 0.2s',
+      'white-space:nowrap',
+    ].join(';');
+    btn.textContent = st.label;
+    btn.onclick = function() { compassTab(st.id); };
+    tabBar.appendChild(btn);
 
-    var cardName = document.createElement('h4');
-    cardName.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.3;';
-    cardName.textContent = mod.name;
+    var pane = document.createElement('div');
+    pane.id = 'cpPane_' + st.id;
+    pane.style.display = 'none';
+    panes[st.id] = pane;
+    container.appendChild(pane);
+  });
 
-    // Progress bar wrapper
-    var barWrap = document.createElement('div');
-    barWrap.style.cssText = 'background:var(--bg3);border-radius:99px;height:6px;margin-bottom:8px;overflow:hidden;';
-    var bar = document.createElement('div');
-    var barColor = mod.pct === 100 ? 'var(--green-bright)' : mod.pct > 0 ? 'var(--primary-light)' : 'var(--border)';
-    bar.style.cssText = 'height:100%;border-radius:99px;width:' + mod.pct + '%;background:' + barColor + ';transition:width 0.4s;';
-    barWrap.appendChild(bar);
+  container.insertBefore(tabBar, panes[subtabs[0].id]);
 
-    var meta = document.createElement('div');
-    meta.style.cssText = 'font-size:0.72rem;color:var(--text3);';
-    meta.textContent = mod.pct + '% complete \u00B7 ' + mod.lessons + ' lessons \u00B7 ' + mod.hours + 'h';
+  /* ============================================================
+     PANE 1: LEARNING TRACK
+     ============================================================ */
+  (function() {
+    var pane = panes.track;
 
-    // Lesson list (hidden by default)
-    var lessonList = document.createElement('div');
-    lessonList.id = 'compassLessons_' + mod.id;
-    lessonList.style.cssText = 'display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:10px;';
+    /* Progress summary */
+    var summary = document.createElement('div');
+    summary.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;';
+    var summaryLeft = document.createElement('div');
+    var summaryTitle = document.createElement('div');
+    summaryTitle.style.cssText = 'font-size:0.85rem;font-weight:700;color:var(--text);';
+    summaryTitle.textContent = 'Phase 2 of 5 \u2014 47% complete';
+    var summarySubt = document.createElement('div');
+    summarySubt.style.cssText = 'font-size:0.72rem;color:var(--text3);margin-top:2px;';
+    summarySubt.textContent = 'Current focus: Product Knowledge';
+    summaryLeft.appendChild(summaryTitle);
+    summaryLeft.appendChild(summarySubt);
+    var summaryPct = document.createElement('div');
+    summaryPct.style.cssText = 'font-size:1.6rem;font-weight:800;color:var(--primary-light);line-height:1;';
+    summaryPct.textContent = '47%';
+    summary.appendChild(summaryLeft);
+    summary.appendChild(summaryPct);
+    pane.appendChild(summary);
 
-    var doneLessons = Math.round(mod.pct / 100 * mod.lessons);
-    mod.items.forEach(function(lesson, i) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.75rem;';
+    /* Stepper */
+    var phases = [
+      { name: 'Foundation',       pct: 100, status: 'done',    color: 'var(--green-bright)', desc: 'Company basics, compliance, CRM setup' },
+      { name: 'Product Knowledge',pct: 72,  status: 'active',  color: 'var(--primary-light)', desc: 'Life, health, investment products' },
+      { name: 'Sales Skills',     pct: 45,  status: 'active',  color: 'var(--primary-light)', desc: 'Client conversations, objection handling' },
+      { name: 'Exam Prep',        pct: 18,  status: 'partial', color: 'var(--text3)',         desc: 'M9, M9A, HI, RES5 practice' },
+      { name: 'Field-Ready',      pct: 0,   status: 'locked',  color: 'var(--border)',        desc: 'Live roleplay, mentorship' },
+    ];
 
-      var icon = document.createElement('span');
-      if (i < doneLessons) {
-        icon.style.cssText = 'color:var(--green-bright);font-size:0.85rem;flex-shrink:0;';
-        icon.textContent = '\u2713';
-      } else {
-        icon.style.cssText = 'width:14px;height:14px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:inline-block;';
+    var stepper = document.createElement('div');
+    stepper.style.cssText = 'display:flex;align-items:flex-start;gap:0;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;';
+
+    phases.forEach(function(ph, i) {
+      var step = document.createElement('div');
+      step.style.cssText = 'display:flex;flex-direction:column;align-items:center;flex:1;min-width:100px;position:relative;';
+
+      /* Connector line */
+      if (i < phases.length - 1) {
+        var line = document.createElement('div');
+        var lineColor = ph.pct === 100 ? 'var(--green-bright)' : 'var(--border)';
+        line.style.cssText = 'position:absolute;top:16px;left:50%;width:100%;height:2px;background:' + lineColor + ';z-index:0;';
+        step.appendChild(line);
       }
 
-      var lbl = document.createElement('span');
-      lbl.style.cssText = i < doneLessons
-        ? 'color:var(--text2);'
-        : 'color:var(--text3);';
-      lbl.textContent = lesson;
+      /* Circle */
+      var circle = document.createElement('div');
+      var circleBg = ph.status === 'done' ? 'var(--green-bright)' : ph.pct > 0 ? 'var(--primary-light)' : 'var(--bg3)';
+      var circleText = ph.status === 'done' ? '\u2713' : ph.status === 'locked' ? '\uD83D\uDD12' : String(i + 1);
+      circle.style.cssText = [
+        'width:32px',
+        'height:32px',
+        'border-radius:50%',
+        'background:' + circleBg,
+        'border:2px solid ' + ph.color,
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'font-size:0.75rem',
+        'font-weight:700',
+        'color:' + (ph.pct > 0 ? '#0a0f1a' : 'var(--text3)'),
+        'position:relative',
+        'z-index:1',
+        'flex-shrink:0',
+      ].join(';');
+      circle.textContent = circleText;
 
-      row.appendChild(icon);
-      row.appendChild(lbl);
-      lessonList.appendChild(row);
+      /* Phase name */
+      var phaseName = document.createElement('div');
+      phaseName.style.cssText = 'font-size:0.68rem;font-weight:700;color:' + (ph.pct > 0 ? 'var(--text)' : 'var(--text3)') + ';margin-top:6px;text-align:center;line-height:1.3;';
+      phaseName.textContent = ph.name;
+
+      /* Phase desc */
+      var phaseDesc = document.createElement('div');
+      phaseDesc.style.cssText = 'font-size:0.62rem;color:var(--text3);text-align:center;margin-top:3px;line-height:1.3;max-width:90px;';
+      phaseDesc.textContent = ph.desc;
+
+      /* Mini progress bar */
+      var miniBar = document.createElement('div');
+      miniBar.style.cssText = 'width:80%;height:3px;background:var(--bg1);border-radius:99px;margin-top:5px;overflow:hidden;';
+      var miniFill = document.createElement('div');
+      miniFill.style.cssText = 'height:100%;width:' + ph.pct + '%;background:' + ph.color + ';border-radius:99px;';
+      miniBar.appendChild(miniFill);
+      var miniPct = document.createElement('div');
+      miniPct.style.cssText = 'font-size:0.6rem;color:' + ph.color + ';margin-top:2px;font-weight:700;';
+      miniPct.textContent = ph.pct + '%';
+
+      step.appendChild(circle);
+      step.appendChild(phaseName);
+      step.appendChild(phaseDesc);
+      step.appendChild(miniBar);
+      step.appendChild(miniPct);
+      stepper.appendChild(step);
     });
 
-    card.appendChild(cardName);
-    card.appendChild(barWrap);
-    card.appendChild(meta);
-    card.appendChild(lessonList);
-    grid.appendChild(card);
-  });
+    pane.appendChild(stepper);
 
-  modulesSection.appendChild(grid);
-  container.appendChild(modulesSection);
+    /* Current assignment checklist */
+    var checklistCard = document.createElement('div');
+    checklistCard.className = 'chart-container';
+    checklistCard.style.cssText = 'padding:14px;margin-bottom:0;';
 
-  // ===== TWO-COLUMN SECTION (Roleplay + Exam) =====
-  var twoCol = document.createElement('div');
-  twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+    var checklistTitle = document.createElement('div');
+    checklistTitle.className = 'demo-section-heading';
+    checklistTitle.style.cssText = 'margin-top:0;margin-bottom:12px;';
+    checklistTitle.textContent = 'Current Assignments';
+    checklistCard.appendChild(checklistTitle);
 
-  // --- LEFT: AI Roleplay Chat ---
-  var chatSection = document.createElement('div');
-  chatSection.className = 'chart-container';
-  chatSection.style.cssText = 'padding:16px;';
+    var tasks = [
+      { text: 'Complete Life Insurance module (Unit Trusts section)', done: true },
+      { text: 'Read product comparison sheet: Term vs Whole Life', done: true },
+      { text: 'Watch: CPF & Retirement Planning lecture (18:45)', done: true },
+      { text: 'Practice 20 M9 exam questions', done: false },
+      { text: 'Submit case study: Mrs Lim retirement portfolio', done: false },
+      { text: 'Roleplay session: Objection Handling with AI Coach', done: false },
+    ];
 
-  var chatHeading = document.createElement('div');
-  chatHeading.className = 'demo-section-heading';
-  chatHeading.style.cssText = 'margin-top:0;margin-bottom:12px;';
-  chatHeading.textContent = 'AI Roleplay Coach';
-  chatSection.appendChild(chatHeading);
+    var doneCount = tasks.filter(function(t) { return t.done; }).length;
+    var taskProgress = document.createElement('div');
+    taskProgress.style.cssText = 'font-size:0.72rem;color:var(--text3);margin-bottom:10px;';
+    taskProgress.textContent = doneCount + ' of ' + tasks.length + ' tasks complete';
+    checklistCard.appendChild(taskProgress);
 
-  // Scenario label
-  var scenarioLabel = document.createElement('div');
-  scenarioLabel.style.cssText = 'font-size:0.72rem;color:var(--purple);font-weight:600;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;';
-  scenarioLabel.textContent = 'Scenario: Retirement Planning';
-  chatSection.appendChild(scenarioLabel);
+    tasks.forEach(function(task) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bg1);';
 
-  // Chat bubbles container
-  var chatBubbles = document.createElement('div');
-  chatBubbles.style.cssText = 'background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;min-height:80px;';
-  chatBubbles.id = 'compassChatBubbles';
+      var checkbox = document.createElement('div');
+      checkbox.style.cssText = task.done
+        ? 'width:18px;height:18px;border-radius:4px;background:var(--green-bright);display:flex;align-items:center;justify-content:center;flex-shrink:0;'
+        : 'width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border);flex-shrink:0;';
+      if (task.done) {
+        checkbox.innerHTML = '<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#0a0f1a" stroke-width="1.8" stroke-linecap="round"/></svg>';
+      }
 
-  // Client message
-  var clientBubble = document.createElement('div');
-  clientBubble.style.cssText = 'margin-bottom:10px;';
+      var label = document.createElement('div');
+      label.style.cssText = 'font-size:0.78rem;line-height:1.4;color:' + (task.done ? 'var(--text3)' : 'var(--text)') + ';' + (task.done ? 'text-decoration:line-through;' : '');
+      label.textContent = task.text;
 
-  var clientLabel = document.createElement('div');
-  clientLabel.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-bottom:4px;';
-  clientLabel.textContent = 'Client';
+      row.appendChild(checkbox);
+      row.appendChild(label);
+      checklistCard.appendChild(row);
+    });
 
-  var clientMsg = document.createElement('div');
-  clientMsg.style.cssText = [
-    'background:var(--bg3)',
-    'border-radius:0 8px 8px 8px',
-    'padding:10px 12px',
-    'font-size:0.78rem',
-    'color:var(--text)',
-    'line-height:1.5',
-    'max-width:90%',
-  ].join(';');
-  clientMsg.textContent = "I\u2019m 35 years old with two young kids. My wife and I are both working but we\u2019re worried about our retirement. We have about $50,000 in savings but no investment plan. What should we be doing?";
+    pane.appendChild(checklistCard);
+  })();
 
-  clientBubble.appendChild(clientLabel);
-  clientBubble.appendChild(clientMsg);
-  chatBubbles.appendChild(clientBubble);
-  chatSection.appendChild(chatBubbles);
+  /* ============================================================
+     PANE 2: PRODUCT KNOWLEDGE
+     ============================================================ */
+  (function() {
+    var pane = panes.products;
 
-  // Advisor response options
-  var optionsLabel = document.createElement('div');
-  optionsLabel.style.cssText = 'font-size:0.75rem;color:var(--text2);font-weight:600;margin-bottom:8px;';
-  optionsLabel.id = 'compassOptionsLabel';
-  optionsLabel.textContent = 'Choose your response as the advisor:';
-  chatSection.appendChild(optionsLabel);
+    var heading = document.createElement('div');
+    heading.className = 'demo-section-heading';
+    heading.style.cssText = 'margin-top:0;margin-bottom:14px;';
+    heading.textContent = 'Product Categories';
+    pane.appendChild(heading);
 
-  var optionsList = document.createElement('div');
-  optionsList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
-  optionsList.id = 'compassOptionsList';
+    var categories = [
+      { id: 'life',    icon: '\uD83D\uDEE1\uFE0F', name: 'Life Insurance',     sub: 'Term, Whole Life, ILP',            items: ['Term Life \u2014 affordable pure protection', 'Whole Life \u2014 lifetime cover with cash value', 'ILP \u2014 investment + life cover combined', 'Key rider: Critical Illness, TPD, WOP'] },
+      { id: 'health',  icon: '\uD83C\uDFE5',       name: 'Health Insurance',   sub: 'Shield Plans, CI, Hospital',       items: ['MediShield Life \u2014 mandatory base layer', 'Integrated Shield Plans \u2014 private ward top-up', 'Critical Illness \u2014 lump sum on diagnosis', 'Hospital Cash \u2014 daily income benefit'] },
+      { id: 'invest',  icon: '\uD83D\uDCC8',       name: 'Investment Products',sub: 'Unit Trusts, ETFs, ILPs',          items: ['Unit Trusts \u2014 pooled managed funds', 'ETFs \u2014 index-tracking, exchange-listed', 'ILPs \u2014 insurance wrapper over funds', 'RSP \u2014 regular savings plan'] },
+      { id: 'retire',  icon: '\uD83C\uDFD6\uFE0F', name: 'Retirement',         sub: 'CPF, Annuities, RSP',              items: ['CPF Life \u2014 national annuity scheme', 'Supplementary Retirement Scheme (SRS)', 'Private annuities \u2014 guaranteed payout', 'Retirement Sum Scheme options'] },
+      { id: 'general', icon: '\uD83C\uDFE0',       name: 'General Insurance',  sub: 'Motor, Travel, Property',          items: ['Motor \u2014 TPFT and comprehensive', 'Travel \u2014 medical, cancellation, baggage', 'Home Contents & Fire insurance', 'Personal Accident \u2014 daily payout'] },
+      { id: 'biz',     icon: '\uD83D\uDCBC',       name: 'Business Solutions', sub: 'Group Insurance, Key Man',         items: ['Group Term Life \u2014 employee benefit', 'Key Man Insurance \u2014 protect key personnel', 'Business Continuity planning', 'Group health & hospitalisation'] },
+    ];
 
-  var chatOptions = [
-    "You should invest in unit trusts \u2014 they give the best returns over the long term.",
-    "Let\u2019s first understand your full financial picture \u2014 income, expenses, insurance coverage, and goals. Then we can build a plan that balances protection and growth.",
-    "At 35, you still have 30 years before retirement. $50k is a good start. I\u2019d recommend putting it all into an ILP immediately.",
-  ];
+    var grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;';
 
-  chatOptions.forEach(function(text, idx) {
-    var btn = document.createElement('button');
-    btn.style.cssText = [
-      'background:var(--bg3)',
-      'border:1px solid var(--border)',
-      'border-radius:var(--radius-sm)',
-      'color:var(--text)',
-      'font-size:0.75rem',
-      'padding:10px 12px',
-      'text-align:left',
-      'cursor:pointer',
-      'line-height:1.4',
-      'transition:border-color 0.2s,background 0.2s',
-    ].join(';');
-    btn.textContent = 'Option ' + (idx + 1) + ': ' + text;
-    btn.onmouseover = function() { this.style.borderColor = 'var(--primary-light)'; };
-    btn.onmouseout  = function() { this.style.borderColor = 'var(--border)'; };
-    btn.onclick = function() { selectChatOption(idx); };
-    optionsList.appendChild(btn);
-  });
+    categories.forEach(function(cat) {
+      var card = document.createElement('div');
+      card.id = 'cpProdCard_' + cat.id;
+      card.style.cssText = [
+        'background:var(--bg3)',
+        'border:1px solid var(--border)',
+        'border-radius:var(--radius-sm)',
+        'padding:14px',
+        'cursor:pointer',
+        'transition:border-color 0.2s',
+      ].join(';');
 
-  chatSection.appendChild(optionsList);
+      var iconEl = document.createElement('div');
+      iconEl.style.cssText = 'font-size:1.4rem;margin-bottom:8px;';
+      iconEl.textContent = cat.icon;
 
-  // AI feedback placeholder (hidden)
-  var aiFeedback = document.createElement('div');
-  aiFeedback.id = 'compassAiFeedback';
-  aiFeedback.style.cssText = 'display:none;margin-top:12px;border-radius:var(--radius-sm);padding:12px;font-size:0.78rem;line-height:1.5;';
-  chatSection.appendChild(aiFeedback);
+      var nameEl = document.createElement('div');
+      nameEl.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--text);margin-bottom:3px;';
+      nameEl.textContent = cat.name;
 
-  twoCol.appendChild(chatSection);
+      var subEl = document.createElement('div');
+      subEl.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-bottom:0;';
+      subEl.textContent = cat.sub;
 
-  // --- RIGHT: Exam Prep ---
-  var examSection = document.createElement('div');
-  examSection.className = 'chart-container';
-  examSection.style.cssText = 'padding:16px;';
+      /* Expanded detail */
+      var detail = document.createElement('div');
+      detail.id = 'cpProdDetail_' + cat.id;
+      detail.style.cssText = 'display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;';
 
-  var examHeading = document.createElement('div');
-  examHeading.className = 'demo-section-heading';
-  examHeading.style.cssText = 'margin-top:0;margin-bottom:12px;';
-  examHeading.textContent = 'Exam Prep';
-  chatSection.style.cssText += ';';
+      cat.items.forEach(function(item) {
+        var row = document.createElement('div');
+        row.style.cssText = 'font-size:0.72rem;color:var(--text2);padding:3px 0;display:flex;align-items:flex-start;gap:6px;';
+        var dot = document.createElement('span');
+        dot.style.cssText = 'color:var(--primary-light);flex-shrink:0;margin-top:1px;';
+        dot.textContent = '\u25B8';
+        var txt = document.createElement('span');
+        txt.textContent = item;
+        row.appendChild(dot);
+        row.appendChild(txt);
+        detail.appendChild(row);
+      });
 
-  var examBadge = document.createElement('div');
-  examBadge.style.cssText = 'font-size:0.72rem;color:var(--primary-light);font-weight:600;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;';
-  examBadge.textContent = 'M9 Practice';
+      card.appendChild(iconEl);
+      card.appendChild(nameEl);
+      card.appendChild(subEl);
+      card.appendChild(detail);
 
-  var progressRow = document.createElement('div');
-  progressRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:14px;';
-  var progressText = document.createElement('span');
-  progressText.style.cssText = 'font-size:0.72rem;color:var(--text3);white-space:nowrap;';
-  progressText.textContent = 'Question 3 of 10';
-  var progressBar = document.createElement('div');
-  progressBar.style.cssText = 'flex:1;height:5px;background:var(--bg3);border-radius:99px;overflow:hidden;';
-  var progressFill = document.createElement('div');
-  progressFill.style.cssText = 'height:100%;width:30%;background:var(--primary-light);border-radius:99px;';
-  progressBar.appendChild(progressFill);
-  progressRow.appendChild(progressText);
-  progressRow.appendChild(progressBar);
+      card.onmouseover = function() { card.style.borderColor = 'var(--primary-light)'; };
+      card.onmouseout  = function() {
+        var det = document.getElementById('cpProdDetail_' + cat.id);
+        if (!det || det.style.display === 'none') card.style.borderColor = 'var(--border)';
+      };
+      card.onclick = function() {
+        var det = document.getElementById('cpProdDetail_' + cat.id);
+        if (!det) return;
+        var open = det.style.display !== 'none';
+        det.style.display = open ? 'none' : 'block';
+        card.style.borderColor = open ? 'var(--border)' : 'var(--primary-light)';
+      };
 
-  var question = document.createElement('div');
-  question.style.cssText = 'font-size:0.82rem;color:var(--text);font-weight:600;line-height:1.5;margin-bottom:14px;';
-  question.textContent = 'Which of the following is NOT a standard exclusion in a typical life insurance policy?';
+      grid.appendChild(card);
+    });
 
-  var examOptions = [
-    { letter: 'A', text: 'Suicide within the first year' },
-    { letter: 'B', text: 'Death from pre-existing conditions after 2 years' },
-    { letter: 'C', text: 'Death due to war or military service' },
-    { letter: 'D', text: 'Death from illegal activities' },
-  ];
+    pane.appendChild(grid);
+  })();
 
-  var examOptsList = document.createElement('div');
-  examOptsList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
-  examOptsList.id = 'compassExamOptions';
+  /* ============================================================
+     PANE 3: CONCEPT CARDS
+     ============================================================ */
+  (function() {
+    var pane = panes.cards;
 
-  examOptions.forEach(function(opt, idx) {
-    var row = document.createElement('div');
-    row.id = 'compassExamOpt_' + idx;
-    row.style.cssText = [
-      'display:flex',
-      'align-items:flex-start',
-      'gap:10px',
-      'background:var(--bg3)',
-      'border:1px solid var(--border)',
-      'border-radius:var(--radius-sm)',
-      'padding:10px 12px',
-      'cursor:pointer',
-      'transition:border-color 0.2s,background 0.2s',
-    ].join(';');
+    var heading = document.createElement('div');
+    heading.className = 'demo-section-heading';
+    heading.style.cssText = 'margin-top:0;margin-bottom:4px;';
+    heading.textContent = 'Concept Cards';
+    var hint = document.createElement('div');
+    hint.style.cssText = 'font-size:0.72rem;color:var(--text3);margin-bottom:16px;';
+    hint.textContent = 'Click a card to reveal the answer';
+    pane.appendChild(heading);
+    pane.appendChild(hint);
 
-    var letter = document.createElement('div');
-    letter.style.cssText = [
-      'width:24px',
-      'height:24px',
-      'border-radius:50%',
-      'background:var(--bg1)',
-      'border:1.5px solid var(--border)',
-      'display:flex',
-      'align-items:center',
-      'justify-content:center',
-      'font-size:0.72rem',
-      'font-weight:700',
-      'color:var(--text2)',
-      'flex-shrink:0',
-    ].join(';');
-    letter.textContent = opt.letter;
-    letter.id = 'compassExamLetter_' + idx;
+    /* Inject flip-card CSS once */
+    if (!document.getElementById('compassFlipStyle')) {
+      var style = document.createElement('style');
+      style.id = 'compassFlipStyle';
+      style.textContent = [
+        '.cp-flip-scene{perspective:800px;height:160px;}',
+        '.cp-flip-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.5s;}',
+        '.cp-flip-card.flipped{transform:rotateY(180deg);}',
+        '.cp-flip-front,.cp-flip-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:var(--radius-sm);padding:16px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;}',
+        '.cp-flip-front{background:var(--bg3);border:1px solid var(--border);}',
+        '.cp-flip-back{background:var(--primary);border:1px solid var(--primary-light);transform:rotateY(180deg);}',
+      ].join('');
+      document.head.appendChild(style);
+    }
 
-    var optText = document.createElement('span');
-    optText.style.cssText = 'font-size:0.78rem;color:var(--text);line-height:1.4;padding-top:2px;';
-    optText.textContent = opt.text;
+    var conceptCards = [
+      {
+        q: 'What is the incontestability clause?',
+        a: 'After 2 years, insurer cannot deny claims based on non-disclosure or misrepresentation. Protects policyholders from retroactive rejection.',
+        diagram: 'Policy issued \u2192 2-year window \u2192 Incontestable \u2713',
+      },
+      {
+        q: 'What is Dollar Cost Averaging?',
+        a: 'Investing a fixed amount regularly regardless of market conditions. Buys more units when prices are low, fewer when high \u2014 reduces timing risk.',
+        diagram: 'Jan $100 \u2192 10 units \u00B7 Feb $100 \u2192 12 units \u00B7 Avg cost < market price',
+      },
+      {
+        q: 'Explain the Total Wealth Concept',
+        a: 'Three pillars: Human Capital (earning power), Financial Capital (accumulated assets), and Passive Income (dividends, annuities). Goal: grow financial capital as human capital peaks then declines.',
+        diagram: 'Human Capital \u2193 over time + Financial Capital \u2191 = Retirement readiness',
+      },
+    ];
 
-    row.onmouseover = function() {
-      if (!row.dataset.answered) row.style.borderColor = 'var(--primary-light)';
-    };
-    row.onmouseout = function() {
-      if (!row.dataset.answered) row.style.borderColor = 'var(--border)';
-    };
-    row.onclick = function() { selectExam(idx); };
+    var cardsGrid = document.createElement('div');
+    cardsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;';
 
-    row.appendChild(letter);
-    row.appendChild(optText);
-    examOptsList.appendChild(row);
-  });
+    conceptCards.forEach(function(cc, i) {
+      var scene = document.createElement('div');
+      scene.className = 'cp-flip-scene';
 
-  var examExplanation = document.createElement('div');
-  examExplanation.id = 'compassExamExplanation';
-  examExplanation.style.cssText = 'display:none;margin-top:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:0.78rem;color:var(--text2);line-height:1.5;';
-  examExplanation.textContent = "After the 2-year contestability period, pre-existing conditions are generally covered under most life insurance policies. The incontestability clause protects policyholders from claim denial after this period.";
+      var flipCard = document.createElement('div');
+      flipCard.className = 'cp-flip-card';
+      flipCard.id = 'cpFlip_' + i;
 
-  examSection.appendChild(examHeading);
-  examSection.appendChild(examBadge);
-  examSection.appendChild(progressRow);
-  examSection.appendChild(question);
-  examSection.appendChild(examOptsList);
-  examSection.appendChild(examExplanation);
+      /* Front */
+      var front = document.createElement('div');
+      front.className = 'cp-flip-front';
 
-  twoCol.appendChild(examSection);
-  container.appendChild(twoCol);
+      var qLabel = document.createElement('div');
+      qLabel.style.cssText = 'font-size:0.62rem;color:var(--text3);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;';
+      qLabel.textContent = 'Question';
 
-  // Responsive: stack on narrow
-  var mq = window.matchMedia('(max-width:640px)');
-  function applyMQ(e) {
-    twoCol.style.gridTemplateColumns = e.matches ? '1fr' : '1fr 1fr';
-  }
-  mq.addEventListener('change', applyMQ);
-  applyMQ(mq);
+      var qText = document.createElement('div');
+      qText.style.cssText = 'font-size:0.8rem;font-weight:600;color:var(--text);line-height:1.4;flex:1;display:flex;align-items:center;';
+      qText.textContent = cc.q;
+
+      var tapHint = document.createElement('div');
+      tapHint.style.cssText = 'font-size:0.62rem;color:var(--primary-light);text-align:right;';
+      tapHint.textContent = 'Click to flip \u2192';
+
+      front.appendChild(qLabel);
+      front.appendChild(qText);
+      front.appendChild(tapHint);
+
+      /* Back */
+      var back = document.createElement('div');
+      back.className = 'cp-flip-back';
+
+      var aLabel = document.createElement('div');
+      aLabel.style.cssText = 'font-size:0.62rem;color:rgba(255,255,255,0.6);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;';
+      aLabel.textContent = 'Answer';
+
+      var aText = document.createElement('div');
+      aText.style.cssText = 'font-size:0.75rem;color:#e2e8f0;line-height:1.5;flex:1;display:flex;align-items:center;';
+      aText.textContent = cc.a;
+
+      var diagram = document.createElement('div');
+      diagram.style.cssText = 'font-size:0.62rem;color:rgba(255,255,255,0.55);font-style:italic;border-top:1px solid rgba(255,255,255,0.2);padding-top:6px;margin-top:4px;';
+      diagram.textContent = cc.diagram;
+
+      back.appendChild(aLabel);
+      back.appendChild(aText);
+      back.appendChild(diagram);
+
+      flipCard.appendChild(front);
+      flipCard.appendChild(back);
+      scene.appendChild(flipCard);
+
+      scene.onclick = (function(fc) {
+        return function() { fc.classList.toggle('flipped'); };
+      })(flipCard);
+
+      cardsGrid.appendChild(scene);
+    });
+
+    pane.appendChild(cardsGrid);
+  })();
+
+  /* ============================================================
+     PANE 4: SCRIPT DATABASE
+     ============================================================ */
+  (function() {
+    var pane = panes.scripts;
+
+    var heading = document.createElement('div');
+    heading.className = 'demo-section-heading';
+    heading.style.cssText = 'margin-top:0;margin-bottom:12px;';
+    heading.textContent = 'Script Database';
+    pane.appendChild(heading);
+
+    var scriptCats = [
+      {
+        label: 'Cold Calling',
+        scripts: [
+          { title: 'New Grad Approach', uses: 284, lines: ['"Hi, is this [Name]? I\'m Leo from AIA. Congrats on graduating \u2014 I work with a lot of fresh graduates on getting their financial basics right..."', '"I know it might not be top of mind yet, but the best time to start is when you have zero commitments. Do you have 15 minutes this week?"'] },
+          { title: 'Working Professional Approach', uses: 512, lines: ['"Hi [Name], I noticed we\'re both connected through [mutual contact]. I help working professionals in their 30s make sure their income is protected and their savings are actually growing..."', '"A lot of my clients started with just a quick review \u2014 no commitment at all. Would that be useful for you?"'] },
+          { title: 'Parent Approach', uses: 196, lines: ['"Hi [Name], I specialise in working with young parents to make sure the family is covered if anything unexpected happens..."', '"Most parents I speak to don\'t realise there are gaps in their coverage until something happens. I can do a free coverage review \u2014 takes 20 minutes."'] },
+        ],
+      },
+      {
+        label: 'SMS/WhatsApp',
+        scripts: [
+          { title: 'Cold Introduction', uses: 341, lines: ['"Hi [Name], I\'m Leo, a financial consultant with AIA. I help young professionals with financial planning. Would you be open to a quick 20-min chat?"', '"No pressure at all \u2014 even if we decide it\'s not the right fit, you\'ll walk away with clarity on where you stand financially."'] },
+          { title: 'Post-Meeting Follow-up', uses: 228, lines: ['"Hi [Name]! Great meeting you today. As promised, I\'ve sent the proposal to your email. Let me know if you have questions \u2014 happy to walk through it."', '"I\'ll follow up in 3 days. In the meantime, feel free to WhatsApp me anytime \uD83D\uDE0A"'] },
+        ],
+      },
+      {
+        label: 'Objection Handling',
+        scripts: [
+          { title: '"I need to think about it"', uses: 673, lines: ['"Of course, this is an important decision. Can I ask what specifically you\'d like to think through? That way I can make sure you have all the info you need."', '"Usually when clients say that, there\'s either a concern about affordability, timing, or they\'re not 100% sure it\'s suitable. Which of those resonates most with you?"'] },
+          { title: '"I\'m already covered through work"', uses: 445, lines: ['"Group coverage is a great starting point. The challenge is \u2014 if you leave the company, the coverage stops. Personal coverage follows you regardless."', '"Also, most group policies don\'t cover critical illness or total permanent disability. Can I do a quick gap analysis so you can see exactly where you stand?"'] },
+          { title: '"I can\'t afford it right now"', uses: 389, lines: ['"I totally understand. The good news is protection doesn\'t have to start big. We can start with the essentials \u2014 sometimes as low as $80-100/month \u2014 and build from there."', '"The real risk is not having coverage and something happening. Let me show you what the bare minimum looks like."'] },
+        ],
+      },
+      {
+        label: 'Referral',
+        scripts: [
+          { title: 'After Successful Policy', uses: 157, lines: ['"[Name], really glad we got your coverage sorted. Quick question \u2014 do you have a friend or family member who might benefit from the same peace of mind?"', '"I work on referrals mostly, so any intro you can make would mean a lot. I promise to take good care of them."'] },
+          { title: 'Referral Introduction', uses: 93, lines: ['"Hi [Referral Name], I\'m Leo \u2014 [Client Name] suggested I reach out. I helped them with their financial planning recently and they thought you might find it useful too."', '"No hard sell, I promise. Happy to just do a free 20-minute coverage check to give you a clearer picture."'] },
+        ],
+      },
+      {
+        label: 'Servicing',
+        scripts: [
+          { title: 'Annual Policy Review', uses: 208, lines: ['"Hi [Name]! It\'s been about a year since we set up your policy. I\'d love to do a quick annual review \u2014 life changes and we want to make sure you\'re still fully covered."', '"Takes 30 minutes, and we can do it over Zoom. When works best for you this month?"'] },
+          { title: 'Birthday/Life Event', uses: 176, lines: ['"Happy birthday [Name]! \uD83C\uDF89 Hope you have an amazing year ahead. Just a quick check-in \u2014 any big life changes this year? New job, house, baby? Those can affect your coverage needs."', '"No rush to review now, but whenever you\'re ready, I\'m here. Take care!"'] },
+        ],
+      },
+    ];
+
+    /* Category tab bar */
+    var catBar = document.createElement('div');
+    catBar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;';
+
+    var scriptPanes = {};
+
+    scriptCats.forEach(function(cat, ci) {
+      var btn = document.createElement('button');
+      btn.id = 'cpScriptTab_' + ci;
+      btn.style.cssText = [
+        'background:var(--bg3)',
+        'border:1px solid var(--border)',
+        'border-radius:var(--radius-pill)',
+        'color:var(--text3)',
+        'font-size:0.72rem',
+        'font-weight:600',
+        'padding:5px 12px',
+        'cursor:pointer',
+        'transition:all 0.2s',
+      ].join(';');
+      btn.textContent = cat.label;
+      btn.onclick = function() { compassScriptTab(ci, scriptCats.length); };
+      catBar.appendChild(btn);
+
+      var sp = document.createElement('div');
+      sp.id = 'cpScriptPane_' + ci;
+      sp.style.display = 'none';
+      sp.style.cssText += 'display:none;';
+
+      var sg = document.createElement('div');
+      sg.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+
+      cat.scripts.forEach(function(sc, si) {
+        var card = document.createElement('div');
+        card.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;';
+
+        var cardTop = document.createElement('div');
+        cardTop.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
+
+        var cardTitle = document.createElement('div');
+        cardTitle.style.cssText = 'font-size:0.8rem;font-weight:700;color:var(--text);';
+        cardTitle.textContent = sc.title;
+
+        var usageBadge = document.createElement('div');
+        usageBadge.style.cssText = 'font-size:0.65rem;color:var(--text3);background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-pill);padding:2px 8px;';
+        usageBadge.textContent = sc.uses + ' uses';
+
+        cardTop.appendChild(cardTitle);
+        cardTop.appendChild(usageBadge);
+        card.appendChild(cardTop);
+
+        sc.lines.forEach(function(line) {
+          var lineEl = document.createElement('div');
+          lineEl.style.cssText = 'font-size:0.75rem;color:var(--text2);line-height:1.5;margin-bottom:5px;font-style:italic;border-left:2px solid var(--border);padding-left:10px;';
+          lineEl.textContent = line;
+          card.appendChild(lineEl);
+        });
+
+        var copyBtn = document.createElement('button');
+        copyBtn.style.cssText = [
+          'background:transparent',
+          'border:1px solid var(--border)',
+          'border-radius:var(--radius-sm)',
+          'color:var(--primary-light)',
+          'font-size:0.7rem',
+          'font-weight:600',
+          'padding:5px 12px',
+          'cursor:pointer',
+          'margin-top:8px',
+          'transition:all 0.2s',
+        ].join(';');
+        copyBtn.textContent = 'Copy Script';
+        copyBtn.onclick = (function(btn, lines) {
+          return function() {
+            btn.textContent = 'Copied!';
+            btn.style.color = 'var(--green-bright)';
+            btn.style.borderColor = 'var(--green-bright)';
+            setTimeout(function() {
+              btn.textContent = 'Copy Script';
+              btn.style.color = 'var(--primary-light)';
+              btn.style.borderColor = 'var(--border)';
+            }, 1500);
+          };
+        })(copyBtn, sc.lines);
+
+        card.appendChild(copyBtn);
+        sg.appendChild(card);
+      });
+
+      sp.appendChild(sg);
+      scriptPanes[ci] = sp;
+      pane.appendChild(sp);
+    });
+
+    pane.insertBefore(catBar, scriptPanes[0]);
+
+    /* expose for onclick */
+    window._compassScriptPaneCount = scriptCats.length;
+
+    /* Default: show first category */
+    setTimeout(function() { compassScriptTab(0, scriptCats.length); }, 0);
+  })();
+
+  /* ============================================================
+     PANE 5: QUESTION BANK
+     ============================================================ */
+  (function() {
+    var pane = panes.qbank;
+
+    var heading = document.createElement('div');
+    heading.className = 'demo-section-heading';
+    heading.style.cssText = 'margin-top:0;margin-bottom:14px;';
+    heading.textContent = 'Question Bank';
+    pane.appendChild(heading);
+
+    /* Stats bar */
+    var statsBar = document.createElement('div');
+    statsBar.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;';
+    var stats = [
+      { label: 'Available', val: '1,024' },
+      { label: 'Attempted', val: '342' },
+      { label: 'Accuracy', val: '78%', color: 'var(--green-bright)' },
+    ];
+    stats.forEach(function(s) {
+      var st = document.createElement('div');
+      st.style.cssText = 'display:flex;flex-direction:column;';
+      var sv = document.createElement('div');
+      sv.style.cssText = 'font-size:1rem;font-weight:800;color:' + (s.color || 'var(--text)') + ';line-height:1;';
+      sv.textContent = s.val;
+      var sl = document.createElement('div');
+      sl.style.cssText = 'font-size:0.65rem;color:var(--text3);margin-top:2px;';
+      sl.textContent = s.label;
+      st.appendChild(sv);
+      st.appendChild(sl);
+      statsBar.appendChild(st);
+    });
+    pane.appendChild(statsBar);
+
+    /* Module selector */
+    var modules = ['M9', 'M9A', 'HI', 'RES5'];
+    var modBar = document.createElement('div');
+    modBar.style.cssText = 'display:flex;gap:6px;margin-bottom:14px;';
+    modules.forEach(function(m, mi) {
+      var btn = document.createElement('button');
+      btn.id = 'cpQMod_' + mi;
+      btn.style.cssText = [
+        'background:' + (mi === 0 ? 'var(--primary)' : 'var(--bg3)'),
+        'border:1px solid ' + (mi === 0 ? 'var(--primary-light)' : 'var(--border)'),
+        'border-radius:var(--radius-pill)',
+        'color:' + (mi === 0 ? '#fff' : 'var(--text3)'),
+        'font-size:0.75rem',
+        'font-weight:700',
+        'padding:5px 14px',
+        'cursor:pointer',
+        'transition:all 0.2s',
+      ].join(';');
+      btn.textContent = m;
+      btn.onclick = function() {
+        modules.forEach(function(_, j) {
+          var b = document.getElementById('cpQMod_' + j);
+          if (!b) return;
+          b.style.background = j === mi ? 'var(--primary)' : 'var(--bg3)';
+          b.style.borderColor = j === mi ? 'var(--primary-light)' : 'var(--border)';
+          b.style.color = j === mi ? '#fff' : 'var(--text3)';
+        });
+      };
+      modBar.appendChild(btn);
+    });
+    pane.appendChild(modBar);
+
+    /* Progress indicator */
+    var qProgress = document.createElement('div');
+    qProgress.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px;';
+    var qProgText = document.createElement('span');
+    qProgText.style.cssText = 'font-size:0.72rem;color:var(--text3);white-space:nowrap;';
+    qProgText.textContent = 'Question 3 of 10 \u2014 M9 Life Insurance';
+    var qProgBar = document.createElement('div');
+    qProgBar.style.cssText = 'flex:1;height:5px;background:var(--bg3);border-radius:99px;overflow:hidden;';
+    var qProgFill = document.createElement('div');
+    qProgFill.style.cssText = 'height:100%;width:30%;background:var(--primary-light);border-radius:99px;transition:width 0.4s;';
+    qProgBar.appendChild(qProgFill);
+    qProgress.appendChild(qProgText);
+    qProgress.appendChild(qProgBar);
+    pane.appendChild(qProgress);
+
+    /* Question card */
+    var qCard = document.createElement('div');
+    qCard.className = 'chart-container';
+    qCard.style.cssText = 'padding:16px;margin-bottom:0;';
+
+    var qText = document.createElement('div');
+    qText.style.cssText = 'font-size:0.85rem;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:16px;';
+    qText.textContent = 'Which of the following is NOT a standard exclusion in a typical life insurance policy?';
+    qCard.appendChild(qText);
+
+    var qOpts = [
+      { letter: 'A', text: 'Suicide within the first year' },
+      { letter: 'B', text: 'Death from pre-existing conditions after 2 years', correct: true },
+      { letter: 'C', text: 'Death due to war or military service' },
+      { letter: 'D', text: 'Death from illegal activities' },
+    ];
+
+    var qOptsList = document.createElement('div');
+    qOptsList.id = 'compassQBankOptions';
+    qOptsList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+
+    qOpts.forEach(function(opt, i) {
+      var row = document.createElement('div');
+      row.id = 'compassQOpt_' + i;
+      row.style.cssText = [
+        'display:flex',
+        'align-items:flex-start',
+        'gap:10px',
+        'background:var(--bg1)',
+        'border:1px solid var(--border)',
+        'border-radius:var(--radius-sm)',
+        'padding:10px 12px',
+        'cursor:pointer',
+        'transition:border-color 0.2s,background 0.2s',
+      ].join(';');
+
+      var letter = document.createElement('div');
+      letter.id = 'compassQLetter_' + i;
+      letter.style.cssText = 'width:24px;height:24px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:var(--text2);flex-shrink:0;';
+      letter.textContent = opt.letter;
+
+      var optTxt = document.createElement('span');
+      optTxt.style.cssText = 'font-size:0.78rem;color:var(--text);line-height:1.4;padding-top:2px;';
+      optTxt.textContent = opt.text;
+
+      row.onmouseover = function() { if (!row.dataset.answered) row.style.borderColor = 'var(--primary-light)'; };
+      row.onmouseout  = function() { if (!row.dataset.answered) row.style.borderColor = 'var(--border)'; };
+      row.onclick = function() { compassSelectQBank(i, qOpts); };
+
+      row.appendChild(letter);
+      row.appendChild(optTxt);
+      qOptsList.appendChild(row);
+    });
+
+    qCard.appendChild(qOptsList);
+
+    var qExplain = document.createElement('div');
+    qExplain.id = 'compassQExplain';
+    qExplain.style.cssText = 'display:none;margin-top:12px;background:rgba(52,211,153,0.08);border:1px solid var(--green-bright);border-radius:var(--radius-sm);padding:12px;font-size:0.78rem;color:var(--text2);line-height:1.5;';
+    qExplain.textContent = '\u2713 Correct! After the 2-year contestability period, pre-existing conditions are generally covered. The incontestability clause protects policyholders from claim denial after this period.';
+    qCard.appendChild(qExplain);
+
+    pane.appendChild(qCard);
+  })();
+
+  /* ============================================================
+     PANE 6: AI ROLEPLAY
+     ============================================================ */
+  (function() {
+    var pane = panes.roleplay;
+
+    var heading = document.createElement('div');
+    heading.className = 'demo-section-heading';
+    heading.style.cssText = 'margin-top:0;margin-bottom:6px;';
+    heading.textContent = 'AI Roleplay Coach';
+    pane.appendChild(heading);
+
+    /* Scenario context */
+    var scenarioBox = document.createElement('div');
+    scenarioBox.style.cssText = 'background:rgba(107,155,219,0.1);border:1px solid var(--primary-light);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:0.75rem;color:var(--primary-light);font-weight:600;';
+    scenarioBox.textContent = 'Scenario: Mr. Tan, 38, married with 2 kids. Employed, asking about retirement planning. No existing coverage review done.';
+    pane.appendChild(scenarioBox);
+
+    /* Chat window */
+    var chatWin = document.createElement('div');
+    chatWin.id = 'cpRoleplayChatWin';
+    chatWin.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;min-height:100px;';
+
+    /* Client avatar row */
+    var clientRow = document.createElement('div');
+    clientRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;';
+
+    var avatar = document.createElement('div');
+    avatar.style.cssText = 'width:34px;height:34px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;color:#fff;flex-shrink:0;';
+    avatar.textContent = 'T';
+
+    var clientMsgWrap = document.createElement('div');
+    var clientName = document.createElement('div');
+    clientName.style.cssText = 'font-size:0.65rem;color:var(--text3);margin-bottom:4px;font-weight:600;';
+    clientName.textContent = 'Mr. Tan (Client)';
+
+    var clientBubble = document.createElement('div');
+    clientBubble.style.cssText = 'background:var(--bg1);border-radius:0 8px 8px 8px;padding:10px 12px;font-size:0.78rem;color:var(--text);line-height:1.5;max-width:85%;';
+    clientBubble.textContent = "I'm 38 years old and honestly I haven't done any proper financial planning. My wife and I are both working but we're worried \u2014 if something happens to me, will my family be okay? We have two kids in primary school.";
+
+    clientMsgWrap.appendChild(clientName);
+    clientMsgWrap.appendChild(clientBubble);
+    clientRow.appendChild(avatar);
+    clientRow.appendChild(clientMsgWrap);
+    chatWin.appendChild(clientRow);
+    pane.appendChild(chatWin);
+
+    /* Response options */
+    var responseLabel = document.createElement('div');
+    responseLabel.id = 'cpRoleplayRespLabel';
+    responseLabel.style.cssText = 'font-size:0.75rem;color:var(--text2);font-weight:600;margin-bottom:8px;';
+    responseLabel.textContent = 'Choose your response as the advisor:';
+    pane.appendChild(responseLabel);
+
+    var optionsList = document.createElement('div');
+    optionsList.id = 'cpRoleplayOptions';
+    optionsList.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:12px;';
+
+    var roleplayOpts = [
+      { text: "Mr. Tan, I totally understand your concern. Before I recommend anything, I'd like to understand your full picture \u2014 your income, existing protection, and what your goals are for the family. May I ask a few questions?", score: 9, good: true, feedback: 'Excellent needs-based approach. You\'re showing empathy and following MAS FAA suitability guidelines by gathering information before recommending. Score: 9/10 \u2014 Strong opening, builds trust.' },
+      { text: "You need term life insurance immediately. At 38 with two kids, you should have at least $1M coverage. Let me prepare a quote.", score: 5, good: false, feedback: 'Product-first approach without needs analysis is a compliance risk. You haven\'t confirmed his existing coverage, income, or liabilities. Score: 5/10 \u2014 Right instinct, wrong process.' },
+      { text: "Don\u2019t worry, I\u2019ll take care of everything. Just tell me your monthly budget and I\u2019ll find something suitable.", score: 3, good: false, feedback: 'Overly casual and skips the fact-find entirely. \u201cJust tell me your budget\u201d implies budget-fitting rather than needs-based planning. Non-compliant with suitability requirements. Score: 3/10.' },
+    ];
+
+    roleplayOpts.forEach(function(opt, i) {
+      var btn = document.createElement('button');
+      btn.style.cssText = [
+        'background:var(--bg3)',
+        'border:1px solid var(--border)',
+        'border-radius:var(--radius-sm)',
+        'color:var(--text)',
+        'font-size:0.75rem',
+        'padding:10px 12px',
+        'text-align:left',
+        'cursor:pointer',
+        'line-height:1.4',
+        'transition:border-color 0.2s,background 0.2s',
+      ].join(';');
+      btn.textContent = 'Option ' + (i + 1) + ': ' + opt.text;
+      btn.onmouseover = function() { this.style.borderColor = 'var(--primary-light)'; };
+      btn.onmouseout  = function() { this.style.borderColor = 'var(--border)'; };
+      btn.onclick = (function(o) {
+        return function() { compassRoleplaySelect(o); };
+      })(opt);
+      optionsList.appendChild(btn);
+    });
+
+    pane.appendChild(optionsList);
+
+    /* AI feedback area */
+    var feedback = document.createElement('div');
+    feedback.id = 'cpRoleplayFeedback';
+    feedback.style.display = 'none';
+    pane.appendChild(feedback);
+  })();
+
+  /* ============================================================
+     PANE 7: VIDEO LECTURES
+     ============================================================ */
+  (function() {
+    var pane = panes.videos;
+
+    var heading = document.createElement('div');
+    heading.className = 'demo-section-heading';
+    heading.style.cssText = 'margin-top:0;margin-bottom:14px;';
+    heading.textContent = 'Video Lectures';
+    pane.appendChild(heading);
+
+    var lectures = [
+      { title: 'Understanding Whole Life Insurance', duration: '12:30', watched: 100, notes: 3 },
+      { title: 'CPF & Retirement Planning',          duration: '18:45', watched: 65,  notes: 5 },
+      { title: 'Objection Handling Masterclass',      duration: '24:12', watched: 30,  notes: 1 },
+      { title: 'First Client Meeting Framework',      duration: '09:58', watched: 0,   notes: 0 },
+    ];
+
+    var videoGrid = document.createElement('div');
+    videoGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px;';
+
+    lectures.forEach(function(lec, i) {
+      var card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;cursor:pointer;transition:border-color 0.2s;';
+      card.onmouseover = function() { card.style.borderColor = 'var(--primary-light)'; };
+      card.onmouseout  = function() { card.style.borderColor = 'var(--border)'; };
+
+      /* Thumbnail */
+      var thumb = document.createElement('div');
+      thumb.style.cssText = 'background:var(--bg1);height:100px;display:flex;align-items:center;justify-content:center;position:relative;';
+      var playBtn = document.createElement('div');
+      playBtn.style.cssText = 'width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;';
+      playBtn.innerHTML = '<svg width="12" height="14" viewBox="0 0 12 14" fill="none"><path d="M1 1L11 7L1 13V1Z" fill="#fff"/></svg>';
+      var durBadge = document.createElement('div');
+      durBadge.style.cssText = 'position:absolute;bottom:6px;right:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:0.62rem;font-weight:700;padding:2px 6px;border-radius:3px;';
+      durBadge.textContent = lec.duration;
+      thumb.appendChild(playBtn);
+      thumb.appendChild(durBadge);
+
+      /* Video info */
+      var info = document.createElement('div');
+      info.style.cssText = 'padding:10px 12px 12px;';
+
+      var vtitle = document.createElement('div');
+      vtitle.style.cssText = 'font-size:0.78rem;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:8px;';
+      vtitle.textContent = lec.title;
+
+      /* Progress bar */
+      var vpWrap = document.createElement('div');
+      vpWrap.style.cssText = 'background:var(--bg1);border-radius:99px;height:4px;margin-bottom:6px;overflow:hidden;';
+      var vpFill = document.createElement('div');
+      var vpColor = lec.watched === 100 ? 'var(--green-bright)' : lec.watched > 0 ? 'var(--primary-light)' : 'var(--border)';
+      vpFill.style.cssText = 'height:100%;width:' + lec.watched + '%;background:' + vpColor + ';border-radius:99px;';
+      vpWrap.appendChild(vpFill);
+
+      var vMeta = document.createElement('div');
+      vMeta.style.cssText = 'display:flex;align-items:center;justify-content:space-between;font-size:0.65rem;color:var(--text3);';
+      var vWatched = document.createElement('span');
+      vWatched.textContent = lec.watched === 100 ? '\u2713 Completed' : lec.watched + '% watched';
+      if (lec.watched === 100) vWatched.style.color = 'var(--green-bright)';
+      var vNotes = document.createElement('span');
+      vNotes.textContent = lec.notes > 0 ? '\uD83D\uDCDD ' + lec.notes + ' notes' : '';
+      vMeta.appendChild(vWatched);
+      vMeta.appendChild(vNotes);
+
+      info.appendChild(vtitle);
+      info.appendChild(vpWrap);
+      info.appendChild(vMeta);
+
+      card.appendChild(thumb);
+      card.appendChild(info);
+      videoGrid.appendChild(card);
+    });
+
+    pane.appendChild(videoGrid);
+
+    /* AI Summary section */
+    var aiSummary = document.createElement('div');
+    aiSummary.className = 'chart-container';
+    aiSummary.style.cssText = 'padding:14px;margin-bottom:0;';
+
+    var aiTitle = document.createElement('div');
+    aiTitle.style.cssText = 'font-size:0.7rem;color:var(--purple);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;';
+    aiTitle.innerHTML = '<span style="font-size:0.85rem;">\u2728</span> AI Summary \u2014 CPF & Retirement Planning';
+    aiSummary.appendChild(aiTitle);
+
+    var summaryPoints = [
+      'CPF Life provides a lifelong monthly payout from age 65. There are three plans (Basic, Standard, Escalating) \u2014 choosing depends on your client\u2019s need for legacy vs income certainty.',
+      'The Full Retirement Sum (FRS) for 2025 is $205,800. Clients who top up early benefit from compounding at 4\u20136% p.a. on their SA/RA balances.',
+      'Private annuities complement CPF Life for clients above the FRS, offering additional guaranteed income, critical illness riders, and more flexible payout structures.',
+    ];
+
+    summaryPoints.forEach(function(pt) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg1);font-size:0.76rem;color:var(--text2);line-height:1.5;';
+      var bullet = document.createElement('div');
+      bullet.style.cssText = 'width:6px;height:6px;border-radius:50%;background:var(--purple);flex-shrink:0;margin-top:6px;';
+      var ptText = document.createElement('span');
+      ptText.textContent = pt;
+      row.appendChild(bullet);
+      row.appendChild(ptText);
+      aiSummary.appendChild(row);
+    });
+
+    pane.appendChild(aiSummary);
+  })();
+
+  /* ---- Activate first tab ---- */
+  compassTab('track');
 };
 
 /* ---- Compass helpers (global) ---- */
-function toggleModule(id) {
-  var card    = document.getElementById('compassCard_' + id);
-  var lessons = document.getElementById('compassLessons_' + id);
-  if (!lessons) return;
-  var open = lessons.style.display !== 'none';
-  lessons.style.display = open ? 'none' : 'block';
-  if (card) card.style.borderColor = open ? '' : 'var(--primary-light)';
+function compassTab(id) {
+  var subtabs = ['track', 'products', 'cards', 'scripts', 'qbank', 'roleplay', 'videos'];
+  subtabs.forEach(function(st) {
+    var pane = document.getElementById('cpPane_' + st);
+    var btn  = document.getElementById('cpTab_' + st);
+    if (!pane || !btn) return;
+    var active = st === id;
+    pane.style.display = active ? 'block' : 'none';
+    btn.style.color       = active ? 'var(--primary-light)' : 'var(--text3)';
+    btn.style.borderColor = active ? 'var(--primary-light)' : 'transparent';
+  });
 }
 
-function selectChatOption(idx) {
-  var optionsList  = document.getElementById('compassOptionsList');
-  var optionsLabel = document.getElementById('compassOptionsLabel');
-  var chatBubbles  = document.getElementById('compassChatBubbles');
-  var aiFeedback   = document.getElementById('compassAiFeedback');
-  if (!optionsList || !chatBubbles || !aiFeedback) return;
-
-  var chatOptions = [
-    "You should invest in unit trusts \u2014 they give the best returns over the long term.",
-    "Let\u2019s first understand your full financial picture \u2014 income, expenses, insurance coverage, and goals. Then we can build a plan that balances protection and growth.",
-    "At 35, you still have 30 years before retirement. $50k is a good start. I\u2019d recommend putting it all into an ILP immediately.",
-  ];
-
-  // Show advisor bubble
-  var advBubble = document.createElement('div');
-  advBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;';
-
-  var advLabel = document.createElement('div');
-  advLabel.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-bottom:4px;';
-  advLabel.textContent = 'You (Advisor)';
-
-  var advMsg = document.createElement('div');
-  advMsg.style.cssText = [
-    'background:var(--primary)',
-    'border-radius:8px 0 8px 8px',
-    'padding:10px 12px',
-    'font-size:0.78rem',
-    'color:#fff',
-    'line-height:1.5',
-    'max-width:90%',
-  ].join(';');
-  advMsg.textContent = chatOptions[idx];
-
-  advBubble.appendChild(advLabel);
-  advBubble.appendChild(advMsg);
-  chatBubbles.appendChild(advBubble);
-
-  // Hide options
-  optionsList.style.display = 'none';
-  if (optionsLabel) optionsLabel.style.display = 'none';
-
-  // Show AI feedback
-  var feedbacks = [
-    {
-      type: 'warning',
-      text: 'Too product-focused too early. You haven\u2019t assessed the client\u2019s needs yet. Always conduct a needs analysis before making any product recommendations.',
-    },
-    {
-      type: 'success',
-      text: 'Excellent response! You\u2019re following the needs-based advisory approach. By gathering a full financial picture first, you demonstrate professionalism and compliance with MAS suitability guidelines.',
-    },
-    {
-      type: 'warning',
-      text: 'Jumping straight to product recommendation without needs analysis is a compliance risk. Recommending a specific product (ILP) before assessing the client\u2019s risk profile and full financial situation may breach FAA suitability requirements.',
-    },
-  ];
-
-  var f = feedbacks[idx];
-  var isSuccess = f.type === 'success';
-  aiFeedback.style.cssText = [
-    'display:block',
-    'margin-top:12px',
-    'border-radius:var(--radius-sm)',
-    'padding:12px',
-    'font-size:0.78rem',
-    'line-height:1.5',
-    'background:' + (isSuccess ? 'rgba(52,211,153,0.1)' : 'rgba(245,158,11,0.1)'),
-    'border:1px solid ' + (isSuccess ? 'var(--green-bright)' : 'var(--amber)'),
-    'color:' + (isSuccess ? 'var(--green-bright)' : 'var(--amber)'),
-  ].join(';');
-
-  var icon = isSuccess ? '\u2713 AI Feedback: ' : '\u26A0 AI Feedback: ';
-  aiFeedback.textContent = icon + f.text;
+function compassScriptTab(idx, total) {
+  for (var i = 0; i < total; i++) {
+    var sp = document.getElementById('cpScriptPane_' + i);
+    var sb = document.getElementById('cpScriptTab_' + i);
+    if (!sp || !sb) continue;
+    var active = i === idx;
+    sp.style.display    = active ? 'block' : 'none';
+    sb.style.background = active ? 'var(--primary)' : 'var(--bg3)';
+    sb.style.borderColor= active ? 'var(--primary-light)' : 'var(--border)';
+    sb.style.color      = active ? '#fff' : 'var(--text3)';
+  }
 }
 
-function selectExam(idx) {
-  var optsList = document.getElementById('compassExamOptions');
-  var explanation = document.getElementById('compassExamExplanation');
+function compassSelectQBank(idx, opts) {
+  var optsList    = document.getElementById('compassQBankOptions');
+  var explanation = document.getElementById('compassQExplain');
   if (!optsList) return;
 
-  // Prevent re-clicking
-  var opts = optsList.querySelectorAll('[id^="compassExamOpt_"]');
-  if (opts[0] && opts[0].dataset.answered) return;
+  var rows = optsList.querySelectorAll('[id^="compassQOpt_"]');
+  if (rows[0] && rows[0].dataset.answered) return;
 
-  var correctIdx = 1; // Option B
+  var correctIdx = opts.findIndex(function(o) { return o.correct; });
 
-  opts.forEach(function(opt, i) {
-    opt.dataset.answered = '1';
-    opt.style.cursor = 'default';
-    opt.onmouseover = null;
-    opt.onmouseout  = null;
-    opt.onclick     = null;
+  rows.forEach(function(row, i) {
+    row.dataset.answered = '1';
+    row.style.cursor = 'default';
+    row.onmouseover = null;
+    row.onmouseout  = null;
+    row.onclick     = null;
 
-    var letter = document.getElementById('compassExamLetter_' + i);
+    var letter = document.getElementById('compassQLetter_' + i);
 
     if (i === correctIdx) {
-      opt.style.background    = 'rgba(52,211,153,0.1)';
-      opt.style.borderColor   = 'var(--green-bright)';
-      if (letter) {
-        letter.style.background   = 'var(--green-bright)';
-        letter.style.borderColor  = 'var(--green-bright)';
-        letter.style.color        = '#0a0f1a';
-      }
+      row.style.background  = 'rgba(52,211,153,0.1)';
+      row.style.borderColor = 'var(--green-bright)';
+      if (letter) { letter.style.background = 'var(--green-bright)'; letter.style.color = '#0a0f1a'; letter.style.borderColor = 'var(--green-bright)'; }
     } else if (i === idx && idx !== correctIdx) {
-      opt.style.background    = 'rgba(239,68,68,0.1)';
-      opt.style.borderColor   = 'var(--red)';
-      if (letter) {
-        letter.style.background   = 'var(--red)';
-        letter.style.borderColor  = 'var(--red)';
-        letter.style.color        = '#fff';
-      }
+      row.style.background  = 'rgba(239,68,68,0.1)';
+      row.style.borderColor = 'var(--red)';
+      if (letter) { letter.style.background = 'var(--red)'; letter.style.color = '#fff'; letter.style.borderColor = 'var(--red)'; }
     }
   });
 
-  if (explanation) explanation.style.display = 'block';
+  if (explanation) {
+    if (idx === correctIdx) {
+      explanation.style.display = 'block';
+    } else {
+      explanation.style.background = 'rgba(239,68,68,0.08)';
+      explanation.style.borderColor = 'var(--red)';
+      explanation.style.color = 'var(--text2)';
+      explanation.textContent = '\u2717 Incorrect. The correct answer is B. After the 2-year contestability period, pre-existing conditions are generally covered. The incontestability clause protects policyholders from claim denial after this window.';
+      explanation.style.display = 'block';
+    }
+  }
 }
+
+function compassRoleplaySelect(opt) {
+  var optionsList   = document.getElementById('cpRoleplayOptions');
+  var responseLabel = document.getElementById('cpRoleplayRespLabel');
+  var chatWin       = document.getElementById('cpRoleplayChatWin');
+  var feedbackEl    = document.getElementById('cpRoleplayFeedback');
+  if (!optionsList) return;
+
+  /* Advisor bubble */
+  var advRow = document.createElement('div');
+  advRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;margin-top:10px;';
+
+  var advLabel = document.createElement('div');
+  advLabel.style.cssText = 'font-size:0.65rem;color:var(--text3);margin-bottom:4px;font-weight:600;';
+  advLabel.textContent = 'You (Advisor)';
+
+  var advBubble = document.createElement('div');
+  advBubble.style.cssText = 'background:var(--primary);border-radius:8px 0 8px 8px;padding:10px 12px;font-size:0.78rem;color:#fff;line-height:1.5;max-width:85%;';
+  advBubble.textContent = opt.text;
+
+  advRow.appendChild(advLabel);
+  advRow.appendChild(advBubble);
+  if (chatWin) chatWin.appendChild(advRow);
+
+  /* Hide options */
+  optionsList.style.display = 'none';
+  if (responseLabel) responseLabel.style.display = 'none';
+
+  /* AI feedback */
+  if (feedbackEl) {
+    var isGood = opt.good;
+    feedbackEl.style.cssText = [
+      'display:block',
+      'padding:12px 14px',
+      'border-radius:var(--radius-sm)',
+      'font-size:0.78rem',
+      'line-height:1.6',
+      'background:' + (isGood ? 'rgba(52,211,153,0.1)' : 'rgba(245,158,11,0.1)'),
+      'border:1px solid ' + (isGood ? 'var(--green-bright)' : 'var(--amber)'),
+      'color:' + (isGood ? 'var(--green-bright)' : 'var(--amber)'),
+    ].join(';');
+
+    var scoreEl = document.createElement('div');
+    scoreEl.style.cssText = 'font-weight:800;font-size:0.9rem;margin-bottom:6px;';
+    scoreEl.textContent = (isGood ? '\u2713' : '\u26A0') + ' Score: ' + opt.score + '/10';
+
+    var fbText = document.createElement('div');
+    fbText.style.cssText = 'color:var(--text2);font-size:0.76rem;line-height:1.5;';
+    fbText.textContent = opt.feedback;
+
+    feedbackEl.innerHTML = '';
+    feedbackEl.appendChild(scoreEl);
+    feedbackEl.appendChild(fbText);
+  }
+}
+
+/* Legacy stubs kept for safety (no longer called) */
+function toggleModule() {}
+function selectChatOption() {}
+function selectExam() {}
 
 /* ============================================================
    AD LAUNCHPAD DEMO — 5-step campaign wizard
