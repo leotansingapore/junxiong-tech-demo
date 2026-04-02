@@ -278,16 +278,6 @@ DEMO_RENDERERS.calculator = function(container) {
   var fmtDollar = function(v) { return '$' + Math.round(Number(v)).toLocaleString(); };
   var fmtPct    = function(v) { return parseFloat(v).toFixed(1) + '%'; };
 
-  /* --- State --- */
-  var cfg = {
-    duration:       10,
-    monthlyPremium: 500,
-    returnRate:     7,
-    feeRate:        1.5,
-    premiumHoliday: false,
-    dividendMode:   false,
-  };
-
   /* ---- SECTION HEADER helper ---- */
   function sectionHeader(text) {
     var h = document.createElement('div');
@@ -304,6 +294,83 @@ DEMO_RENDERERS.calculator = function(container) {
     h.textContent = text;
     return h;
   }
+
+  /* ======================================================
+     TAB BAR
+     ====================================================== */
+  var TAB_DEFS = [
+    { id: 'plan',       label: 'Plan Simulator' },
+    { id: 'retirement', label: 'Retirement Planner' },
+    { id: 'insurance',  label: 'Insurance Needs' },
+    { id: 'tools',      label: 'All 50+ Tools' },
+  ];
+
+  var tabBar = document.createElement('div');
+  tabBar.style.cssText = [
+    'display:flex',
+    'gap:4px',
+    'margin-bottom:20px',
+    'background:var(--surface2)',
+    'border:1px solid var(--border)',
+    'border-radius:10px',
+    'padding:4px',
+    'flex-wrap:wrap',
+  ].join(';');
+
+  var panels = {};
+  var tabBtns = {};
+  var activeTab = 'plan';
+
+  function switchTab(id) {
+    activeTab = id;
+    TAB_DEFS.forEach(function(t) {
+      var isActive = t.id === id;
+      tabBtns[t.id].style.background = isActive ? 'var(--accent)' : 'transparent';
+      tabBtns[t.id].style.color      = isActive ? '#fff' : 'var(--text3)';
+      panels[t.id].style.display     = isActive ? 'block' : 'none';
+    });
+    /* Trigger chart re-renders when switching to a tab that has a canvas */
+    if (id === 'plan')       { setTimeout(updateSim, 0); }
+    if (id === 'retirement') { setTimeout(updateRetirement, 0); }
+  }
+
+  TAB_DEFS.forEach(function(t) {
+    var btn = document.createElement('button');
+    btn.textContent = t.label;
+    btn.style.cssText = [
+      'padding:7px 14px',
+      'font-size:0.82rem',
+      'font-weight:600',
+      'border-radius:7px',
+      'border:none',
+      'cursor:pointer',
+      'transition:background .15s,color .15s',
+      'background:transparent',
+      'color:var(--text3)',
+      'white-space:nowrap',
+    ].join(';');
+    btn.addEventListener('click', function() { switchTab(t.id); });
+    tabBtns[t.id] = btn;
+    tabBar.appendChild(btn);
+  });
+
+  container.appendChild(tabBar);
+
+  /* ======================================================
+     PANEL 1 — PLAN SIMULATOR (existing content)
+     ====================================================== */
+  var panelPlan = document.createElement('div');
+  panels['plan'] = panelPlan;
+
+  /* --- State --- */
+  var cfg = {
+    duration:       10,
+    monthlyPremium: 500,
+    returnRate:     7,
+    feeRate:        1.5,
+    premiumHoliday: false,
+    dividendMode:   false,
+  };
 
   /* ---- TWO-COLUMN LAYOUT ---- */
   var layout = document.createElement('div');
@@ -474,10 +541,11 @@ DEMO_RENDERERS.calculator = function(container) {
   /* ---- Assemble layout ---- */
   layout.appendChild(leftCol);
   layout.appendChild(rightCol);
-  container.appendChild(layout);
+  panelPlan.appendChild(layout);
+  container.appendChild(panelPlan);
 
   /* ======================================================
-     UPDATE FUNCTION
+     UPDATE FUNCTION — PLAN SIMULATOR
      ====================================================== */
   function updateSim() {
     var totals = invSimTotals(cfg);
@@ -517,11 +585,11 @@ DEMO_RENDERERS.calculator = function(container) {
         var tr = document.createElement('tr');
         tr.style.background = i % 2 === 0 ? 'var(--surface1,#111827)' : 'var(--surface2)';
         var cells = [
-          { text: r.year,                  center: true,  color: 'var(--text3)' },
-          { text: fmtDollar(cumulContrib), center: false, color: 'var(--text2)' },
+          { text: r.year,                    center: true,  color: 'var(--text3)' },
+          { text: fmtDollar(cumulContrib),   center: false, color: 'var(--text2)' },
           { text: '+' + fmtDollar(r.growth), center: false, color: '#34d399' },
           { text: '-' + fmtDollar(r.fees),   center: false, color: '#ef4444' },
-          { text: fmtDollar(r.balance),    center: false, color: '#6b9bdb', bold: true },
+          { text: fmtDollar(r.balance),      center: false, color: '#6b9bdb', bold: true },
         ];
         cells.forEach(function(c) {
           var td = document.createElement('td');
@@ -537,8 +605,426 @@ DEMO_RENDERERS.calculator = function(container) {
     }
   }
 
-  /* Initial render */
+  /* ======================================================
+     PANEL 2 — RETIREMENT PLANNER
+     ====================================================== */
+  var panelRetirement = document.createElement('div');
+  panelRetirement.style.display = 'none';
+  panels['retirement'] = panelRetirement;
+
+  var retCfg = { curAge: 30, retAge: 62, expenses: 4000, savings: 50000 };
+
+  var retLayout = document.createElement('div');
+  retLayout.style.cssText = 'display:grid;grid-template-columns:1fr 1.3fr;gap:24px;align-items:start;';
+  var retMq = window.matchMedia('(max-width:620px)');
+  retMq.addEventListener('change', function(e) {
+    retLayout.style.gridTemplateColumns = e.matches ? '1fr' : '1fr 1.3fr';
+  });
+  retLayout.style.gridTemplateColumns = retMq.matches ? '1fr' : '1fr 1.3fr';
+
+  /* Left col */
+  var retLeft = document.createElement('div');
+  retLeft.appendChild(sectionHeader('Retirement Parameters'));
+
+  var sRetCurAge = calcSlider('retCurAge', 'Current Age', 25, 60, 1, retCfg.curAge, function(v) { return v + ' yrs'; });
+  wireCalcSlider(sRetCurAge, 'retCurAgeVal', function(v) { return v + ' yrs'; }, function() {
+    retCfg.curAge = parseInt(document.getElementById('retCurAge').value, 10);
+    updateRetirement();
+  });
+  retLeft.appendChild(sRetCurAge);
+
+  var sRetRetAge = calcSlider('retRetAge', 'Retirement Age', 55, 70, 1, retCfg.retAge, function(v) { return v + ' yrs'; });
+  wireCalcSlider(sRetRetAge, 'retRetAgeVal', function(v) { return v + ' yrs'; }, function() {
+    retCfg.retAge = parseInt(document.getElementById('retRetAge').value, 10);
+    updateRetirement();
+  });
+  retLeft.appendChild(sRetRetAge);
+
+  var sRetExp = calcSlider('retExpenses', 'Monthly Expenses', 2000, 15000, 200, retCfg.expenses, fmtDollar);
+  wireCalcSlider(sRetExp, 'retExpensesVal', fmtDollar, function() {
+    retCfg.expenses = parseFloat(document.getElementById('retExpenses').value);
+    updateRetirement();
+  });
+  retLeft.appendChild(sRetExp);
+
+  var sRetSav = calcSlider('retSavings', 'Current Savings', 0, 500000, 5000, retCfg.savings, fmtDollar);
+  wireCalcSlider(sRetSav, 'retSavingsVal', fmtDollar, function() {
+    retCfg.savings = parseFloat(document.getElementById('retSavings').value);
+    updateRetirement();
+  });
+  retLeft.appendChild(sRetSav);
+
+  var retCards = document.createElement('div');
+  retCards.className = 'result-cards';
+  retCards.style.marginTop = '20px';
+  retCards.appendChild(calcCard('Total Needed', 'retTotalNeeded', ''));
+  retCards.appendChild(calcCard('Future Savings', 'retFutureSavings', 'green'));
+  retCards.appendChild(calcCard('Funding Gap', 'retGap', 'accent'));
+  retCards.appendChild(calcCard('Monthly Savings Needed', 'retMonthly', 'blue'));
+  retLeft.appendChild(retCards);
+
+  /* Right col */
+  var retRight = document.createElement('div');
+  retRight.appendChild(sectionHeader('Savings Projection'));
+
+  var retChartWrap = document.createElement('div');
+  retChartWrap.className = 'chart-container';
+  retChartWrap.style.marginBottom = '0';
+
+  var retCanvas = document.createElement('canvas');
+  retCanvas.id = 'retChart';
+  retChartWrap.appendChild(retCanvas);
+  retRight.appendChild(retChartWrap);
+
+  retLayout.appendChild(retLeft);
+  retLayout.appendChild(retRight);
+  panelRetirement.appendChild(retLayout);
+  container.appendChild(panelRetirement);
+
+  function updateRetirement() {
+    var cur = retCfg.curAge;
+    var ret = retCfg.retAge;
+    var exp = retCfg.expenses;
+    var sav = retCfg.savings;
+    var years = Math.max(ret - cur, 1);
+
+    var totalNeeded    = exp * 12 * (90 - ret);
+    var futureSavings  = sav * Math.pow(1.06, years);
+    var gap            = Math.max(totalNeeded - futureSavings, 0);
+    /* Monthly needed: annuity formula — FV = PMT * ((1+r)^n - 1) / r */
+    var r = 0.06 / 12;
+    var n = years * 12;
+    var monthlyNeeded  = gap > 0 ? gap * r / (Math.pow(1 + r, n) - 1) : 0;
+
+    function setEl(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
+    setEl('retTotalNeeded',   fmtDollar(totalNeeded));
+    setEl('retFutureSavings', fmtDollar(futureSavings));
+    setEl('retGap',           gap > 0 ? fmtDollar(gap) : 'Funded');
+    setEl('retMonthly',       gap > 0 ? fmtDollar(monthlyNeeded) + '/mo' : 'On Track');
+
+    /* Build projection series */
+    var series = [];
+    var bal = sav;
+    series.push({ value: bal, label: 'Now' });
+    for (var i = 1; i <= years; i++) {
+      bal = bal * 1.06 + monthlyNeeded * 12;
+      series.push({ value: bal, label: 'Yr ' + i });
+    }
+
+    var retChartEl = document.getElementById('retChart');
+    if (retChartEl) {
+      Charts.area(retChartEl, series, { color: '#34d399', height: 200, currency: true });
+    }
+  }
+
+  /* ======================================================
+     PANEL 3 — INSURANCE NEEDS
+     ====================================================== */
+  var panelInsurance = document.createElement('div');
+  panelInsurance.style.display = 'none';
+  panels['insurance'] = panelInsurance;
+
+  var insCfg = { income: 80000, dependents: 2, existing: 200000 };
+
+  var insLayout = document.createElement('div');
+  insLayout.style.cssText = 'display:grid;grid-template-columns:1fr 1.3fr;gap:24px;align-items:start;';
+  var insMq = window.matchMedia('(max-width:620px)');
+  insMq.addEventListener('change', function(e) {
+    insLayout.style.gridTemplateColumns = e.matches ? '1fr' : '1fr 1.3fr';
+  });
+  insLayout.style.gridTemplateColumns = insMq.matches ? '1fr' : '1fr 1.3fr';
+
+  var insLeft = document.createElement('div');
+  insLeft.appendChild(sectionHeader('Your Profile'));
+
+  var sInsIncome = calcSlider('insIncome', 'Annual Income', 30000, 300000, 5000, insCfg.income, fmtDollar);
+  wireCalcSlider(sInsIncome, 'insIncomeVal', fmtDollar, function() {
+    insCfg.income = parseFloat(document.getElementById('insIncome').value);
+    updateInsurance();
+  });
+  insLeft.appendChild(sInsIncome);
+
+  var sInsDeps = calcSlider('insDeps', 'Dependents', 0, 5, 1, insCfg.dependents, function(v) {
+    return v == 1 ? '1 person' : v + ' people';
+  });
+  wireCalcSlider(sInsDeps, 'insDepsVal', function(v) {
+    return v == 1 ? '1 person' : v + ' people';
+  }, function() {
+    insCfg.dependents = parseInt(document.getElementById('insDeps').value, 10);
+    updateInsurance();
+  });
+  insLeft.appendChild(sInsDeps);
+
+  var sInsExist = calcSlider('insExisting', 'Existing Coverage', 0, 1000000, 10000, insCfg.existing, fmtDollar);
+  wireCalcSlider(sInsExist, 'insExistingVal', fmtDollar, function() {
+    insCfg.existing = parseFloat(document.getElementById('insExisting').value);
+    updateInsurance();
+  });
+  insLeft.appendChild(sInsExist);
+
+  var insSummaryCards = document.createElement('div');
+  insSummaryCards.className = 'result-cards';
+  insSummaryCards.style.marginTop = '20px';
+  insSummaryCards.appendChild(calcCard('Total Needed', 'insTotalNeeded', ''));
+  insSummaryCards.appendChild(calcCard('Current Coverage', 'insCurrentCov', 'green'));
+  insSummaryCards.appendChild(calcCard('Coverage Gap', 'insGap', 'accent'));
+  insLeft.appendChild(insSummaryCards);
+
+  /* Right col — coverage bars */
+  var insRight = document.createElement('div');
+  insRight.appendChild(sectionHeader('Coverage Analysis'));
+
+  var insBarsWrap = document.createElement('div');
+  insBarsWrap.id = 'insBars';
+  insBarsWrap.style.cssText = 'display:flex;flex-direction:column;gap:16px;';
+  insRight.appendChild(insBarsWrap);
+
+  insLayout.appendChild(insLeft);
+  insLayout.appendChild(insRight);
+  panelInsurance.appendChild(insLayout);
+  container.appendChild(panelInsurance);
+
+  function updateInsurance() {
+    var inc  = insCfg.income;
+    var deps = insCfg.dependents;
+    var exist = insCfg.existing;
+
+    var coverages = [
+      { label: 'Death / TPD',           recommended: inc * (10 + deps * 2), color: '#6b9bdb' },
+      { label: 'Total Permanent Disability', recommended: inc * 8,          color: '#a78bfa' },
+      { label: 'Critical Illness',       recommended: inc * 4,               color: '#f59e0b' },
+      { label: 'Hospitalisation',        recommended: 200000,                color: '#34d399' },
+    ];
+
+    /* Distribute existing coverage proportionally to death bucket */
+    coverages[0].actual = Math.min(exist, coverages[0].recommended);
+    coverages[1].actual = Math.min(Math.max(exist - coverages[0].recommended, 0) * 0.5, coverages[1].recommended);
+    coverages[2].actual = Math.min(Math.max(exist - coverages[0].recommended, 0) * 0.3, coverages[2].recommended);
+    coverages[3].actual = Math.min(Math.max(exist - coverages[0].recommended, 0) * 0.2, coverages[3].recommended);
+
+    var totalNeeded = coverages.reduce(function(s, c) { return s + c.recommended; }, 0);
+    var totalActual = coverages.reduce(function(s, c) { return s + c.actual; }, 0);
+    var totalGap    = Math.max(totalNeeded - totalActual, 0);
+
+    function setEl(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
+    setEl('insTotalNeeded',  fmtDollar(totalNeeded));
+    setEl('insCurrentCov',   fmtDollar(totalActual));
+    setEl('insGap',          totalGap > 0 ? fmtDollar(totalGap) : 'Fully Covered');
+
+    var barsEl = document.getElementById('insBars');
+    if (!barsEl) return;
+    while (barsEl.firstChild) barsEl.removeChild(barsEl.firstChild);
+
+    coverages.forEach(function(cov) {
+      var pct     = Math.min(cov.actual / cov.recommended, 1);
+      var status  = pct >= 1 ? 'Adequate' : pct >= 0.5 ? 'Partial' : 'Gap';
+      var statusColor = pct >= 1 ? '#34d399' : pct >= 0.5 ? '#f59e0b' : '#ef4444';
+
+      var row = document.createElement('div');
+
+      var rowTop = document.createElement('div');
+      rowTop.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;';
+
+      var lbl = document.createElement('span');
+      lbl.style.cssText = 'font-size:0.82rem;color:var(--text2);font-weight:500;';
+      lbl.textContent = cov.label;
+
+      var badge = document.createElement('span');
+      badge.style.cssText = [
+        'font-size:0.72rem',
+        'font-weight:700',
+        'padding:2px 8px',
+        'border-radius:20px',
+        'background:' + statusColor + '22',
+        'color:' + statusColor,
+        'border:1px solid ' + statusColor + '55',
+      ].join(';');
+      badge.textContent = status;
+
+      rowTop.appendChild(lbl);
+      rowTop.appendChild(badge);
+      row.appendChild(rowTop);
+
+      /* Bar track */
+      var track = document.createElement('div');
+      track.style.cssText = 'height:8px;background:var(--surface3,#374151);border-radius:4px;overflow:hidden;';
+      var fill = document.createElement('div');
+      fill.style.cssText = 'height:100%;border-radius:4px;background:' + cov.color + ';transition:width .4s;width:' + (pct * 100).toFixed(1) + '%;';
+      track.appendChild(fill);
+      row.appendChild(track);
+
+      /* Sub-label */
+      var sub = document.createElement('div');
+      sub.style.cssText = 'display:flex;justify-content:space-between;margin-top:4px;font-size:0.72rem;color:var(--text3);';
+      var subLeft = document.createElement('span');
+      subLeft.textContent = 'Actual: ' + fmtDollar(cov.actual);
+      var subRight = document.createElement('span');
+      subRight.textContent = 'Recommended: ' + fmtDollar(cov.recommended);
+      sub.appendChild(subLeft);
+      sub.appendChild(subRight);
+      row.appendChild(sub);
+
+      barsEl.appendChild(row);
+    });
+  }
+
+  /* ======================================================
+     PANEL 4 — ALL 50+ TOOLS
+     ====================================================== */
+  var panelTools = document.createElement('div');
+  panelTools.style.display = 'none';
+  panels['tools'] = panelTools;
+
+  /* Header */
+  var toolsHeader = document.createElement('div');
+  toolsHeader.style.cssText = 'margin-bottom:20px;';
+  var toolsTitle = document.createElement('div');
+  toolsTitle.style.cssText = [
+    'font-size:0.72rem',
+    'font-weight:700',
+    'letter-spacing:.10em',
+    'text-transform:uppercase',
+    'color:var(--text3)',
+    'margin-bottom:4px',
+  ].join(';');
+  toolsTitle.textContent = '50+ FINANCIAL CALCULATORS \u00B7 ALL CATEGORIES';
+  var toolsSub = document.createElement('div');
+  toolsSub.style.cssText = 'font-size:0.82rem;color:var(--text3);';
+  toolsSub.textContent = 'Full-featured calculators with data models, interactive charts, and PDF export.';
+  toolsHeader.appendChild(toolsTitle);
+  toolsHeader.appendChild(toolsSub);
+  panelTools.appendChild(toolsHeader);
+
+  var TOOL_CATEGORIES = [
+    {
+      label: 'INVESTMENT PLANNING',
+      color: '#6b9bdb',
+      tools: [
+        'Long-Term Investment Illustrator',
+        '5-Year Investing Plan',
+        '8-Year Investing Plan',
+        'Hybrid Investment Plan',
+        'Smart Wealth Builder',
+        'Lump Sum Plan',
+        'Universal Illustrator',
+        'Flexi-Term Plan',
+      ],
+    },
+    {
+      label: 'RETIREMENT',
+      color: '#34d399',
+      tools: [
+        'CPF Life Estimator',
+        'Retirement Funding',
+        'Income Tax Calculator',
+        'Retirement Saver',
+        'Retirement Lifestyle',
+      ],
+    },
+    {
+      label: 'INSURANCE',
+      color: '#f59e0b',
+      tools: [
+        'Insurance Needs Assessment',
+        'Total Wealth Concept',
+        'Healthshield Gold Max',
+        'Critical Illness Stats',
+        'Accident Plan',
+        'Hospital Income',
+      ],
+    },
+    {
+      label: 'PORTFOLIO',
+      color: '#a78bfa',
+      tools: [
+        'Interactive Portfolio Builder',
+        'All-Weather Portfolio',
+        'Fear & Greed Index',
+        'Morningstar Funds',
+      ],
+    },
+    {
+      label: 'PROPERTY',
+      color: '#fb7185',
+      tools: [
+        'HDB Mortgage Calculator',
+        'Premium Rates',
+        'Yield Calculator',
+      ],
+    },
+    {
+      label: 'BUSINESS',
+      color: '#38bdf8',
+      tools: [
+        'Financial Advisor Differentiation',
+        'Personal Branding Hub',
+      ],
+    },
+  ];
+
+  TOOL_CATEGORIES.forEach(function(cat) {
+    var section = document.createElement('div');
+    section.style.cssText = 'margin-bottom:24px;';
+
+    var catLabel = document.createElement('div');
+    catLabel.style.cssText = [
+      'font-size:0.70rem',
+      'font-weight:700',
+      'letter-spacing:.10em',
+      'text-transform:uppercase',
+      'color:' + cat.color,
+      'margin-bottom:10px',
+      'padding-bottom:6px',
+      'border-bottom:1px solid var(--border)',
+    ].join(';');
+    catLabel.textContent = cat.label;
+    section.appendChild(catLabel);
+
+    var grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;';
+
+    cat.tools.forEach(function(toolName) {
+      var card = document.createElement('div');
+      card.style.cssText = [
+        'display:flex',
+        'align-items:center',
+        'gap:8px',
+        'padding:9px 12px',
+        'background:var(--surface2)',
+        'border:1px solid var(--border)',
+        'border-radius:8px',
+        'cursor:default',
+        'transition:border-color .15s',
+      ].join(';');
+      card.addEventListener('mouseenter', function() { card.style.borderColor = cat.color + '88'; });
+      card.addEventListener('mouseleave', function() { card.style.borderColor = 'var(--border)'; });
+
+      var dot = document.createElement('div');
+      dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:' + cat.color + ';flex-shrink:0;';
+
+      var name = document.createElement('span');
+      name.style.cssText = 'font-size:0.78rem;color:var(--text2);line-height:1.3;';
+      name.textContent = toolName;
+
+      card.appendChild(dot);
+      card.appendChild(name);
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    panelTools.appendChild(section);
+  });
+
+  container.appendChild(panelTools);
+
+  /* ======================================================
+     ACTIVATE DEFAULT TAB + INITIAL RENDERS
+     ====================================================== */
+  switchTab('plan');
   setTimeout(updateSim, 0);
+  /* Pre-compute retirement & insurance so first switch is instant */
+  setTimeout(updateRetirement, 50);
+  setTimeout(updateInsurance, 50);
 };
 
 /* ============================================================
