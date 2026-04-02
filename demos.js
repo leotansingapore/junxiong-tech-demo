@@ -5110,22 +5110,93 @@ DEMO_RENDERERS.financehub = function(container) {
   projChartWrap.appendChild(projCanvas);
   projPanel.appendChild(projChartWrap);
 
-  // Milestone markers row
+  // Milestone markers row — clickable chips
   var milestonesRow = document.createElement('div');
-  milestonesRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;';
+  milestonesRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;';
+  var activeMilestoneChip = null;
   [
-    { icon: '\uD83D\uDE97', label: 'Car', age: 28, color: '#f59e0b' },
-    { icon: '\uD83C\uDFE0', label: 'HDB', age: 30, color: '#6b9bdb' },
-    { icon: '\uD83D\uDC8D', label: 'Wedding', age: 32, color: '#a78bfa' },
-    { icon: '\uD83D\uDC76', label: 'Child', age: 33, color: '#34d399' },
+    { icon: '\uD83D\uDE97', label: 'Car',        age: 28, color: '#f59e0b' },
+    { icon: '\uD83C\uDFE0', label: 'HDB',        age: 30, color: '#6b9bdb' },
+    { icon: '\uD83D\uDC8D', label: 'Wedding',    age: 32, color: '#a78bfa' },
+    { icon: '\uD83D\uDC76', label: 'Child',      age: 33, color: '#34d399' },
     { icon: '\uD83C\uDFC6', label: 'Retirement', age: 62, color: '#C4A24D' },
   ].forEach(function(m) {
     var chip = document.createElement('div');
-    chip.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:20px;background:' + m.color + '15;border:1px solid ' + m.color + '30;color:' + m.color + ';';
-    chip.textContent = m.icon + ' Age ' + m.age + ' · ' + m.label;
+    var chipBaseStyle = 'display:flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:20px;background:' + m.color + '15;border:1px solid ' + m.color + '30;color:' + m.color + ';cursor:pointer;transition:all 0.15s;';
+    chip.style.cssText = chipBaseStyle;
+    chip.textContent = m.icon + ' Age ' + m.age + ' \u00b7 ' + m.label;
+    (function(chipEl, milestone) {
+      chipEl.addEventListener('click', function() {
+        var isActive = activeMilestoneChip === chipEl;
+        if (activeMilestoneChip) {
+          activeMilestoneChip.style.fontWeight = '';
+          activeMilestoneChip.style.boxShadow = '';
+        }
+        if (isActive) {
+          activeMilestoneChip = null;
+        } else {
+          chipEl.style.fontWeight = '700';
+          chipEl.style.boxShadow = '0 0 0 2px ' + milestone.color + '55';
+          activeMilestoneChip = chipEl;
+          var toast = document.getElementById('fhToast');
+          if (toast) {
+            toast.textContent = milestone.icon + ' ' + milestone.label + ' milestone at Age ' + milestone.age;
+            toast.style.opacity = '1';
+            setTimeout(function() { toast.style.opacity = '0'; }, 2500);
+          }
+        }
+      });
+    })(chip, m);
     milestonesRow.appendChild(chip);
   });
   projPanel.appendChild(milestonesRow);
+
+  // Key Assumptions collapsible
+  var assumptionsWrap = document.createElement('div');
+  assumptionsWrap.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;margin-bottom:16px;overflow:hidden;';
+  var assumptionsHeader = document.createElement('div');
+  assumptionsHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;user-select:none;';
+  var assumptionsHTitle = document.createElement('span');
+  assumptionsHTitle.textContent = 'Key Assumptions';
+  assumptionsHTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.06em;';
+  var assumptionsChevron = document.createElement('span');
+  assumptionsChevron.textContent = '\u25b8';
+  assumptionsChevron.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.3);transition:transform 0.2s;display:inline-block;';
+  assumptionsHeader.appendChild(assumptionsHTitle);
+  assumptionsHeader.appendChild(assumptionsChevron);
+  var assumptionsBody = document.createElement('div');
+  assumptionsBody.style.cssText = 'display:none;padding:4px 16px 14px;';
+  var aGrid = document.createElement('div');
+  aGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;';
+  [
+    { label: 'Inflation',           value: '3% per annum' },
+    { label: 'Investment Returns',  value: '6% per annum' },
+    { label: 'Salary Growth',       value: '3% per annum' },
+    { label: 'CPF OA Rate',         value: '2.5% per annum' },
+    { label: 'CPF SA Rate',         value: '4.0% per annum' },
+    { label: 'Retirement Age',      value: '62 years old' },
+  ].forEach(function(a) {
+    var aItem = document.createElement('div');
+    aItem.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
+    var aLabel = document.createElement('div');
+    aLabel.textContent = a.label;
+    aLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);';
+    var aValue = document.createElement('div');
+    aValue.textContent = a.value;
+    aValue.style.cssText = 'font-size:13px;color:#e2e8f0;font-weight:500;';
+    aItem.appendChild(aLabel);
+    aItem.appendChild(aValue);
+    aGrid.appendChild(aItem);
+  });
+  assumptionsBody.appendChild(aGrid);
+  assumptionsHeader.addEventListener('click', function() {
+    var isOpen = assumptionsBody.style.display !== 'none';
+    assumptionsBody.style.display = isOpen ? 'none' : 'block';
+    assumptionsChevron.style.transform = isOpen ? '' : 'rotate(90deg)';
+  });
+  assumptionsWrap.appendChild(assumptionsHeader);
+  assumptionsWrap.appendChild(assumptionsBody);
+  projPanel.appendChild(assumptionsWrap);
 
   // Key insight cards
   var insightTitle = document.createElement('div');
@@ -5134,7 +5205,7 @@ DEMO_RENDERERS.financehub = function(container) {
   projPanel.appendChild(insightTitle);
 
   var insightGrid = document.createElement('div');
-  insightGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;';
+  insightGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;';
   [
     { label: 'Retirement Ready By',  value: 'Age 60',  color: '#34d399' },
     { label: 'Property Paid Off',    value: 'Age 55',  color: '#6b9bdb' },
@@ -5143,6 +5214,22 @@ DEMO_RENDERERS.financehub = function(container) {
     insightGrid.appendChild(fhStatCard(ins.label, ins.value, ins.color, false));
   });
   projPanel.appendChild(insightGrid);
+
+  // Export Report button
+  var exportBtn = document.createElement('button');
+  exportBtn.textContent = '\u21af  Export Report';
+  exportBtn.style.cssText = 'font-size:13px;font-weight:600;padding:9px 20px;border-radius:10px;background:rgba(196,162,77,0.15);color:#C4A24D;border:1px solid rgba(196,162,77,0.35);cursor:pointer;';
+  exportBtn.addEventListener('mouseenter', function() { exportBtn.style.background = 'rgba(196,162,77,0.25)'; });
+  exportBtn.addEventListener('mouseleave', function() { exportBtn.style.background = 'rgba(196,162,77,0.15)'; });
+  exportBtn.addEventListener('click', function() {
+    var toast = document.getElementById('fhToast');
+    if (toast) {
+      toast.textContent = '\u2713 Exported \u2014 Marcus_Tan_FinancialPlan_Apr2026.pdf';
+      toast.style.opacity = '1';
+      setTimeout(function() { toast.style.opacity = '0'; }, 3000);
+    }
+  });
+  projPanel.appendChild(exportBtn);
 
   // ---- Append all panels ----
   container.appendChild(profilePanel);
