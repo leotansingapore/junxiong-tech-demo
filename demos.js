@@ -1098,7 +1098,7 @@ function renderHero() {
 
   const sub = document.createElement('p');
   sub.className = 'hero-sub';
-  sub.textContent = "See how Junxiong's suite of tools helps financial advisors close more clients, train faster, and run better campaigns — all in one ecosystem.";
+  sub.textContent = "See how our suite of tools helps financial advisors close more clients, train faster, and run better campaigns — all in one ecosystem.";
 
   const statsData = [
     { color: '#34d399', value: '70+', label: 'Financial Calculators' },
@@ -3442,7 +3442,7 @@ window._wizardData = window._wizardData || {
   headline: "Protect Your Family's Future Today",
   text: "As a parent, your family's financial security matters most. Get a free consultation with a certified financial advisor.",
   cta: "Learn More",
-  pageName: "Junxiong Financial Advisory",
+  pageName: "Financial Advisory",
   ageMin: 25, ageMax: 54,
   gender: 'all',
   locations: ['Singapore'],
@@ -3883,7 +3883,7 @@ DEMO_RENDERERS.launchpad = function(container) {
     img.appendChild(hl);
     fb.appendChild(img);
     var bar = _lp_el('div','padding:8px 10px;background:#f0f2f5;display:flex;align-items:center;justify-content:space-between;');
-    bar.appendChild(_lp_el('div','font-size:10px;color:#606770;','junxiongfa.com'));
+    bar.appendChild(_lp_el('div','font-size:10px;color:#606770;','financialadvisory.com'));
     var cb = _lp_el('div','background:#1877f2;color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:5px;');
     cb.id = 'studio_prev_cta_' + idSuffix;
     cb.textContent = (document.getElementById('studio_cta') ? document.getElementById('studio_cta').value : window._wizardData.cta);
@@ -3933,7 +3933,7 @@ DEMO_RENDERERS.launchpad = function(container) {
     rcHl.id = 'studio_rc_hl_' + idSuffix;
     rcHl.textContent = (document.getElementById('studio_headline') ? document.getElementById('studio_headline').value : window._wizardData.headline);
     rcText.appendChild(rcHl);
-    rcText.appendChild(_lp_el('div','font-size:10px;color:#606770;margin-bottom:6px;','junxiongfa.com'));
+    rcText.appendChild(_lp_el('div','font-size:10px;color:#606770;margin-bottom:6px;','financialadvisory.com'));
     var rcCta = _lp_el('div','background:#1877f2;color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;display:inline-block;');
     rcCta.id = 'studio_rc_cta_' + idSuffix;
     rcCta.textContent = (document.getElementById('studio_cta') ? document.getElementById('studio_cta').value : window._wizardData.cta);
@@ -4129,7 +4129,7 @@ function _renderWizardStep() {
     var av2 = _lp_el('div','width:36px;height:36px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0;','JX');
     fbHdr.appendChild(av2);
     var hi2 = _lp_el('div');
-    hi2.appendChild(_lp_el('div','font-size:13px;font-weight:700;color:#050505;','Junxiong Financial Advisory'));
+    hi2.appendChild(_lp_el('div','font-size:13px;font-weight:700;color:#050505;','Financial Advisory'));
     hi2.appendChild(_lp_el('div','font-size:11px;color:#606770;','Sponsored \u00b7 \ud83c\udf10'));
     fbHdr.appendChild(hi2);
     var fbTxt = _lp_el('div','padding:0 12px 10px;font-size:13px;color:#050505;line-height:1.5;'); fbTxt.id='previewText'; fbTxt.textContent=d.text;
@@ -4137,7 +4137,7 @@ function _renderWizardStep() {
     var fbHl = _lp_el('div','font-size:16px;font-weight:800;color:#fff;text-align:center;line-height:1.3;text-shadow:0 1px 4px rgba(0,0,0,0.3);'); fbHl.id='previewHeadline'; fbHl.textContent=d.headline;
     fbImg.appendChild(fbHl);
     var fbBar = _lp_el('div','padding:10px 12px;background:#f0f2f5;display:flex;align-items:center;justify-content:space-between;');
-    fbBar.appendChild(_lp_el('div','font-size:11px;color:#606770;','junxiongfa.com'));
+    fbBar.appendChild(_lp_el('div','font-size:11px;color:#606770;','financialadvisory.com'));
     var cb2 = _lp_el('div','background:#1877f2;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;'); cb2.id='previewCTA'; cb2.textContent=d.cta;
     fbBar.appendChild(cb2);
     fbCard.appendChild(fbHdr); fbCard.appendChild(fbTxt); fbCard.appendChild(fbImg); fbCard.appendChild(fbBar);
@@ -4352,13 +4352,13 @@ function _renderWizardStep() {
     var av3 = _lp_el('div','width:30px;height:30px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;flex-shrink:0;','JX');
     fbHdr2.appendChild(av3);
     var hi3 = _lp_el('div');
-    hi3.appendChild(_lp_el('div','font-size:12px;font-weight:700;color:#050505;','Junxiong Financial Advisory'));
+    hi3.appendChild(_lp_el('div','font-size:12px;font-weight:700;color:#050505;','Financial Advisory'));
     hi3.appendChild(_lp_el('div','font-size:10px;color:#606770;','Sponsored'));
     fbHdr2.appendChild(hi3);
     var fbImg2 = _lp_el('div','height:110px;background:linear-gradient(135deg,#1877f2,#42b883);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;');
     fbImg2.appendChild(_lp_el('div','font-size:13px;font-weight:800;color:#fff;text-align:center;line-height:1.3;text-shadow:0 1px 4px rgba(0,0,0,0.3);',d.headline));
     var fbBar2 = _lp_el('div','padding:8px 10px;background:#f0f2f5;display:flex;align-items:center;justify-content:space-between;');
-    fbBar2.appendChild(_lp_el('div','font-size:10px;color:#606770;','junxiongfa.com'));
+    fbBar2.appendChild(_lp_el('div','font-size:10px;color:#606770;','financialadvisory.com'));
     fbBar2.appendChild(_lp_el('div','background:#1877f2;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;',d.cta));
     fbCard2.appendChild(fbHdr2); fbCard2.appendChild(fbImg2); fbCard2.appendChild(fbBar2);
     right2.appendChild(fbCard2);
