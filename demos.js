@@ -856,6 +856,333 @@ function initScrollReveal() {
 }
 
 /* ============================================================
+   ACTIVITY TRACKER DEMO
+   ============================================================ */
+DEMO_RENDERERS.tracker = function(container) {
+  container.id = 'trackerDemo';
+
+  var activities = [
+    { label: 'Cold calls',        pts: 10, done: true  },
+    { label: 'Client meetings',   pts: 12, done: true  },
+    { label: 'Follow-up emails',  pts: 8,  done: true  },
+    { label: 'Referral outreach', pts: 8,  done: false },
+    { label: 'Product training',  pts: 7,  done: false },
+    { label: 'Social media post', pts: 5,  done: false },
+  ];
+
+  var totalPts = activities.reduce(function(s, a) { return s + a.pts; }, 0);
+
+  function donePts() {
+    return activities.reduce(function(s, a) { return a.done ? s + a.pts : s; }, 0);
+  }
+
+  // ---- Stat boxes ----
+  var statBoxes = document.createElement('div');
+  statBoxes.className = 'stat-boxes';
+  statBoxes.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;';
+
+  var stats = [
+    { val: '14',  label: 'Streak',        color: 'var(--green-bright)' },
+    { val: '312', label: 'Weekly Points',  color: 'var(--accent)'       },
+    { val: '#3',  label: 'Team Rank',      color: 'var(--primary-light)' },
+    { val: '12',  label: 'Trees Planted',  color: 'var(--purple)'       },
+  ];
+
+  stats.forEach(function(s) {
+    var box = document.createElement('div');
+    box.className = 'stat-box';
+    var val = document.createElement('div');
+    val.className = 'stat-box-value';
+    val.style.color = s.color;
+    val.textContent = s.val;
+    var lbl = document.createElement('div');
+    lbl.className = 'stat-box-label';
+    lbl.textContent = s.label;
+    box.appendChild(val);
+    box.appendChild(lbl);
+    statBoxes.appendChild(box);
+  });
+
+  container.appendChild(statBoxes);
+
+  // ---- Two-column dashboard ----
+  var dashboard = document.createElement('div');
+  dashboard.className = 'at-dashboard';
+  dashboard.style.cssText = 'grid-template-columns:1fr 320px;';
+
+  // ===== LEFT COLUMN =====
+  var leftCol = document.createElement('div');
+  leftCol.style.cssText = 'display:flex;flex-direction:column;gap:16px;';
+
+  // --- Daily Pledge section ---
+  var pledgeSection = document.createElement('div');
+  pledgeSection.className = 'chart-container';
+
+  var pledgeHeading = document.createElement('div');
+  pledgeHeading.className = 'demo-section-heading';
+  pledgeHeading.textContent = "Today's Pledge";
+  pledgeSection.appendChild(pledgeHeading);
+
+  // Progress ring wrap
+  var ringWrap = document.createElement('div');
+  ringWrap.className = 'progress-ring-wrap';
+  ringWrap.style.cssText = 'position:relative;margin-bottom:16px;flex-direction:row;justify-content:flex-start;align-items:center;gap:20px;';
+
+  var ringContainer = document.createElement('div');
+  ringContainer.style.cssText = 'position:relative;width:160px;height:160px;flex-shrink:0;';
+
+  var canvas = document.createElement('canvas');
+  canvas.id = 'trackerRing';
+  canvas.width = 160;
+  canvas.height = 160;
+  canvas.style.cssText = 'display:block;';
+  ringContainer.appendChild(canvas);
+
+  var ringCenter = document.createElement('div');
+  ringCenter.id = 'trackerRingCenter';
+  ringCenter.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;';
+  var ptsSpan = document.createElement('div');
+  ptsSpan.id = 'trackerPts';
+  ptsSpan.style.cssText = 'font-size:1.5rem;font-weight:800;color:var(--text);line-height:1;';
+  ptsSpan.textContent = donePts() + ' pts';
+  var lblSpan = document.createElement('div');
+  lblSpan.style.cssText = 'font-size:0.7rem;color:var(--text3);margin-top:3px;';
+  lblSpan.textContent = 'of ' + totalPts;
+  ringCenter.appendChild(ptsSpan);
+  ringCenter.appendChild(lblSpan);
+  ringContainer.appendChild(ringCenter);
+
+  ringWrap.appendChild(ringContainer);
+
+  // Activity list (inside ring wrap, side-by-side)
+  var actList = document.createElement('div');
+  actList.className = 'activity-list';
+  actList.style.cssText = 'flex:1;';
+  actList.id = 'trackerActivityList';
+
+  activities.forEach(function(act, idx) {
+    actList.appendChild(buildActivityItem(act, idx));
+  });
+
+  ringWrap.appendChild(actList);
+  pledgeSection.appendChild(ringWrap);
+  leftCol.appendChild(pledgeSection);
+
+  // --- Isometric Forest ---
+  var forestWrap = document.createElement('div');
+  forestWrap.className = 'forest-wrap';
+
+  var forestTitle = document.createElement('div');
+  forestTitle.className = 'demo-section-heading';
+  forestTitle.textContent = 'Your Forest';
+  forestWrap.appendChild(forestTitle);
+
+  var forestScene = document.createElement('div');
+  forestScene.className = 'forest-scene';
+  forestScene.style.cssText = [
+    'background:linear-gradient(180deg,#0a2e1a 0%,#0f4d2a 60%,#1a6b3c 100%)',
+    'min-height:320px',
+    'position:relative',
+    'border-radius:8px',
+    'overflow:hidden',
+  ].join(';');
+
+  var treeData = [
+    { species: 'cherry_blossom', left: '5%',  bottom: '12%', width: 72 },
+    { species: 'mighty_oak',     left: '16%', bottom: '8%',  width: 90 },
+    { species: 'coconut_palm',   left: '28%', bottom: '10%', width: 68 },
+    { species: 'apple_tree',     left: '40%', bottom: '6%',  width: 80 },
+    { species: 'lucky_bamboo',   left: '52%', bottom: '14%', width: 60 },
+    { species: 'blue_spruce',    left: '63%', bottom: '8%',  width: 85 },
+    { species: 'banana_plant',   left: '75%', bottom: '12%', width: 65 },
+    { species: 'plumeria',       left: '86%', bottom: '7%',  width: 70 },
+  ];
+
+  treeData.forEach(function(t) {
+    var treeDiv = document.createElement('div');
+    treeDiv.className = 'forest-tree';
+    treeDiv.style.cssText = 'position:absolute;left:' + t.left + ';bottom:' + t.bottom + ';width:' + t.width + 'px;';
+    var img = document.createElement('img');
+    img.src = 'https://tree-showcase-omega.vercel.app/trees/stages/' + t.species + '_full.png';
+    img.alt = t.species.replace(/_/g, ' ');
+    img.style.cssText = 'width:100%;height:auto;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));';
+    img.onerror = function() {
+      treeDiv.style.fontSize = '2.4rem';
+      treeDiv.style.lineHeight = '1';
+      treeDiv.textContent = '\uD83C\uDF33';
+    };
+    treeDiv.appendChild(img);
+    forestScene.appendChild(treeDiv);
+  });
+
+  forestWrap.appendChild(forestScene);
+
+  var forestStats = document.createElement('div');
+  forestStats.className = 'forest-stats';
+  forestStats.style.cssText = 'margin-top:12px;font-size:0.8rem;color:var(--text3);';
+  forestStats.textContent = '12 trees planted \u00B7 6 species unlocked \u00B7 3 rare+ species';
+  forestWrap.appendChild(forestStats);
+
+  leftCol.appendChild(forestWrap);
+  dashboard.appendChild(leftCol);
+
+  // ===== RIGHT COLUMN =====
+  var rightCol = document.createElement('div');
+  rightCol.style.cssText = 'display:flex;flex-direction:column;gap:16px;';
+
+  var lbSection = document.createElement('div');
+  lbSection.className = 'chart-container';
+
+  var lbHeading = document.createElement('div');
+  lbHeading.className = 'demo-section-heading';
+  lbHeading.textContent = 'Team Leaderboard';
+  lbSection.appendChild(lbHeading);
+
+  var lbList = document.createElement('div');
+  lbList.className = 'leaderboard';
+
+  var lbData = [
+    { rank: 1, initials: 'SL', name: 'Sarah Lim',  pts: 428, streak: 21, cls: 'gold'           },
+    { rank: 2, initials: 'JC', name: 'James Chen', pts: 395, streak: 14, cls: 'silver'          },
+    { rank: 3, initials: 'LT', name: 'You',        pts: 312, streak: 14, cls: 'bronze highlight'},
+    { rank: 4, initials: 'RN', name: 'Rachel Ng',  pts: 287, streak: 8,  cls: ''                },
+    { rank: 5, initials: 'DT', name: 'David Tan',  pts: 264, streak: 5,  cls: ''                },
+  ];
+
+  lbData.forEach(function(row) {
+    var lbRow = document.createElement('div');
+    lbRow.className = 'leaderboard-row' + (row.cls ? ' ' + row.cls : '');
+
+    var rankEl = document.createElement('div');
+    rankEl.className = 'leaderboard-rank';
+    rankEl.textContent = '#' + row.rank;
+
+    var avatarEl = document.createElement('div');
+    avatarEl.style.cssText = [
+      'width:30px',
+      'height:30px',
+      'border-radius:50%',
+      'background:var(--bg2)',
+      'border:1px solid var(--border)',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'font-size:0.7rem',
+      'font-weight:700',
+      'color:var(--text2)',
+      'flex-shrink:0',
+    ].join(';');
+    avatarEl.textContent = row.initials;
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'leaderboard-name';
+    nameEl.textContent = row.name;
+
+    var ptsEl = document.createElement('div');
+    ptsEl.className = 'leaderboard-score';
+    ptsEl.textContent = row.pts + ' pts';
+
+    var streakEl = document.createElement('div');
+    streakEl.className = 'leaderboard-streak';
+    streakEl.textContent = row.streak + 'd';
+
+    lbRow.appendChild(rankEl);
+    lbRow.appendChild(avatarEl);
+    lbRow.appendChild(nameEl);
+    lbRow.appendChild(ptsEl);
+    lbRow.appendChild(streakEl);
+    lbList.appendChild(lbRow);
+  });
+
+  lbSection.appendChild(lbList);
+  rightCol.appendChild(lbSection);
+  dashboard.appendChild(rightCol);
+  container.appendChild(dashboard);
+
+  // Initial ring draw
+  setTimeout(function() { redrawRing(); }, 0);
+
+  // ---- Helper: build activity item ----
+  function buildActivityItem(act, idx) {
+    var item = document.createElement('div');
+    item.className = 'activity-item' + (act.done ? ' done' : '');
+    item.dataset.idx = idx;
+    item.onclick = function() { toggleActivity(idx); };
+
+    var check = document.createElement('div');
+    check.className = 'activity-check';
+    var inner = document.createElement('div');
+    inner.className = 'activity-check-inner';
+    check.appendChild(inner);
+
+    var name = document.createElement('div');
+    name.className = 'activity-name';
+    name.textContent = act.label;
+
+    var pts = document.createElement('div');
+    pts.className = 'activity-pts';
+    pts.textContent = '+' + act.pts;
+
+    item.appendChild(check);
+    item.appendChild(name);
+    item.appendChild(pts);
+    return item;
+  }
+
+  // ---- Redraw ring ----
+  function redrawRing() {
+    var c = document.getElementById('trackerRing');
+    if (!c) return;
+    var done = donePts();
+    var progress = totalPts > 0 ? done / totalPts : 0;
+    Charts.progressRing(c, progress, {
+      size:          160,
+      lineWidth:     12,
+      trackColor:    '#1e293b',
+      fillColor:     '#355A99',
+      fillColorEnd:  '#6b9bdb',
+    });
+    var ptsEl = document.getElementById('trackerPts');
+    if (ptsEl) ptsEl.textContent = done + ' pts';
+  }
+};
+
+/* ---- Global toggle for activity tracker ---- */
+function toggleActivity(idx) {
+  var listEl = document.getElementById('trackerActivityList');
+  if (!listEl) return;
+  var items = listEl.querySelectorAll('.activity-item');
+  var item  = items[idx];
+  if (!item) return;
+  item.classList.toggle('done');
+
+  // Recalculate from DOM state
+  var done = 0;
+  var total = 0;
+  var allItems = listEl.querySelectorAll('.activity-item');
+  allItems.forEach(function(el) {
+    var ptsEl = el.querySelector('.activity-pts');
+    var pts = ptsEl ? parseInt(ptsEl.textContent.replace('+', ''), 10) : 0;
+    total += pts;
+    if (el.classList.contains('done')) done += pts;
+  });
+
+  // Update ring
+  var canvas = document.getElementById('trackerRing');
+  if (canvas) {
+    Charts.progressRing(canvas, total > 0 ? done / total : 0, {
+      size:         160,
+      lineWidth:    12,
+      trackColor:   '#1e293b',
+      fillColor:    '#355A99',
+      fillColorEnd: '#6b9bdb',
+    });
+  }
+  var ptsEl = document.getElementById('trackerPts');
+  if (ptsEl) ptsEl.textContent = done + ' pts';
+}
+
+/* ============================================================
    MOBILE MENU TOGGLE
    ============================================================ */
 function toggleMobileMenu() {
