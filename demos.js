@@ -24,12 +24,12 @@ const PLATFORMS = [
     icon: '🌳',
     iconClass: 'tracker',
     title: 'Activity Tracker',
-    desc: 'Gamified team performance with trees, badges & streaks',
+    desc: 'Gamified team performance platform with 11 modules',
     features: [
-      'Daily pledge',
-      'Isometric forest',
-      'Team leaderboards',
-      'Manager dashboard',
+      'Real-time activity feed & GPS logging',
+      'Hall of Fame leaderboard',
+      'Habit tracking with heatmaps',
+      'Digital pledge sheet & FYC calculator',
     ],
   },
   {
@@ -774,1069 +774,412 @@ function initScrollReveal() {
 }
 
 /* ============================================================
-   ACTIVITY TRACKER DEMO
+   ACTIVITY TRACKER DEMO — Module Showcase
    ============================================================ */
 DEMO_RENDERERS.tracker = function(container) {
   container.id = 'trackerDemo';
 
-  // ---- Tab bar ----
-  var tabBar = document.createElement('div');
-  tabBar.className = 'demo-tabs';
-
-  var atTabDefs = [
-    { key: 'feed',        label: 'Activity Feed'   },
-    { key: 'leaderboard', label: 'Leaderboard'     },
-    { key: 'habits',      label: 'Habit Tracker'   },
-    { key: 'pledge',      label: 'Pledge & Goals'  },
-    { key: 'gamification',label: 'Gamification'    },
-    { key: 'coaching',    label: 'Coaching'        },
-    { key: 'dashboard',   label: 'Sales Dashboard' },
-  ];
-
-  atTabDefs.forEach(function(def, i) {
-    var btn = document.createElement('button');
-    btn.className = 'demo-tab' + (i === 0 ? ' active' : '');
-    btn.dataset.tab = def.key;
-    btn.textContent = def.label;
-    btn.addEventListener('click', function() { atSwitchTab(def.key); });
-    tabBar.appendChild(btn);
-  });
-
-  container.appendChild(tabBar);
-
-  // ---- Build panels ----
-  var panels = {};
-  panels.feed        = buildAtFeedPanel();
-  panels.leaderboard = buildAtLeaderboardPanel();
-  panels.habits      = buildAtHabitsPanel();
-  panels.pledge      = buildAtPledgePanel();
-  panels.gamification= buildAtGamificationPanel();
-  panels.coaching    = buildAtCoachingPanel();
-  panels.dashboard   = buildAtDashboardPanel();
-
-  atTabDefs.forEach(function(def, i) {
-    panels[def.key].style.display = i === 0 ? '' : 'none';
-    panels[def.key].dataset.panel = def.key;
-    container.appendChild(panels[def.key]);
-  });
-
-  // Render charts in first visible panel after DOM insertion
-  setTimeout(function() { atRenderFeedCharts(); }, 0);
-
-  // ================================================================
-  // TAB SWITCHER
-  // ================================================================
-  function atSwitchTab(key) {
-    var tabs = container.querySelectorAll('.demo-tab');
-    tabs.forEach(function(t) {
-      t.classList.toggle('active', t.dataset.tab === key);
-    });
-    atTabDefs.forEach(function(def) {
-      panels[def.key].style.display = def.key === key ? '' : 'none';
-    });
-    setTimeout(function() {
-      if (key === 'feed')        atRenderFeedCharts();
-      if (key === 'dashboard')   atRenderDashboardCharts();
-    }, 0);
-  }
-
-  // ================================================================
-  // HELPER: avatar initials bubble
-  // ================================================================
+  /* ---- Helper: avatar initials bubble ---- */
   function atAvatar(initials, color) {
     var av = document.createElement('div');
     av.style.cssText = [
-      'width:32px', 'height:32px', 'border-radius:50%',
+      'width:28px', 'height:28px', 'border-radius:50%',
       'background:' + (color || 'var(--bg2)'),
       'border:1px solid var(--border)',
       'display:flex', 'align-items:center', 'justify-content:center',
-      'font-size:0.68rem', 'font-weight:700', 'color:var(--text)', 'flex-shrink:0',
+      'font-size:0.62rem', 'font-weight:700', 'color:#fff', 'flex-shrink:0',
     ].join(';');
     av.textContent = initials;
     return av;
   }
 
-  // ================================================================
-  // TAB 1: ACTIVITY FEED
-  // ================================================================
-  function buildAtFeedPanel() {
-    var panel = document.createElement('div');
-
-    // Today's progress bar
-    var progWrap = document.createElement('div');
-    progWrap.className = 'chart-container';
-    progWrap.style.cssText = 'padding:14px 16px;margin-bottom:16px;';
-
-    var progHeader = document.createElement('div');
-    progHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
-    var progTitle = document.createElement('div');
-    progTitle.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--text);';
-    progTitle.textContent = "Today's Progress";
-    var progPts = document.createElement('div');
-    progPts.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--primary-light);';
-    progPts.textContent = '45 / 60 pts';
-    progHeader.appendChild(progTitle);
-    progHeader.appendChild(progPts);
-    progWrap.appendChild(progHeader);
-
-    var barOuter = document.createElement('div');
-    barOuter.style.cssText = 'background:var(--bg1);border-radius:99px;height:10px;overflow:hidden;';
-    var barInner = document.createElement('div');
-    barInner.style.cssText = 'height:100%;border-radius:99px;width:75%;background:linear-gradient(90deg,#355A99,#6b9bdb);transition:width 0.6s ease;';
-    barOuter.appendChild(barInner);
-    progWrap.appendChild(barOuter);
-
-    var progSub = document.createElement('div');
-    progSub.style.cssText = 'font-size:0.72rem;color:var(--text3);margin-top:6px;';
-    progSub.textContent = '75% of daily goal — great momentum!';
-    progWrap.appendChild(progSub);
-    panel.appendChild(progWrap);
-
-    // Activity feed
-    var feedWrap = document.createElement('div');
-    feedWrap.className = 'chart-container';
-    feedWrap.style.cssText = 'padding:16px;';
-
-    var feedTitle = document.createElement('div');
-    feedTitle.className = 'demo-section-heading';
-    feedTitle.textContent = 'Recent Activity';
-    feedWrap.appendChild(feedTitle);
-
-    var feedData = [
-      { initials: 'LT', color: '#355A99', name: 'You',         type: 'Closing',          icon: '\uD83D\uDCDD', pts: '+4pt',  time: '2m ago',   bg: 'rgba(53,90,153,0.15)' },
-      { initials: 'SL', color: '#0f7b5a', name: 'Sarah Lim',   type: 'Set',              icon: '\uD83D\uDCDE', pts: '+1pt',  time: '14m ago',  bg: 'rgba(15,123,90,0.15)'  },
-      { initials: 'JC', color: '#7c3aed', name: 'James Chen',  type: 'Opening',          icon: '\uD83E\uDD1D', pts: '+3pt',  time: '28m ago',  bg: 'rgba(124,58,237,0.15)' },
-      { initials: 'RN', color: '#b45309', name: 'Rachel Ng',   type: 'Referral',         icon: '\uD83D\uDD17', pts: '+1pt',  time: '45m ago',  bg: 'rgba(180,83,9,0.15)'   },
-      { initials: 'DT', color: '#0e7490', name: 'David Tan',   type: 'Client Servicing', icon: '\uD83D\uDD27', pts: '+2pt',  time: '1h ago',   bg: 'rgba(14,116,144,0.15)' },
-      { initials: 'MW', color: '#be185d', name: 'May Wong',    type: 'Closed',           icon: '\u2705',       pts: '+5pt',  time: '2h ago',   bg: 'rgba(190,24,93,0.15)'  },
-    ];
-
-    feedData.forEach(function(row) {
-      var item = document.createElement('div');
-      item.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);';
-
-      var av = atAvatar(row.initials, row.color);
-      item.appendChild(av);
-
-      var info = document.createElement('div');
-      info.style.cssText = 'flex:1;min-width:0;';
-      var nameLine = document.createElement('div');
-      nameLine.style.cssText = 'font-size:0.82rem;font-weight:600;color:var(--text);';
-      nameLine.textContent = row.name;
-      var typeLine = document.createElement('div');
-      typeLine.style.cssText = 'font-size:0.75rem;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:4px;';
-      var typeIcon = document.createElement('span');
-      typeIcon.textContent = row.icon;
-      var typeTxt = document.createElement('span');
-      typeTxt.textContent = row.type;
-      typeLine.appendChild(typeIcon);
-      typeLine.appendChild(typeTxt);
-      info.appendChild(nameLine);
-      info.appendChild(typeLine);
-      item.appendChild(info);
-
-      var right = document.createElement('div');
-      right.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;';
-      var ptsBadge = document.createElement('div');
-      ptsBadge.style.cssText = 'font-size:0.75rem;font-weight:700;color:var(--green-bright);background:rgba(52,211,153,0.12);padding:2px 8px;border-radius:99px;';
-      ptsBadge.textContent = row.pts;
-      var timeEl = document.createElement('div');
-      timeEl.style.cssText = 'font-size:0.7rem;color:var(--text3);';
-      timeEl.textContent = row.time;
-      right.appendChild(ptsBadge);
-      right.appendChild(timeEl);
-      item.appendChild(right);
-
-      feedWrap.appendChild(item);
-    });
-
-    panel.appendChild(feedWrap);
-    return panel;
+  /* ---- Helper: feature pill ---- */
+  function atPill(label) {
+    var p = document.createElement('span');
+    p.style.cssText = 'display:inline-block;padding:2px 9px;border-radius:99px;font-size:0.66rem;font-weight:600;background:rgba(107,155,219,0.15);color:var(--primary-light);border:1px solid rgba(107,155,219,0.25);white-space:nowrap;';
+    p.textContent = label;
+    return p;
   }
 
-  function atRenderFeedCharts() {
-    // No canvas charts needed for feed tab
+  /* ---- Helper: badge ---- */
+  function atBadge(label, color) {
+    var b = document.createElement('span');
+    b.style.cssText = 'display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:' + (color || 'rgba(52,211,153,0.15)') + ';color:' + (color ? '#fff' : 'var(--green-bright)') + ';';
+    b.textContent = label;
+    return b;
   }
 
-  // ================================================================
-  // TAB 2: LEADERBOARD
-  // ================================================================
-  function buildAtLeaderboardPanel() {
-    var panel = document.createElement('div');
+  /* ---- Helper: build a core module card ---- */
+  function buildModuleCard(opts) {
+    // opts: { emoji, name, badge, badgeColor, desc, pills, previewFn }
+    var card = document.createElement('div');
+    card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;';
 
-    // Podium
-    var podiumWrap = document.createElement('div');
-    podiumWrap.className = 'chart-container';
-    podiumWrap.style.cssText = 'padding:20px;margin-bottom:16px;';
+    // Header
+    var header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:11px 14px 9px;border-bottom:1px solid var(--border);';
+    var htitle = document.createElement('div');
+    htitle.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:0.84rem;font-weight:700;color:var(--text);';
+    var emoji = document.createElement('span');
+    emoji.textContent = opts.emoji;
+    emoji.style.fontSize = '1rem';
+    var nm = document.createElement('span');
+    nm.textContent = opts.name;
+    htitle.appendChild(emoji);
+    htitle.appendChild(nm);
+    header.appendChild(htitle);
+    if (opts.badge) {
+      header.appendChild(atBadge(opts.badge, opts.badgeColor || null));
+    }
+    card.appendChild(header);
 
-    var podTitle = document.createElement('div');
-    podTitle.className = 'demo-section-heading';
-    podTitle.textContent = 'Hall of Fame — This Week';
-    podiumWrap.appendChild(podTitle);
+    // Body: two columns
+    var body = document.createElement('div');
+    body.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:0;';
 
-    var podRow = document.createElement('div');
-    podRow.style.cssText = 'display:flex;justify-content:center;align-items:flex-end;gap:16px;margin-bottom:8px;';
+    // Left: description + pills
+    var left = document.createElement('div');
+    left.style.cssText = 'padding:14px 14px 14px;display:flex;flex-direction:column;gap:10px;border-right:1px solid var(--border);';
+    var desc = document.createElement('div');
+    desc.style.cssText = 'font-size:0.78rem;color:var(--text2);line-height:1.6;';
+    desc.textContent = opts.desc;
+    left.appendChild(desc);
 
-    var podData = [
-      { rank: 2, initials: 'JC', name: 'James Chen', pts: 395, height: 64,  color: '#C0C0C0', medal: '\uD83E\uDD48' },
-      { rank: 1, initials: 'SL', name: 'Sarah Lim',  pts: 428, height: 88,  color: '#FFD700', medal: '\uD83E\uDD47' },
-      { rank: 3, initials: 'LT', name: 'You',        pts: 312, height: 48,  color: '#CD7F32', medal: '\uD83E\uDD49' },
-    ];
+    if (opts.pills && opts.pills.length) {
+      var pillRow = document.createElement('div');
+      pillRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-top:auto;';
+      opts.pills.forEach(function(pl) { pillRow.appendChild(atPill(pl)); });
+      left.appendChild(pillRow);
+    }
+    body.appendChild(left);
 
-    podData.forEach(function(p) {
-      var col = document.createElement('div');
-      col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;';
+    // Right: live preview
+    var right = document.createElement('div');
+    right.style.cssText = 'padding:12px;background:var(--bg1);';
+    if (opts.previewFn) opts.previewFn(right);
+    body.appendChild(right);
 
-      var medal = document.createElement('div');
-      medal.style.cssText = 'font-size:1.4rem;';
-      medal.textContent = p.medal;
-
-      var av = atAvatar(p.initials, p.color + '33');
-      av.style.cssText += ';border:2px solid ' + p.color + ';';
-
-      var pName = document.createElement('div');
-      pName.style.cssText = 'font-size:0.72rem;font-weight:700;color:var(--text);text-align:center;max-width:70px;';
-      pName.textContent = p.name;
-
-      var pPts = document.createElement('div');
-      pPts.style.cssText = 'font-size:0.68rem;color:var(--text3);';
-      pPts.textContent = p.pts + ' pts';
-
-      var block = document.createElement('div');
-      block.style.cssText = 'width:64px;height:' + p.height + 'px;background:' + p.color + '22;border:1px solid ' + p.color + '55;border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:' + p.color + ';';
-      block.textContent = '#' + p.rank;
-
-      col.appendChild(medal);
-      col.appendChild(av);
-      col.appendChild(pName);
-      col.appendChild(pPts);
-      col.appendChild(block);
-      podRow.appendChild(col);
-    });
-
-    podiumWrap.appendChild(podRow);
-    panel.appendChild(podiumWrap);
-
-    // Full leaderboard table
-    var lbWrap = document.createElement('div');
-    lbWrap.className = 'chart-container';
-    lbWrap.style.cssText = 'padding:16px;';
-
-    var lbTitle = document.createElement('div');
-    lbTitle.className = 'demo-section-heading';
-    lbTitle.textContent = 'Full Leaderboard';
-    lbWrap.appendChild(lbTitle);
-
-    var lbData = [
-      { rank: 1, initials: 'SL', name: 'Sarah Lim',    pts: 428, streak: 21, trend: '+12', you: false },
-      { rank: 2, initials: 'JC', name: 'James Chen',   pts: 395, streak: 14, trend: '+5',  you: false },
-      { rank: 3, initials: 'LT', name: 'You',          pts: 312, streak: 14, trend: '+3',  you: true  },
-      { rank: 4, initials: 'RN', name: 'Rachel Ng',    pts: 287, streak: 8,  trend: '-2',  you: false },
-      { rank: 5, initials: 'DT', name: 'David Tan',    pts: 264, streak: 5,  trend: '+1',  you: false },
-      { rank: 6, initials: 'MW', name: 'May Wong',     pts: 241, streak: 3,  trend: '-4',  you: false },
-      { rank: 7, initials: 'BT', name: 'Bryan Teo',    pts: 198, streak: 7,  trend: '+8',  you: false },
-      { rank: 8, initials: 'CK', name: 'Cindy Koh',    pts: 176, streak: 2,  trend: '-1',  you: false },
-    ];
-
-    var headerRow = document.createElement('div');
-    headerRow.style.cssText = 'display:grid;grid-template-columns:36px 1fr 80px 56px 48px;gap:8px;padding:6px 8px;font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);margin-bottom:4px;';
-    ['#', 'Name', 'Points', 'Streak', 'Trend'].forEach(function(h) {
-      var hEl = document.createElement('div');
-      hEl.textContent = h;
-      headerRow.appendChild(hEl);
-    });
-    lbWrap.appendChild(headerRow);
-
-    lbData.forEach(function(row) {
-      var lbRow = document.createElement('div');
-      lbRow.style.cssText = 'display:grid;grid-template-columns:36px 1fr 80px 56px 48px;gap:8px;padding:8px;align-items:center;border-radius:6px;' + (row.you ? 'background:rgba(53,90,153,0.15);border:1px solid rgba(107,155,219,0.3);' : '');
-
-      var rankEl = document.createElement('div');
-      rankEl.style.cssText = 'font-size:0.75rem;font-weight:700;color:' + (row.rank === 1 ? '#FFD700' : row.rank === 2 ? '#C0C0C0' : row.rank === 3 ? '#CD7F32' : 'var(--text3)') + ';';
-      rankEl.textContent = '#' + row.rank;
-
-      var nameWrap = document.createElement('div');
-      nameWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
-      var av = atAvatar(row.initials);
-      av.style.width = '26px';
-      av.style.height = '26px';
-      av.style.fontSize = '0.62rem';
-      var nameEl = document.createElement('div');
-      nameEl.style.cssText = 'font-size:0.8rem;font-weight:' + (row.you ? '700' : '500') + ';color:var(--text);';
-      nameEl.textContent = row.name + (row.you ? ' (you)' : '');
-      nameWrap.appendChild(av);
-      nameWrap.appendChild(nameEl);
-
-      var ptsEl = document.createElement('div');
-      ptsEl.style.cssText = 'font-size:0.8rem;font-weight:600;color:var(--primary-light);';
-      ptsEl.textContent = row.pts + ' pts';
-
-      var streakEl = document.createElement('div');
-      streakEl.style.cssText = 'font-size:0.78rem;color:var(--text2);';
-      streakEl.textContent = row.streak + 'd \uD83D\uDD25';
-
-      var trendEl = document.createElement('div');
-      var trendUp = row.trend.charAt(0) === '+';
-      trendEl.style.cssText = 'font-size:0.75rem;font-weight:600;color:' + (trendUp ? 'var(--green-bright)' : '#ef4444') + ';';
-      trendEl.textContent = (trendUp ? '\u2191' : '\u2193') + ' ' + row.trend.slice(1);
-
-      lbRow.appendChild(rankEl);
-      lbRow.appendChild(nameWrap);
-      lbRow.appendChild(ptsEl);
-      lbRow.appendChild(streakEl);
-      lbRow.appendChild(trendEl);
-      lbWrap.appendChild(lbRow);
-    });
-
-    panel.appendChild(lbWrap);
-    return panel;
+    card.appendChild(body);
+    return card;
   }
 
-  // ================================================================
-  // TAB 3: HABIT TRACKER
-  // ================================================================
-  function buildAtHabitsPanel() {
-    var panel = document.createElement('div');
+  /* ================================================================
+     STAT BADGES ROW
+     ================================================================ */
+  var statsRow = document.createElement('div');
+  statsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;';
+  var statItems = [
+    '11 Modules', '4 Core', '7 Add-ons', 'Used by 50+ advisors',
+  ];
+  statItems.forEach(function(s) {
+    var b = document.createElement('div');
+    b.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;background:var(--bg2);border:1px solid var(--border);font-size:0.75rem;font-weight:600;color:var(--text2);';
+    b.textContent = s;
+    statsRow.appendChild(b);
+  });
+  container.appendChild(statsRow);
 
-    var habitWrap = document.createElement('div');
-    habitWrap.className = 'chart-container';
-    habitWrap.style.cssText = 'padding:16px;margin-bottom:16px;';
+  /* ================================================================
+     CORE MODULES SECTION HEADER
+     ================================================================ */
+  var coreHeader = document.createElement('div');
+  coreHeader.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px;';
+  var coreLabel = document.createElement('div');
+  coreLabel.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);';
+  coreLabel.textContent = 'CORE MODULES';
+  coreHeader.appendChild(coreLabel);
+  coreHeader.appendChild(atBadge('Included'));
+  container.appendChild(coreHeader);
 
-    var habitTitle = document.createElement('div');
-    habitTitle.className = 'demo-section-heading';
-    habitTitle.textContent = 'Weekly Habit Tracker';
-    habitWrap.appendChild(habitTitle);
-
-    var days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    var habits = [
-      { name: 'Cold Calls',      streak: 14, checks: [1,1,1,1,1,0,0] },
-      { name: 'Client Meetings', streak: 7,  checks: [1,0,1,1,0,1,0] },
-      { name: 'Follow-ups',      streak: 5,  checks: [1,1,1,0,1,0,0] },
-      { name: 'Social Media',    streak: 21, checks: [1,1,1,1,1,1,0] },
-      { name: 'Product Study',   streak: 3,  checks: [0,1,1,1,0,0,0] },
-      { name: 'Exercise',        streak: 9,  checks: [1,1,0,1,1,0,0] },
-      { name: 'Reading',         streak: 12, checks: [1,1,1,1,1,0,0] },
-    ];
-
-    // Header row
-    var headerGrid = document.createElement('div');
-    headerGrid.style.cssText = 'display:grid;grid-template-columns:140px repeat(7,1fr) 60px;gap:4px;margin-bottom:8px;padding:0 4px;';
-    var emptyH = document.createElement('div');
-    headerGrid.appendChild(emptyH);
-    days.forEach(function(d) {
-      var dEl = document.createElement('div');
-      dEl.style.cssText = 'text-align:center;font-size:0.68rem;color:var(--text3);font-weight:600;text-transform:uppercase;';
-      dEl.textContent = d;
-      headerGrid.appendChild(dEl);
-    });
-    var streakH = document.createElement('div');
-    streakH.style.cssText = 'text-align:center;font-size:0.68rem;color:var(--text3);font-weight:600;text-transform:uppercase;';
-    streakH.textContent = 'Streak';
-    headerGrid.appendChild(streakH);
-    habitWrap.appendChild(headerGrid);
-
-    habits.forEach(function(habit) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:grid;grid-template-columns:140px repeat(7,1fr) 60px;gap:4px;padding:4px;border-radius:6px;margin-bottom:2px;';
-      row.style.cssText += 'align-items:center;';
-
-      var nameEl = document.createElement('div');
-      nameEl.style.cssText = 'font-size:0.78rem;color:var(--text2);font-weight:500;padding-right:8px;';
-      nameEl.textContent = habit.name;
-      row.appendChild(nameEl);
-
-      habit.checks.forEach(function(checked, di) {
-        var cell = document.createElement('div');
-        cell.style.cssText = 'display:flex;justify-content:center;align-items:center;';
-        var dot = document.createElement('div');
-        var isToday = di === 4; // Friday = today
-        if (isToday && !checked) {
-          dot.style.cssText = 'width:22px;height:22px;border-radius:4px;border:2px dashed var(--border);';
-        } else if (checked) {
-          dot.style.cssText = 'width:22px;height:22px;border-radius:4px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;';
-          var tick = document.createElement('span');
-          tick.style.cssText = 'color:#fff;font-size:0.7rem;font-weight:700;';
-          tick.textContent = '\u2713';
-          dot.appendChild(tick);
-        } else {
-          dot.style.cssText = 'width:22px;height:22px;border-radius:4px;background:var(--bg1);border:1px solid var(--border);opacity:0.5;';
-        }
-        cell.appendChild(dot);
-        row.appendChild(cell);
+  /* ---- Core Card 1: Activity Tracking & Feed ---- */
+  container.appendChild(buildModuleCard({
+    emoji: '\uD83D\uDCF1',
+    name: 'Activity Tracking & Feed',
+    badge: 'CORE',
+    badgeColor: 'rgba(52,211,153,0.8)',
+    desc: 'Real-time activity logging with team feed, reactions, GPS verification, and daily progress tracking.',
+    pills: ['GPS Verified', 'Team Feed', 'Daily Goals'],
+    previewFn: function(wrap) {
+      var feedData = [
+        { initials: 'LT', color: '#355A99', name: 'You',        type: 'Closing',  icon: '\uD83D\uDCDD', pts: '+4pt',  time: '2m ago'  },
+        { initials: 'SL', color: '#0f7b5a', name: 'Sarah Lim',  type: 'Set',      icon: '\uD83D\uDCDE', pts: '+1pt',  time: '14m ago' },
+        { initials: 'JC', color: '#7c3aed', name: 'James Chen', type: 'Opening',  icon: '\uD83E\uDD1D', pts: '+3pt',  time: '28m ago' },
+      ];
+      feedData.forEach(function(row) {
+        var item = document.createElement('div');
+        item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);';
+        item.appendChild(atAvatar(row.initials, row.color));
+        var info = document.createElement('div');
+        info.style.cssText = 'flex:1;min-width:0;';
+        var nm = document.createElement('div');
+        nm.style.cssText = 'font-size:0.74rem;font-weight:600;color:var(--text);';
+        nm.textContent = row.name;
+        var tl = document.createElement('div');
+        tl.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-top:1px;';
+        tl.textContent = row.icon + ' ' + row.type;
+        info.appendChild(nm);
+        info.appendChild(tl);
+        item.appendChild(info);
+        var rght = document.createElement('div');
+        rght.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;';
+        var pts = document.createElement('div');
+        pts.style.cssText = 'font-size:0.68rem;font-weight:700;color:var(--green-bright);background:rgba(52,211,153,0.12);padding:1px 6px;border-radius:99px;';
+        pts.textContent = row.pts;
+        var tm = document.createElement('div');
+        tm.style.cssText = 'font-size:0.64rem;color:var(--text3);';
+        tm.textContent = row.time;
+        rght.appendChild(pts);
+        rght.appendChild(tm);
+        item.appendChild(rght);
+        wrap.appendChild(item);
       });
-
-      var streakEl = document.createElement('div');
-      streakEl.style.cssText = 'text-align:center;font-size:0.75rem;font-weight:700;color:var(--green-bright);';
-      streakEl.textContent = habit.streak + 'd';
-      row.appendChild(streakEl);
-
-      habitWrap.appendChild(row);
-    });
-
-    panel.appendChild(habitWrap);
-
-    // Mini heatmap
-    var heatWrap = document.createElement('div');
-    heatWrap.className = 'chart-container';
-    heatWrap.style.cssText = 'padding:16px;';
-
-    var heatTitle = document.createElement('div');
-    heatTitle.className = 'demo-section-heading';
-    heatTitle.textContent = '4-Week Activity Heatmap';
-    heatWrap.appendChild(heatTitle);
-
-    var heatGrid = document.createElement('div');
-    heatGrid.style.cssText = 'display:grid;grid-template-columns:repeat(28,1fr);gap:3px;';
-
-    var heatValues = [
-      3,5,4,2,5,1,0, 4,3,5,5,4,2,0, 2,4,3,5,5,1,0, 5,4,5,4,4,0,0
-    ];
-    var heatColors = ['var(--bg1)', 'rgba(53,90,153,0.25)', 'rgba(53,90,153,0.45)', 'rgba(107,155,219,0.6)', 'rgba(107,155,219,0.8)', 'var(--primary-light)'];
-
-    heatValues.forEach(function(v) {
-      var cell = document.createElement('div');
-      cell.style.cssText = 'height:14px;border-radius:2px;background:' + heatColors[v] + ';';
-      heatGrid.appendChild(cell);
-    });
-
-    heatWrap.appendChild(heatGrid);
-
-    var heatLegend = document.createElement('div');
-    heatLegend.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:10px;font-size:0.68rem;color:var(--text3);';
-    heatLegend.textContent = 'Less ';
-    [0,1,2,3,4,5].forEach(function(v) {
-      var sq = document.createElement('div');
-      sq.style.cssText = 'width:12px;height:12px;border-radius:2px;background:' + heatColors[v] + ';';
-      heatLegend.appendChild(sq);
-    });
-    var moreEl = document.createElement('span');
-    moreEl.textContent = ' More';
-    heatLegend.appendChild(moreEl);
-    heatWrap.appendChild(heatLegend);
-
-    panel.appendChild(heatWrap);
-    return panel;
-  }
-
-  // ================================================================
-  // TAB 4: PLEDGE SHEET & CALCULATOR
-  // ================================================================
-  function buildAtPledgePanel() {
-    var panel = document.createElement('div');
-
-    var twoCol = document.createElement('div');
-    twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;';
-
-    // LEFT: Forward Goal
-    var goalWrap = document.createElement('div');
-    goalWrap.className = 'chart-container';
-    goalWrap.style.cssText = 'padding:16px;';
-
-    var goalTitle = document.createElement('div');
-    goalTitle.className = 'demo-section-heading';
-    goalTitle.textContent = 'Forward Goal';
-    goalWrap.appendChild(goalTitle);
-
-    var fycRow = document.createElement('div');
-    fycRow.style.cssText = 'margin-bottom:16px;';
-    var fycLabel = document.createElement('div');
-    fycLabel.style.cssText = 'font-size:0.75rem;color:var(--text3);margin-bottom:6px;';
-    fycLabel.textContent = 'Annual FYC Target';
-    var fycValue = document.createElement('div');
-    fycValue.style.cssText = 'font-size:1.6rem;font-weight:800;color:var(--primary-light);';
-    fycValue.textContent = '$50,000';
-    fycRow.appendChild(fycLabel);
-    fycRow.appendChild(fycValue);
-    goalWrap.appendChild(fycRow);
-
-    var breakdownTitle = document.createElement('div');
-    breakdownTitle.style.cssText = 'font-size:0.75rem;font-weight:700;color:var(--text2);margin-bottom:10px;border-top:1px solid var(--border);padding-top:12px;';
-    breakdownTitle.textContent = 'Weekly Activity Required';
-    goalWrap.appendChild(breakdownTitle);
-
-    var breakdown = [
-      { label: 'Sets needed',     val: '15',  icon: '\uD83D\uDCDE', color: 'var(--text3)' },
-      { label: 'Openings',        val: '8',   icon: '\uD83E\uDD1D', color: 'var(--text3)' },
-      { label: 'Closings/week',   val: '3',   icon: '\uD83D\uDCDD', color: 'var(--primary-light)' },
-      { label: 'Avg case size',   val: '$3,200', icon: '\uD83D\uDCB0', color: 'var(--green-bright)' },
-      { label: 'Hit rate needed', val: '37%', icon: '\uD83C\uDFAF', color: 'var(--accent)' },
-    ];
-
-    breakdown.forEach(function(b) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);';
-      var left = document.createElement('div');
-      left.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--text2);';
-      var icon = document.createElement('span');
-      icon.textContent = b.icon;
-      var lbl = document.createElement('span');
-      lbl.textContent = b.label;
-      left.appendChild(icon);
-      left.appendChild(lbl);
-      var val = document.createElement('div');
-      val.style.cssText = 'font-size:0.82rem;font-weight:700;color:' + b.color + ';';
-      val.textContent = b.val;
-      row.appendChild(left);
-      row.appendChild(val);
-      goalWrap.appendChild(row);
-    });
-
-    twoCol.appendChild(goalWrap);
-
-    // RIGHT: Weekly Pledge
-    var pledgeWrap = document.createElement('div');
-    pledgeWrap.className = 'chart-container';
-    pledgeWrap.style.cssText = 'padding:16px;';
-
-    var pledgeTitle = document.createElement('div');
-    pledgeTitle.className = 'demo-section-heading';
-    pledgeTitle.textContent = 'This Week\'s Pledge';
-    pledgeWrap.appendChild(pledgeTitle);
-
-    var pledgeData = [
-      { type: 'Set',              target: 15, actual: 12, icon: '\uD83D\uDCDE' },
-      { type: 'Opening',          target: 8,  actual: 8,  icon: '\uD83E\uDD1D' },
-      { type: 'Closing',          target: 3,  actual: 2,  icon: '\uD83D\uDCDD' },
-      { type: 'Closed',           target: 2,  actual: 2,  icon: '\u2705' },
-      { type: 'Referral',         target: 4,  actual: 5,  icon: '\uD83D\uDD17' },
-      { type: 'Client Servicing', target: 6,  actual: 4,  icon: '\uD83D\uDD27' },
-    ];
-
-    var pHeader = document.createElement('div');
-    pHeader.style.cssText = 'display:grid;grid-template-columns:1fr 56px 56px 40px;gap:4px;font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);';
-    ['Activity', 'Target', 'Actual', ''].forEach(function(h) {
-      var hEl = document.createElement('div');
-      hEl.textContent = h;
-      pHeader.appendChild(hEl);
-    });
-    pledgeWrap.appendChild(pHeader);
-
-    pledgeData.forEach(function(row) {
-      var met = row.actual >= row.target;
-      var pRow = document.createElement('div');
-      pRow.style.cssText = 'display:grid;grid-template-columns:1fr 56px 56px 40px;gap:4px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);';
-
-      var nameCell = document.createElement('div');
-      nameCell.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text);';
-      var ic = document.createElement('span');
-      ic.textContent = row.icon;
-      var nm = document.createElement('span');
-      nm.textContent = row.type;
-      nameCell.appendChild(ic);
-      nameCell.appendChild(nm);
-
-      var targetCell = document.createElement('div');
-      targetCell.style.cssText = 'font-size:0.78rem;color:var(--text3);text-align:center;';
-      targetCell.textContent = row.target;
-
-      var actualCell = document.createElement('div');
-      actualCell.style.cssText = 'font-size:0.82rem;font-weight:700;color:' + (met ? 'var(--green-bright)' : 'var(--primary-light)') + ';text-align:center;';
-      actualCell.textContent = row.actual;
-
-      var statusCell = document.createElement('div');
-      statusCell.style.cssText = 'text-align:center;font-size:0.9rem;';
-      statusCell.textContent = met ? '\u2713' : '\u00B7';
-      statusCell.style.color = met ? 'var(--green-bright)' : 'var(--text3)';
-
-      pRow.appendChild(nameCell);
-      pRow.appendChild(targetCell);
-      pRow.appendChild(actualCell);
-      pRow.appendChild(statusCell);
-      pledgeWrap.appendChild(pRow);
-    });
-
-    twoCol.appendChild(pledgeWrap);
-    panel.appendChild(twoCol);
-    return panel;
-  }
-
-  // ================================================================
-  // TAB 5: GAMIFICATION
-  // ================================================================
-  function buildAtGamificationPanel() {
-    var panel = document.createElement('div');
-
-    var twoCol = document.createElement('div');
-    twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;';
-
-    // LEFT: Wheel of Fortune
-    var wheelWrap = document.createElement('div');
-    wheelWrap.className = 'chart-container';
-    wheelWrap.style.cssText = 'padding:16px;text-align:center;';
-
-    var wheelTitle = document.createElement('div');
-    wheelTitle.className = 'demo-section-heading';
-    wheelTitle.textContent = 'Wheel of Fortune';
-    wheelWrap.appendChild(wheelTitle);
-
-    // Wheel SVG
-    var wheelSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    wheelSvg.setAttribute('viewBox', '0 0 200 200');
-    wheelSvg.style.cssText = 'width:160px;height:160px;display:block;margin:0 auto 12px;';
-    wheelSvg.id = 'atWheel';
-
-    var segments = [
-      { label: '50 Credits',   color: '#355A99', textColor: '#fff' },
-      { label: 'Badge',         color: '#C4A24D', textColor: '#fff' },
-      { label: '100 Credits',  color: '#0f7b5a', textColor: '#fff' },
-      { label: 'Free Coffee',   color: '#7c3aed', textColor: '#fff' },
-      { label: '200 Credits',  color: '#be185d', textColor: '#fff' },
-      { label: 'Mystery',       color: '#0e7490', textColor: '#fff' },
-    ];
-    var n = segments.length;
-    var cx = 100, cy = 100, r = 90;
-
-    segments.forEach(function(seg, i) {
-      var startAngle = (i / n) * 2 * Math.PI - Math.PI / 2;
-      var endAngle   = ((i + 1) / n) * 2 * Math.PI - Math.PI / 2;
-
-      var x1 = cx + r * Math.cos(startAngle);
-      var y1 = cy + r * Math.sin(startAngle);
-      var x2 = cx + r * Math.cos(endAngle);
-      var y2 = cy + r * Math.sin(endAngle);
-
-      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      var d = 'M ' + cx + ' ' + cy + ' L ' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' A ' + r + ' ' + r + ' 0 0 1 ' + x2.toFixed(1) + ' ' + y2.toFixed(1) + ' Z';
-      path.setAttribute('d', d);
-      path.setAttribute('fill', seg.color);
-      path.setAttribute('stroke', '#1e293b');
-      path.setAttribute('stroke-width', '1.5');
-      wheelSvg.appendChild(path);
-
-      var midAngle = (startAngle + endAngle) / 2;
-      var tr = r * 0.65;
-      var tx = cx + tr * Math.cos(midAngle);
-      var ty = cy + tr * Math.sin(midAngle);
-      var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', tx.toFixed(1));
-      text.setAttribute('y', ty.toFixed(1));
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('dominant-baseline', 'middle');
-      text.setAttribute('fill', seg.textColor);
-      text.setAttribute('font-size', '8');
-      text.setAttribute('font-weight', '700');
-      text.setAttribute('transform', 'rotate(' + ((midAngle * 180 / Math.PI) + 90) + ' ' + tx.toFixed(1) + ' ' + ty.toFixed(1) + ')');
-      text.textContent = seg.label;
-      wheelSvg.appendChild(text);
-    });
-
-    // Center circle
-    var centerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    centerCircle.setAttribute('cx', '100');
-    centerCircle.setAttribute('cy', '100');
-    centerCircle.setAttribute('r', '14');
-    centerCircle.setAttribute('fill', '#1e293b');
-    centerCircle.setAttribute('stroke', '#334155');
-    centerCircle.setAttribute('stroke-width', '2');
-    wheelSvg.appendChild(centerCircle);
-
-    // Pointer
-    var pointer = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    pointer.setAttribute('points', '100,2 106,14 94,14');
-    pointer.setAttribute('fill', '#FFD700');
-    wheelSvg.appendChild(pointer);
-
-    wheelWrap.appendChild(wheelSvg);
-
-    var spinBtn = document.createElement('button');
-    spinBtn.style.cssText = 'background:var(--primary-light);color:#fff;border:none;border-radius:8px;padding:10px 28px;font-size:0.85rem;font-weight:700;cursor:pointer;transition:transform 0.1s;';
-    spinBtn.textContent = 'Spin!';
-    var wheelRotation = 0;
-    spinBtn.addEventListener('click', function() {
-      var degrees = 720 + Math.floor(Math.random() * 360);
-      wheelRotation += degrees;
-      var allPaths = wheelSvg.querySelectorAll('path,text,circle,polygon');
-      wheelSvg.style.transition = 'transform 2s cubic-bezier(0.17,0.67,0.12,0.99)';
-      wheelSvg.style.transform = 'rotate(' + wheelRotation + 'deg)';
-      wheelSvg.style.transformOrigin = '80px 80px';
-    });
-    wheelWrap.appendChild(spinBtn);
-
-    twoCol.appendChild(wheelWrap);
-
-    // RIGHT: Credits & Rewards
-    var credWrap = document.createElement('div');
-    credWrap.className = 'chart-container';
-    credWrap.style.cssText = 'padding:16px;';
-
-    var credTitle = document.createElement('div');
-    credTitle.className = 'demo-section-heading';
-    credTitle.textContent = 'Credits & Rewards';
-    credWrap.appendChild(credTitle);
-
-    var credBalance = document.createElement('div');
-    credBalance.style.cssText = 'text-align:center;margin-bottom:16px;padding:14px;background:var(--bg1);border-radius:8px;';
-    var credNum = document.createElement('div');
-    credNum.style.cssText = 'font-size:2rem;font-weight:800;color:var(--accent);';
-    credNum.textContent = '1,250';
-    var credLbl = document.createElement('div');
-    credLbl.style.cssText = 'font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;';
-    credLbl.textContent = 'Credits Balance';
-    credBalance.appendChild(credNum);
-    credBalance.appendChild(credLbl);
-    credWrap.appendChild(credBalance);
-
-    var recentTitle = document.createElement('div');
-    recentTitle.style.cssText = 'font-size:0.75rem;font-weight:700;color:var(--text2);margin-bottom:10px;';
-    recentTitle.textContent = 'Recent Rewards';
-    credWrap.appendChild(recentTitle);
-
-    var rewardHistory = [
-      { reward: '100 Credits',  date: 'Mar 31', icon: '\uD83C\uDF1F' },
-      { reward: 'Free Coffee',  date: 'Mar 28', icon: '\u2615'       },
-      { reward: '50 Credits',   date: 'Mar 25', icon: '\uD83C\uDF1F' },
-      { reward: 'Mystery Prize',date: 'Mar 20', icon: '\uD83C\uDF81' },
-    ];
-
-    rewardHistory.forEach(function(rw) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);';
-      var icon = document.createElement('span');
-      icon.style.cssText = 'font-size:1.1rem;';
-      icon.textContent = rw.icon;
-      var info = document.createElement('div');
-      info.style.cssText = 'flex:1;';
-      var rwName = document.createElement('div');
-      rwName.style.cssText = 'font-size:0.78rem;font-weight:600;color:var(--text);';
-      rwName.textContent = rw.reward;
-      var rwDate = document.createElement('div');
-      rwDate.style.cssText = 'font-size:0.7rem;color:var(--text3);';
-      rwDate.textContent = rw.date;
-      info.appendChild(rwName);
-      info.appendChild(rwDate);
-      row.appendChild(icon);
-      row.appendChild(info);
-      credWrap.appendChild(row);
-    });
-
-    twoCol.appendChild(credWrap);
-    panel.appendChild(twoCol);
-
-    // Tree Forest Preview
-    var forestWrap = document.createElement('div');
-    forestWrap.className = 'chart-container';
-    forestWrap.style.cssText = 'padding:16px;';
-
-    var forestTitle = document.createElement('div');
-    forestTitle.className = 'demo-section-heading';
-    forestTitle.textContent = 'Your Forest — 12 Trees Planted';
-    forestWrap.appendChild(forestTitle);
-
-    var forestScene = document.createElement('div');
-    forestScene.style.cssText = [
-      'background:linear-gradient(180deg,#0a2e1a 0%,#0f4d2a 60%,#1a6b3c 100%)',
-      'min-height:180px', 'position:relative', 'border-radius:8px', 'overflow:hidden',
-    ].join(';');
-
-    var treeData = [
-      { species: 'cherry_blossom', left: '5%',  bottom: '10%', width: 62 },
-      { species: 'mighty_oak',     left: '18%', bottom: '6%',  width: 78 },
-      { species: 'coconut_palm',   left: '31%', bottom: '8%',  width: 58 },
-      { species: 'apple_tree',     left: '44%', bottom: '5%',  width: 70 },
-      { species: 'lucky_bamboo',   left: '57%', bottom: '12%', width: 52 },
-      { species: 'blue_spruce',    left: '70%', bottom: '7%',  width: 74 },
-    ];
-
-    treeData.forEach(function(t) {
-      var treeDiv = document.createElement('div');
-      treeDiv.style.cssText = 'position:absolute;left:' + t.left + ';bottom:' + t.bottom + ';width:' + t.width + 'px;';
-      var img = document.createElement('img');
-      img.src = 'https://tree-showcase-omega.vercel.app/trees/stages/' + t.species + '_full.png';
-      img.alt = t.species.replace(/_/g, ' ');
-      img.style.cssText = 'width:100%;height:auto;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));';
-      img.onerror = function() { treeDiv.textContent = '\uD83C\uDF33'; treeDiv.style.fontSize = '2rem'; };
-      treeDiv.appendChild(img);
-      forestScene.appendChild(treeDiv);
-    });
-
-    forestWrap.appendChild(forestScene);
-    panel.appendChild(forestWrap);
-    return panel;
-  }
-
-  // ================================================================
-  // TAB 6: COACHING & REFLECTIONS
-  // ================================================================
-  function buildAtCoachingPanel() {
-    var panel = document.createElement('div');
-
-    var twoCol = document.createElement('div');
-    twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;';
-
-    // LEFT: Coaching Calendar
-    var calWrap = document.createElement('div');
-    calWrap.className = 'chart-container';
-    calWrap.style.cssText = 'padding:16px;';
-
-    var calTitle = document.createElement('div');
-    calTitle.className = 'demo-section-heading';
-    calTitle.textContent = 'Book Coaching Session';
-    calWrap.appendChild(calTitle);
-
-    var calDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    var calHours = ['9am', '10am', '11am', '1pm', '2pm', '3pm', '4pm'];
-    var booked   = { '10am-Tue': true, '2pm-Thu': true, '9am-Wed': true };
-    var yourSlot = '11am-Mon';
-
-    var calHeaderRow = document.createElement('div');
-    calHeaderRow.style.cssText = 'display:grid;grid-template-columns:40px repeat(5,1fr);gap:3px;margin-bottom:4px;';
-    var emptyCorner = document.createElement('div');
-    calHeaderRow.appendChild(emptyCorner);
-    calDays.forEach(function(d) {
-      var dEl = document.createElement('div');
-      dEl.style.cssText = 'text-align:center;font-size:0.65rem;color:var(--text3);font-weight:600;padding:2px;';
-      dEl.textContent = d;
-      calHeaderRow.appendChild(dEl);
-    });
-    calWrap.appendChild(calHeaderRow);
-
-    calHours.forEach(function(h) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:grid;grid-template-columns:40px repeat(5,1fr);gap:3px;margin-bottom:3px;';
-      var hLabel = document.createElement('div');
-      hLabel.style.cssText = 'font-size:0.62rem;color:var(--text3);display:flex;align-items:center;padding-right:4px;justify-content:flex-end;';
-      hLabel.textContent = h;
-      row.appendChild(hLabel);
-      calDays.forEach(function(d) {
-        var key = h + '-' + d;
-        var cell = document.createElement('div');
-        var isBooked = booked[key];
-        var isYours  = key === yourSlot;
-        cell.style.cssText = 'height:22px;border-radius:4px;cursor:pointer;';
-        if (isYours) {
-          cell.style.background = 'var(--primary-light)';
-          cell.style.border = '1px solid rgba(107,155,219,0.6)';
-          cell.title = 'Your session';
-        } else if (isBooked) {
-          cell.style.background = 'rgba(107,155,219,0.15)';
-          cell.style.border = '1px solid rgba(107,155,219,0.2)';
-          cell.style.opacity = '0.5';
-        } else {
-          cell.style.background = 'rgba(52,211,153,0.1)';
-          cell.style.border = '1px solid rgba(52,211,153,0.2)';
-        }
-        row.appendChild(cell);
+    },
+  }));
+
+  /* ---- Core Card 2: Leaderboard & Analytics ---- */
+  container.appendChild(buildModuleCard({
+    emoji: '\uD83C\uDFC6',
+    name: 'Leaderboard & Analytics',
+    badge: 'CORE',
+    badgeColor: 'rgba(52,211,153,0.8)',
+    desc: 'Hall of Fame podium, full activity leaderboard, sales funnel analytics, team trends & inactivity alerts.',
+    pills: ['Hall of Fame', 'Trend Arrows', 'Inactivity Alerts'],
+    previewFn: function(wrap) {
+      var podData = [
+        { rank: 2, initials: 'JC', name: 'James Chen', pts: 395, color: '#C0C0C0', medal: '\uD83E\uDD48' },
+        { rank: 1, initials: 'SL', name: 'Sarah Lim',  pts: 428, color: '#FFD700', medal: '\uD83E\uDD47' },
+        { rank: 3, initials: 'LT', name: 'You',        pts: 312, color: '#CD7F32', medal: '\uD83E\uDD49' },
+      ];
+      var podRow = document.createElement('div');
+      podRow.style.cssText = 'display:flex;justify-content:center;align-items:flex-end;gap:12px;';
+      podData.forEach(function(p) {
+        var col = document.createElement('div');
+        col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
+        var medal = document.createElement('div');
+        medal.style.cssText = 'font-size:1rem;';
+        medal.textContent = p.medal;
+        var av = atAvatar(p.initials, p.color + '55');
+        av.style.cssText += ';border:2px solid ' + p.color + ';width:30px;height:30px;';
+        var pn = document.createElement('div');
+        pn.style.cssText = 'font-size:0.62rem;font-weight:700;color:var(--text);text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+        pn.textContent = p.name.split(' ')[0];
+        var pp = document.createElement('div');
+        pp.style.cssText = 'font-size:0.62rem;color:var(--text3);';
+        pp.textContent = p.pts + ' pts';
+        var blk = document.createElement('div');
+        var h = p.rank === 1 ? '36px' : p.rank === 2 ? '26px' : '18px';
+        blk.style.cssText = 'width:44px;height:' + h + ';background:' + p.color + '22;border:1px solid ' + p.color + '55;border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;color:' + p.color + ';';
+        blk.textContent = '#' + p.rank;
+        col.appendChild(medal);
+        col.appendChild(av);
+        col.appendChild(pn);
+        col.appendChild(pp);
+        col.appendChild(blk);
+        podRow.appendChild(col);
       });
-      calWrap.appendChild(row);
-    });
+      wrap.appendChild(podRow);
+    },
+  }));
 
-    var calLegend = document.createElement('div');
-    calLegend.style.cssText = 'display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;';
-    [
-      { color: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.2)', label: 'Available' },
-      { color: 'var(--primary-light)', border: 'transparent', label: 'Your booking' },
-      { color: 'rgba(107,155,219,0.15)', border: 'rgba(107,155,219,0.2)', label: 'Booked' },
-    ].forEach(function(l) {
-      var item = document.createElement('div');
-      item.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--text3);';
-      var sq = document.createElement('div');
-      sq.style.cssText = 'width:12px;height:12px;border-radius:2px;background:' + l.color + ';border:1px solid ' + l.border + ';';
-      var lb = document.createElement('span');
-      lb.textContent = l.label;
-      item.appendChild(sq);
-      item.appendChild(lb);
-      calLegend.appendChild(item);
-    });
-    calWrap.appendChild(calLegend);
-    twoCol.appendChild(calWrap);
+  /* ---- Core Card 3: Habit Tracker ---- */
+  container.appendChild(buildModuleCard({
+    emoji: '\uD83D\uDD25',
+    name: 'Habit Tracker',
+    badge: 'CORE',
+    badgeColor: 'rgba(52,211,153,0.8)',
+    desc: 'Daily habits with streak tracking, contribution heatmaps, work & personal habit separation.',
+    pills: ['Streak Tracking', 'Heatmaps', 'Work/Personal Split'],
+    previewFn: function(wrap) {
+      var heatValues = [
+        3,5,4,2,5,1,0, 4,3,5,5,4,2,0, 2,4,3,5,5,1,0, 5,4,5,4,4,0,0
+      ];
+      var heatColors = [
+        'var(--bg2)',
+        'rgba(53,90,153,0.25)',
+        'rgba(53,90,153,0.45)',
+        'rgba(107,155,219,0.6)',
+        'rgba(107,155,219,0.8)',
+        'var(--primary-light)',
+      ];
+      var label = document.createElement('div');
+      label.style.cssText = 'font-size:0.68rem;color:var(--text3);font-weight:600;margin-bottom:7px;';
+      label.textContent = '4-Week Heatmap';
+      wrap.appendChild(label);
+      var grid = document.createElement('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:repeat(28,1fr);gap:2px;';
+      heatValues.forEach(function(v) {
+        var cell = document.createElement('div');
+        cell.style.cssText = 'height:11px;border-radius:2px;background:' + heatColors[v] + ';';
+        grid.appendChild(cell);
+      });
+      wrap.appendChild(grid);
+      var legend = document.createElement('div');
+      legend.style.cssText = 'display:flex;align-items:center;gap:4px;margin-top:7px;font-size:0.62rem;color:var(--text3);';
+      legend.textContent = 'Less ';
+      [0,1,2,3,4,5].forEach(function(v) {
+        var sq = document.createElement('div');
+        sq.style.cssText = 'width:10px;height:10px;border-radius:2px;background:' + heatColors[v] + ';border:1px solid var(--border);';
+        legend.appendChild(sq);
+      });
+      var more = document.createElement('span');
+      more.textContent = ' More';
+      legend.appendChild(more);
+      wrap.appendChild(legend);
+    },
+  }));
 
-    // RIGHT: Weekly Reflection
-    var reflectWrap = document.createElement('div');
-    reflectWrap.className = 'chart-container';
-    reflectWrap.style.cssText = 'padding:16px;';
+  /* ---- Core Card 4: Digital Pledge Sheet & Calculator ---- */
+  container.appendChild(buildModuleCard({
+    emoji: '\uD83D\uDCCB',
+    name: 'Digital Pledge Sheet & Calculator',
+    badge: 'CORE',
+    badgeColor: 'rgba(52,211,153,0.8)',
+    desc: 'Reverse-engineer activity targets from FYC goals. Save/load pledge sheets, presets, PDF export.',
+    pills: ['Reverse Calculator', 'PDF Export', 'Presets'],
+    previewFn: function(wrap) {
+      var fycRow = document.createElement('div');
+      fycRow.style.cssText = 'margin-bottom:10px;padding:9px;background:rgba(53,90,153,0.12);border:1px solid rgba(107,155,219,0.2);border-radius:7px;';
+      var fycLbl = document.createElement('div');
+      fycLbl.style.cssText = 'font-size:0.64rem;color:var(--text3);margin-bottom:3px;';
+      fycLbl.textContent = 'FYC Target';
+      var fycVal = document.createElement('div');
+      fycVal.style.cssText = 'font-size:1.1rem;font-weight:800;color:var(--primary-light);';
+      fycVal.textContent = '$50,000';
+      fycRow.appendChild(fycLbl);
+      fycRow.appendChild(fycVal);
+      wrap.appendChild(fycRow);
+      var reqs = [
+        { icon: '\uD83D\uDCDE', label: 'Sets / week',  val: '12' },
+        { icon: '\uD83E\uDD1D', label: 'Openings',     val: '4'  },
+        { icon: '\uD83D\uDCDD', label: 'Closings',     val: '2'  },
+      ];
+      reqs.forEach(function(r) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);';
+        var lft = document.createElement('div');
+        lft.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text2);';
+        lft.textContent = r.icon + ' ' + r.label;
+        var val = document.createElement('div');
+        val.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--green-bright);';
+        val.textContent = r.val;
+        row.appendChild(lft);
+        row.appendChild(val);
+        wrap.appendChild(row);
+      });
+    },
+  }));
 
-    var reflectTitle = document.createElement('div');
-    reflectTitle.className = 'demo-section-heading';
-    reflectTitle.textContent = 'Weekly Reflection';
-    reflectWrap.appendChild(reflectTitle);
+  /* ================================================================
+     ADD-ON MODULES SECTION HEADER
+     ================================================================ */
+  var addonHeader = document.createElement('div');
+  addonHeader.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:8px;margin-bottom:12px;';
+  var addonLabel = document.createElement('div');
+  addonLabel.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);';
+  addonLabel.textContent = 'ADD-ON MODULES';
+  addonHeader.appendChild(addonLabel);
+  addonHeader.appendChild(atBadge('Growth & Coaching', 'rgba(107,155,219,0.8)'));
+  container.appendChild(addonHeader);
 
-    var reflectData = [
-      {
-        q: 'What went well this week?',
-        a: "Exceeded my daily call targets Mon-Thu. Converted 2 out of 3 openings into full proposals. Client referral from Mrs. Lim generated a warm prospect.",
-      },
-      {
-        q: 'What will you improve next week?',
-        a: "Follow up on 4 pending proposals before end of week. Increase social media posting to daily. Block 30 mins each morning for product knowledge review.",
-      },
-    ];
+  /* ---- Add-on grid ---- */
+  var addons = [
+    { icon: '\uD83D\uDCB0', title: 'Commission Calculator',   desc: '30+ AIA product commission rates',              isNew: false },
+    { icon: '\uD83D\uDCC8', title: 'Income Projection',       desc: 'Multi-year income layering with 9 streams',      isNew: false },
+    { icon: '\uD83D\uDCCA', title: 'Sales Dashboard',         desc: 'FYC leaderboard with Life, HSG, A&H breakdowns', isNew: true  },
+    { icon: '\uD83C\uDFA0', title: 'Gamification & Rewards',  desc: 'Wheel of Fortune, credits, real-life rewards',   isNew: true  },
+    { icon: '\uD83D\uDCC5', title: 'Coaching & Booking',      desc: 'Public booking pages, Google Calendar sync',     isNew: false },
+    { icon: '\uD83D\uDCAD', title: 'Team Reflections',        desc: 'Weekly reflections with AI coaching feedback',   isNew: false },
+    { icon: '\u2705',       title: 'Accountability Board',    desc: 'Scheduled to-do lists with team visibility',     isNew: true  },
+  ];
 
-    reflectData.forEach(function(r) {
-      var qEl = document.createElement('div');
-      qEl.style.cssText = 'font-size:0.75rem;font-weight:700;color:var(--text2);margin-bottom:6px;margin-top:12px;';
-      qEl.textContent = r.q;
-      var aEl = document.createElement('div');
-      aEl.style.cssText = 'font-size:0.78rem;color:var(--text3);line-height:1.6;background:var(--bg1);border-radius:6px;padding:10px 12px;border-left:3px solid var(--primary-light);';
-      aEl.textContent = r.a;
-      reflectWrap.appendChild(qEl);
-      reflectWrap.appendChild(aEl);
-    });
+  var addonGrid = document.createElement('div');
+  addonGrid.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px;';
 
-    twoCol.appendChild(reflectWrap);
-    panel.appendChild(twoCol);
+  addons.forEach(function(a) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;display:flex;gap:10px;align-items:flex-start;';
 
-    // AI Coaching suggestion
-    var aiWrap = document.createElement('div');
-    aiWrap.className = 'chart-container';
-    aiWrap.style.cssText = 'padding:16px;';
+    var iconEl = document.createElement('div');
+    iconEl.style.cssText = 'font-size:1.1rem;flex-shrink:0;margin-top:1px;';
+    iconEl.textContent = a.icon;
+    card.appendChild(iconEl);
 
-    var aiHeader = document.createElement('div');
-    aiHeader.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px;';
-    var aiIcon = document.createElement('div');
-    aiIcon.style.cssText = 'width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#355A99,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;';
-    aiIcon.textContent = '\uD83E\uDD16';
-    var aiTitle = document.createElement('div');
-    aiTitle.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--text);';
-    aiTitle.textContent = 'AI Coach Feedback';
-    aiHeader.appendChild(aiIcon);
-    aiHeader.appendChild(aiTitle);
-    aiWrap.appendChild(aiHeader);
+    var info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:0;';
 
-    var aiMsg = document.createElement('div');
-    aiMsg.style.cssText = 'font-size:0.82rem;color:var(--text2);line-height:1.7;background:var(--bg1);border-radius:8px;padding:14px;border:1px solid var(--border);';
-    aiMsg.textContent = "Great week, Leo! Your set-to-opening conversion rate of 53% is above team average (42%). Focus area: your closing ratio dropped to 25% — consider practising the 3 objection-handling scripts before your next proposal presentation. Your consistency streak of 14 days is your strongest asset — keep the momentum!";
-    aiWrap.appendChild(aiMsg);
+    var titleRow = document.createElement('div');
+    titleRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:3px;';
+    var tEl = document.createElement('div');
+    tEl.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--text);';
+    tEl.textContent = a.title;
+    titleRow.appendChild(tEl);
+    if (a.isNew) {
+      var nb = document.createElement('span');
+      nb.style.cssText = 'display:inline-block;padding:1px 6px;border-radius:4px;font-size:0.58rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;background:#355A99;color:#fff;';
+      nb.textContent = 'NEW';
+      titleRow.appendChild(nb);
+    }
+    info.appendChild(titleRow);
 
-    panel.appendChild(aiWrap);
-    return panel;
-  }
+    var dsc = document.createElement('div');
+    dsc.style.cssText = 'font-size:0.71rem;color:var(--text3);line-height:1.5;';
+    dsc.textContent = a.desc;
+    info.appendChild(dsc);
+    card.appendChild(info);
+    addonGrid.appendChild(card);
+  });
 
-  // ================================================================
-  // TAB 7: SALES DASHBOARD
-  // ================================================================
-  function buildAtDashboardPanel() {
-    var panel = document.createElement('div');
+  container.appendChild(addonGrid);
 
-    // 4 metric cards
-    var cardsGrid = document.createElement('div');
-    cardsGrid.className = 'stat-boxes';
-    cardsGrid.style.cssText = 'grid-template-columns:repeat(4,1fr);margin-bottom:16px;';
+  /* ================================================================
+     TREE FOREST BOTTOM SECTION
+     ================================================================ */
+  var forestWrap = document.createElement('div');
+  forestWrap.className = 'chart-container';
+  forestWrap.style.cssText = 'padding:14px 16px;';
 
-    var metrics = [
-      { val: '$42,800', label: 'FYC YTD',       color: 'var(--primary-light)' },
-      { val: '18',      label: 'Cases Closed',   color: 'var(--green-bright)'  },
-      { val: '$2,378',  label: 'Avg Case Size',  color: 'var(--accent)'        },
-      { val: '34%',     label: 'Hit Rate',       color: 'var(--purple)'        },
-    ];
+  var forestTitle = document.createElement('div');
+  forestTitle.className = 'demo-section-heading';
+  forestTitle.textContent = 'Your Personal Forest';
+  forestWrap.appendChild(forestTitle);
 
-    metrics.forEach(function(m) {
-      var card = document.createElement('div');
-      card.className = 'stat-box';
-      var val = document.createElement('div');
-      val.className = 'stat-box-value';
-      val.style.color = m.color;
-      val.textContent = m.val;
-      var lbl = document.createElement('div');
-      lbl.className = 'stat-box-label';
-      lbl.textContent = m.label;
-      card.appendChild(val);
-      card.appendChild(lbl);
-      cardsGrid.appendChild(card);
-    });
+  var forestScene = document.createElement('div');
+  forestScene.style.cssText = [
+    'background:linear-gradient(180deg,#0a2e1a 0%,#0f4d2a 60%,#1a6b3c 100%)',
+    'min-height:160px', 'position:relative', 'border-radius:8px', 'overflow:hidden',
+  ].join(';');
 
-    panel.appendChild(cardsGrid);
+  var treeData = [
+    { species: 'cherry_blossom', left: '4%',  bottom: '8%',  width: 58 },
+    { species: 'mighty_oak',     left: '17%', bottom: '5%',  width: 72 },
+    { species: 'coconut_palm',   left: '30%', bottom: '7%',  width: 54 },
+    { species: 'apple_tree',     left: '45%', bottom: '4%',  width: 66 },
+    { species: 'lucky_bamboo',   left: '59%', bottom: '10%', width: 48 },
+    { species: 'blue_spruce',    left: '72%', bottom: '6%',  width: 68 },
+  ];
 
-    // Bar chart — Monthly FYC
-    var barWrap = document.createElement('div');
-    barWrap.className = 'chart-container';
-    barWrap.style.cssText = 'padding:16px;margin-bottom:16px;';
+  treeData.forEach(function(t) {
+    var treeDiv = document.createElement('div');
+    treeDiv.style.cssText = 'position:absolute;left:' + t.left + ';bottom:' + t.bottom + ';width:' + t.width + 'px;';
+    var img = document.createElement('img');
+    img.src = 'https://tree-showcase-omega.vercel.app/trees/stages/' + t.species + '_full.png';
+    img.alt = t.species.replace(/_/g, ' ');
+    img.style.cssText = 'width:100%;height:auto;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));';
+    img.onerror = function() { treeDiv.textContent = '\uD83C\uDF33'; treeDiv.style.fontSize = '2rem'; };
+    treeDiv.appendChild(img);
+    forestScene.appendChild(treeDiv);
+  });
 
-    var barTitle = document.createElement('div');
-    barTitle.className = 'demo-section-heading';
-    barTitle.textContent = 'Monthly FYC (Last 6 Months)';
-    barWrap.appendChild(barTitle);
+  forestWrap.appendChild(forestScene);
 
-    var barCanvas = document.createElement('canvas');
-    barCanvas.id = 'atDashBarChart';
-    barWrap.appendChild(barCanvas);
-    panel.appendChild(barWrap);
+  var forestCaption = document.createElement('div');
+  forestCaption.style.cssText = 'font-size:0.74rem;color:var(--text3);margin-top:10px;text-align:center;';
+  forestCaption.textContent = 'Advisors grow their personal forest by hitting daily activity targets';
+  forestWrap.appendChild(forestCaption);
 
-    // Category breakdown table
-    var tableWrap = document.createElement('div');
-    tableWrap.className = 'chart-container';
-    tableWrap.style.cssText = 'padding:16px;';
-
-    var tableTitle = document.createElement('div');
-    tableTitle.className = 'demo-section-heading';
-    tableTitle.textContent = 'FYC by Category';
-    tableWrap.appendChild(tableTitle);
-
-    var catData = [
-      { cat: 'Life Insurance',    fyc: 24800, cases: 8,  color: '#355A99'  },
-      { cat: 'Health Insurance',  fyc: 12400, cases: 6,  color: '#0f7b5a'  },
-      { cat: 'A&H / PA',          fyc: 5600,  cases: 4,  color: '#C4A24D'  },
-    ];
-    var totalFyc = catData.reduce(function(s, c) { return s + c.fyc; }, 0);
-
-    var tHeader = document.createElement('div');
-    tHeader.style.cssText = 'display:grid;grid-template-columns:1fr 80px 56px 80px;gap:8px;font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);';
-    ['Category', 'FYC', 'Cases', 'Share'].forEach(function(h) {
-      var hEl = document.createElement('div');
-      hEl.textContent = h;
-      tHeader.appendChild(hEl);
-    });
-    tableWrap.appendChild(tHeader);
-
-    catData.forEach(function(row) {
-      var pct = Math.round(row.fyc / totalFyc * 100);
-      var tRow = document.createElement('div');
-      tRow.style.cssText = 'display:grid;grid-template-columns:1fr 80px 56px 80px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);';
-
-      var catCell = document.createElement('div');
-      catCell.style.cssText = 'display:flex;align-items:center;gap:8px;';
-      var dot = document.createElement('div');
-      dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + row.color + ';flex-shrink:0;';
-      var catName = document.createElement('span');
-      catName.style.cssText = 'font-size:0.8rem;color:var(--text);';
-      catName.textContent = row.cat;
-      catCell.appendChild(dot);
-      catCell.appendChild(catName);
-
-      var fycCell = document.createElement('div');
-      fycCell.style.cssText = 'font-size:0.82rem;font-weight:700;color:' + row.color + ';';
-      fycCell.textContent = '$' + row.fyc.toLocaleString();
-
-      var casesCell = document.createElement('div');
-      casesCell.style.cssText = 'font-size:0.8rem;color:var(--text2);';
-      casesCell.textContent = row.cases;
-
-      var shareWrap = document.createElement('div');
-      var shareBar = document.createElement('div');
-      shareBar.style.cssText = 'background:var(--bg1);border-radius:99px;height:6px;margin-bottom:3px;overflow:hidden;';
-      var shareFill = document.createElement('div');
-      shareFill.style.cssText = 'height:100%;border-radius:99px;width:' + pct + '%;background:' + row.color + ';';
-      shareBar.appendChild(shareFill);
-      var sharePct = document.createElement('div');
-      sharePct.style.cssText = 'font-size:0.68rem;color:var(--text3);';
-      sharePct.textContent = pct + '%';
-      shareWrap.appendChild(shareBar);
-      shareWrap.appendChild(sharePct);
-
-      tRow.appendChild(catCell);
-      tRow.appendChild(fycCell);
-      tRow.appendChild(casesCell);
-      tRow.appendChild(shareWrap);
-      tableWrap.appendChild(tRow);
-    });
-
-    panel.appendChild(tableWrap);
-    return panel;
-  }
-
-  function atRenderDashboardCharts() {
-    var canvas = document.getElementById('atDashBarChart');
-    if (!canvas) return;
-    var chartData = [
-      { label: 'Oct', value: 5200  },
-      { label: 'Nov', value: 7800  },
-      { label: 'Dec', value: 9400  },
-      { label: 'Jan', value: 6100  },
-      { label: 'Feb', value: 8300  },
-      { label: 'Mar', value: 6000  },
-    ];
-    Charts.horizontalBar(canvas, chartData, { height: 200 });
-  }
+  container.appendChild(forestWrap);
 };
+
 
 /* ============================================================
    PRODUCT COMPASS DEMO
