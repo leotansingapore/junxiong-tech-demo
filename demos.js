@@ -1307,326 +1307,1064 @@ function initScrollReveal() {
 DEMO_RENDERERS.tracker = function(container) {
   container.id = 'trackerDemo';
 
-  var activities = [
-    { label: 'Cold calls',        pts: 10, done: true  },
-    { label: 'Client meetings',   pts: 12, done: true  },
-    { label: 'Follow-up emails',  pts: 8,  done: true  },
-    { label: 'Referral outreach', pts: 8,  done: false },
-    { label: 'Product training',  pts: 7,  done: false },
-    { label: 'Social media post', pts: 5,  done: false },
+  // ---- Tab bar ----
+  var tabBar = document.createElement('div');
+  tabBar.className = 'demo-tabs';
+
+  var atTabDefs = [
+    { key: 'feed',        label: 'Activity Feed'   },
+    { key: 'leaderboard', label: 'Leaderboard'     },
+    { key: 'habits',      label: 'Habit Tracker'   },
+    { key: 'pledge',      label: 'Pledge & Goals'  },
+    { key: 'gamification',label: 'Gamification'    },
+    { key: 'coaching',    label: 'Coaching'        },
+    { key: 'dashboard',   label: 'Sales Dashboard' },
   ];
 
-  var totalPts = activities.reduce(function(s, a) { return s + a.pts; }, 0);
-
-  function donePts() {
-    return activities.reduce(function(s, a) { return a.done ? s + a.pts : s; }, 0);
-  }
-
-  // ---- Stat boxes ----
-  var statBoxes = document.createElement('div');
-  statBoxes.className = 'stat-boxes';
-  statBoxes.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;';
-
-  var stats = [
-    { val: '14',  label: 'Streak',        color: 'var(--green-bright)' },
-    { val: '312', label: 'Weekly Points',  color: 'var(--accent)'       },
-    { val: '#3',  label: 'Team Rank',      color: 'var(--primary-light)' },
-    { val: '12',  label: 'Trees Planted',  color: 'var(--purple)'       },
-  ];
-
-  stats.forEach(function(s) {
-    var box = document.createElement('div');
-    box.className = 'stat-box';
-    var val = document.createElement('div');
-    val.className = 'stat-box-value';
-    val.style.color = s.color;
-    val.textContent = s.val;
-    var lbl = document.createElement('div');
-    lbl.className = 'stat-box-label';
-    lbl.textContent = s.label;
-    box.appendChild(val);
-    box.appendChild(lbl);
-    statBoxes.appendChild(box);
+  atTabDefs.forEach(function(def, i) {
+    var btn = document.createElement('button');
+    btn.className = 'demo-tab' + (i === 0 ? ' active' : '');
+    btn.dataset.tab = def.key;
+    btn.textContent = def.label;
+    btn.addEventListener('click', function() { atSwitchTab(def.key); });
+    tabBar.appendChild(btn);
   });
 
-  container.appendChild(statBoxes);
+  container.appendChild(tabBar);
 
-  // ---- Two-column dashboard ----
-  var dashboard = document.createElement('div');
-  dashboard.className = 'at-dashboard';
-  dashboard.style.cssText = 'grid-template-columns:1fr 320px;';
+  // ---- Build panels ----
+  var panels = {};
+  panels.feed        = buildAtFeedPanel();
+  panels.leaderboard = buildAtLeaderboardPanel();
+  panels.habits      = buildAtHabitsPanel();
+  panels.pledge      = buildAtPledgePanel();
+  panels.gamification= buildAtGamificationPanel();
+  panels.coaching    = buildAtCoachingPanel();
+  panels.dashboard   = buildAtDashboardPanel();
 
-  // ===== LEFT COLUMN =====
-  var leftCol = document.createElement('div');
-  leftCol.style.cssText = 'display:flex;flex-direction:column;gap:16px;';
-
-  // --- Daily Pledge section ---
-  var pledgeSection = document.createElement('div');
-  pledgeSection.className = 'chart-container';
-
-  var pledgeHeading = document.createElement('div');
-  pledgeHeading.className = 'demo-section-heading';
-  pledgeHeading.textContent = "Today's Pledge";
-  pledgeSection.appendChild(pledgeHeading);
-
-  // Progress ring wrap
-  var ringWrap = document.createElement('div');
-  ringWrap.className = 'progress-ring-wrap';
-  ringWrap.style.cssText = 'position:relative;margin-bottom:16px;flex-direction:row;justify-content:flex-start;align-items:center;gap:20px;';
-
-  var ringContainer = document.createElement('div');
-  ringContainer.style.cssText = 'position:relative;width:160px;height:160px;flex-shrink:0;';
-
-  var canvas = document.createElement('canvas');
-  canvas.id = 'trackerRing';
-  canvas.width = 160;
-  canvas.height = 160;
-  canvas.style.cssText = 'display:block;';
-  ringContainer.appendChild(canvas);
-
-  var ringCenter = document.createElement('div');
-  ringCenter.id = 'trackerRingCenter';
-  ringCenter.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;';
-  var ptsSpan = document.createElement('div');
-  ptsSpan.id = 'trackerPts';
-  ptsSpan.style.cssText = 'font-size:1.5rem;font-weight:800;color:var(--text);line-height:1;';
-  ptsSpan.textContent = donePts() + ' pts';
-  var lblSpan = document.createElement('div');
-  lblSpan.style.cssText = 'font-size:0.7rem;color:var(--text3);margin-top:3px;';
-  lblSpan.textContent = 'of ' + totalPts;
-  ringCenter.appendChild(ptsSpan);
-  ringCenter.appendChild(lblSpan);
-  ringContainer.appendChild(ringCenter);
-
-  ringWrap.appendChild(ringContainer);
-
-  // Activity list (inside ring wrap, side-by-side)
-  var actList = document.createElement('div');
-  actList.className = 'activity-list';
-  actList.style.cssText = 'flex:1;';
-  actList.id = 'trackerActivityList';
-
-  activities.forEach(function(act, idx) {
-    actList.appendChild(buildActivityItem(act, idx));
+  atTabDefs.forEach(function(def, i) {
+    panels[def.key].style.display = i === 0 ? '' : 'none';
+    panels[def.key].dataset.panel = def.key;
+    container.appendChild(panels[def.key]);
   });
 
-  ringWrap.appendChild(actList);
-  pledgeSection.appendChild(ringWrap);
-  leftCol.appendChild(pledgeSection);
+  // Render charts in first visible panel after DOM insertion
+  setTimeout(function() { atRenderFeedCharts(); }, 0);
 
-  // --- Isometric Forest ---
-  var forestWrap = document.createElement('div');
-  forestWrap.className = 'forest-wrap';
-
-  var forestTitle = document.createElement('div');
-  forestTitle.className = 'demo-section-heading';
-  forestTitle.textContent = 'Your Forest';
-  forestWrap.appendChild(forestTitle);
-
-  var forestScene = document.createElement('div');
-  forestScene.className = 'forest-scene';
-  forestScene.style.cssText = [
-    'background:linear-gradient(180deg,#0a2e1a 0%,#0f4d2a 60%,#1a6b3c 100%)',
-    'min-height:320px',
-    'position:relative',
-    'border-radius:8px',
-    'overflow:hidden',
-  ].join(';');
-
-  var treeData = [
-    { species: 'cherry_blossom', left: '5%',  bottom: '12%', width: 72 },
-    { species: 'mighty_oak',     left: '16%', bottom: '8%',  width: 90 },
-    { species: 'coconut_palm',   left: '28%', bottom: '10%', width: 68 },
-    { species: 'apple_tree',     left: '40%', bottom: '6%',  width: 80 },
-    { species: 'lucky_bamboo',   left: '52%', bottom: '14%', width: 60 },
-    { species: 'blue_spruce',    left: '63%', bottom: '8%',  width: 85 },
-    { species: 'banana_plant',   left: '75%', bottom: '12%', width: 65 },
-    { species: 'plumeria',       left: '86%', bottom: '7%',  width: 70 },
-  ];
-
-  treeData.forEach(function(t) {
-    var treeDiv = document.createElement('div');
-    treeDiv.className = 'forest-tree';
-    treeDiv.style.cssText = 'position:absolute;left:' + t.left + ';bottom:' + t.bottom + ';width:' + t.width + 'px;';
-    var img = document.createElement('img');
-    img.src = 'https://tree-showcase-omega.vercel.app/trees/stages/' + t.species + '_full.png';
-    img.alt = t.species.replace(/_/g, ' ');
-    img.style.cssText = 'width:100%;height:auto;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));';
-    img.onerror = function() {
-      treeDiv.style.fontSize = '2.4rem';
-      treeDiv.style.lineHeight = '1';
-      treeDiv.textContent = '\uD83C\uDF33';
-    };
-    treeDiv.appendChild(img);
-    forestScene.appendChild(treeDiv);
-  });
-
-  forestWrap.appendChild(forestScene);
-
-  var forestStats = document.createElement('div');
-  forestStats.className = 'forest-stats';
-  forestStats.style.cssText = 'margin-top:12px;font-size:0.8rem;color:var(--text3);';
-  forestStats.textContent = '12 trees planted \u00B7 6 species unlocked \u00B7 3 rare+ species';
-  forestWrap.appendChild(forestStats);
-
-  leftCol.appendChild(forestWrap);
-  dashboard.appendChild(leftCol);
-
-  // ===== RIGHT COLUMN =====
-  var rightCol = document.createElement('div');
-  rightCol.style.cssText = 'display:flex;flex-direction:column;gap:16px;';
-
-  var lbSection = document.createElement('div');
-  lbSection.className = 'chart-container';
-
-  var lbHeading = document.createElement('div');
-  lbHeading.className = 'demo-section-heading';
-  lbHeading.textContent = 'Team Leaderboard';
-  lbSection.appendChild(lbHeading);
-
-  var lbList = document.createElement('div');
-  lbList.className = 'leaderboard';
-
-  var lbData = [
-    { rank: 1, initials: 'SL', name: 'Sarah Lim',  pts: 428, streak: 21, cls: 'gold'           },
-    { rank: 2, initials: 'JC', name: 'James Chen', pts: 395, streak: 14, cls: 'silver'          },
-    { rank: 3, initials: 'LT', name: 'You',        pts: 312, streak: 14, cls: 'bronze highlight'},
-    { rank: 4, initials: 'RN', name: 'Rachel Ng',  pts: 287, streak: 8,  cls: ''                },
-    { rank: 5, initials: 'DT', name: 'David Tan',  pts: 264, streak: 5,  cls: ''                },
-  ];
-
-  lbData.forEach(function(row) {
-    var lbRow = document.createElement('div');
-    lbRow.className = 'leaderboard-row' + (row.cls ? ' ' + row.cls : '');
-
-    var rankEl = document.createElement('div');
-    rankEl.className = 'leaderboard-rank';
-    rankEl.textContent = '#' + row.rank;
-
-    var avatarEl = document.createElement('div');
-    avatarEl.style.cssText = [
-      'width:30px',
-      'height:30px',
-      'border-radius:50%',
-      'background:var(--bg2)',
-      'border:1px solid var(--border)',
-      'display:flex',
-      'align-items:center',
-      'justify-content:center',
-      'font-size:0.7rem',
-      'font-weight:700',
-      'color:var(--text2)',
-      'flex-shrink:0',
-    ].join(';');
-    avatarEl.textContent = row.initials;
-
-    var nameEl = document.createElement('div');
-    nameEl.className = 'leaderboard-name';
-    nameEl.textContent = row.name;
-
-    var ptsEl = document.createElement('div');
-    ptsEl.className = 'leaderboard-score';
-    ptsEl.textContent = row.pts + ' pts';
-
-    var streakEl = document.createElement('div');
-    streakEl.className = 'leaderboard-streak';
-    streakEl.textContent = row.streak + 'd';
-
-    lbRow.appendChild(rankEl);
-    lbRow.appendChild(avatarEl);
-    lbRow.appendChild(nameEl);
-    lbRow.appendChild(ptsEl);
-    lbRow.appendChild(streakEl);
-    lbList.appendChild(lbRow);
-  });
-
-  lbSection.appendChild(lbList);
-  rightCol.appendChild(lbSection);
-  dashboard.appendChild(rightCol);
-  container.appendChild(dashboard);
-
-  // Initial ring draw
-  setTimeout(function() { redrawRing(); }, 0);
-
-  // ---- Helper: build activity item ----
-  function buildActivityItem(act, idx) {
-    var item = document.createElement('div');
-    item.className = 'activity-item' + (act.done ? ' done' : '');
-    item.dataset.idx = idx;
-    item.onclick = function() { toggleActivity(idx); };
-
-    var check = document.createElement('div');
-    check.className = 'activity-check';
-    var inner = document.createElement('div');
-    inner.className = 'activity-check-inner';
-    check.appendChild(inner);
-
-    var name = document.createElement('div');
-    name.className = 'activity-name';
-    name.textContent = act.label;
-
-    var pts = document.createElement('div');
-    pts.className = 'activity-pts';
-    pts.textContent = '+' + act.pts;
-
-    item.appendChild(check);
-    item.appendChild(name);
-    item.appendChild(pts);
-    return item;
-  }
-
-  // ---- Redraw ring ----
-  function redrawRing() {
-    var c = document.getElementById('trackerRing');
-    if (!c) return;
-    var done = donePts();
-    var progress = totalPts > 0 ? done / totalPts : 0;
-    Charts.progressRing(c, progress, {
-      size:          160,
-      lineWidth:     12,
-      trackColor:    '#1e293b',
-      fillColor:     '#355A99',
-      fillColorEnd:  '#6b9bdb',
+  // ================================================================
+  // TAB SWITCHER
+  // ================================================================
+  function atSwitchTab(key) {
+    var tabs = container.querySelectorAll('.demo-tab');
+    tabs.forEach(function(t) {
+      t.classList.toggle('active', t.dataset.tab === key);
     });
-    var ptsEl = document.getElementById('trackerPts');
-    if (ptsEl) ptsEl.textContent = done + ' pts';
+    atTabDefs.forEach(function(def) {
+      panels[def.key].style.display = def.key === key ? '' : 'none';
+    });
+    setTimeout(function() {
+      if (key === 'feed')        atRenderFeedCharts();
+      if (key === 'dashboard')   atRenderDashboardCharts();
+    }, 0);
+  }
+
+  // ================================================================
+  // HELPER: avatar initials bubble
+  // ================================================================
+  function atAvatar(initials, color) {
+    var av = document.createElement('div');
+    av.style.cssText = [
+      'width:32px', 'height:32px', 'border-radius:50%',
+      'background:' + (color || 'var(--bg2)'),
+      'border:1px solid var(--border)',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'font-size:0.68rem', 'font-weight:700', 'color:var(--text)', 'flex-shrink:0',
+    ].join(';');
+    av.textContent = initials;
+    return av;
+  }
+
+  // ================================================================
+  // TAB 1: ACTIVITY FEED
+  // ================================================================
+  function buildAtFeedPanel() {
+    var panel = document.createElement('div');
+
+    // Today's progress bar
+    var progWrap = document.createElement('div');
+    progWrap.className = 'chart-container';
+    progWrap.style.cssText = 'padding:14px 16px;margin-bottom:16px;';
+
+    var progHeader = document.createElement('div');
+    progHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
+    var progTitle = document.createElement('div');
+    progTitle.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--text);';
+    progTitle.textContent = "Today's Progress";
+    var progPts = document.createElement('div');
+    progPts.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--primary-light);';
+    progPts.textContent = '45 / 60 pts';
+    progHeader.appendChild(progTitle);
+    progHeader.appendChild(progPts);
+    progWrap.appendChild(progHeader);
+
+    var barOuter = document.createElement('div');
+    barOuter.style.cssText = 'background:var(--bg1);border-radius:99px;height:10px;overflow:hidden;';
+    var barInner = document.createElement('div');
+    barInner.style.cssText = 'height:100%;border-radius:99px;width:75%;background:linear-gradient(90deg,#355A99,#6b9bdb);transition:width 0.6s ease;';
+    barOuter.appendChild(barInner);
+    progWrap.appendChild(barOuter);
+
+    var progSub = document.createElement('div');
+    progSub.style.cssText = 'font-size:0.72rem;color:var(--text3);margin-top:6px;';
+    progSub.textContent = '75% of daily goal — great momentum!';
+    progWrap.appendChild(progSub);
+    panel.appendChild(progWrap);
+
+    // Activity feed
+    var feedWrap = document.createElement('div');
+    feedWrap.className = 'chart-container';
+    feedWrap.style.cssText = 'padding:16px;';
+
+    var feedTitle = document.createElement('div');
+    feedTitle.className = 'demo-section-heading';
+    feedTitle.textContent = 'Recent Activity';
+    feedWrap.appendChild(feedTitle);
+
+    var feedData = [
+      { initials: 'LT', color: '#355A99', name: 'You',         type: 'Closing',          icon: '\uD83D\uDCDD', pts: '+4pt',  time: '2m ago',   bg: 'rgba(53,90,153,0.15)' },
+      { initials: 'SL', color: '#0f7b5a', name: 'Sarah Lim',   type: 'Set',              icon: '\uD83D\uDCDE', pts: '+1pt',  time: '14m ago',  bg: 'rgba(15,123,90,0.15)'  },
+      { initials: 'JC', color: '#7c3aed', name: 'James Chen',  type: 'Opening',          icon: '\uD83E\uDD1D', pts: '+3pt',  time: '28m ago',  bg: 'rgba(124,58,237,0.15)' },
+      { initials: 'RN', color: '#b45309', name: 'Rachel Ng',   type: 'Referral',         icon: '\uD83D\uDD17', pts: '+1pt',  time: '45m ago',  bg: 'rgba(180,83,9,0.15)'   },
+      { initials: 'DT', color: '#0e7490', name: 'David Tan',   type: 'Client Servicing', icon: '\uD83D\uDD27', pts: '+2pt',  time: '1h ago',   bg: 'rgba(14,116,144,0.15)' },
+      { initials: 'MW', color: '#be185d', name: 'May Wong',    type: 'Closed',           icon: '\u2705',       pts: '+5pt',  time: '2h ago',   bg: 'rgba(190,24,93,0.15)'  },
+    ];
+
+    feedData.forEach(function(row) {
+      var item = document.createElement('div');
+      item.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);';
+
+      var av = atAvatar(row.initials, row.color);
+      item.appendChild(av);
+
+      var info = document.createElement('div');
+      info.style.cssText = 'flex:1;min-width:0;';
+      var nameLine = document.createElement('div');
+      nameLine.style.cssText = 'font-size:0.82rem;font-weight:600;color:var(--text);';
+      nameLine.textContent = row.name;
+      var typeLine = document.createElement('div');
+      typeLine.style.cssText = 'font-size:0.75rem;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:4px;';
+      var typeIcon = document.createElement('span');
+      typeIcon.textContent = row.icon;
+      var typeTxt = document.createElement('span');
+      typeTxt.textContent = row.type;
+      typeLine.appendChild(typeIcon);
+      typeLine.appendChild(typeTxt);
+      info.appendChild(nameLine);
+      info.appendChild(typeLine);
+      item.appendChild(info);
+
+      var right = document.createElement('div');
+      right.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;';
+      var ptsBadge = document.createElement('div');
+      ptsBadge.style.cssText = 'font-size:0.75rem;font-weight:700;color:var(--green-bright);background:rgba(52,211,153,0.12);padding:2px 8px;border-radius:99px;';
+      ptsBadge.textContent = row.pts;
+      var timeEl = document.createElement('div');
+      timeEl.style.cssText = 'font-size:0.7rem;color:var(--text3);';
+      timeEl.textContent = row.time;
+      right.appendChild(ptsBadge);
+      right.appendChild(timeEl);
+      item.appendChild(right);
+
+      feedWrap.appendChild(item);
+    });
+
+    panel.appendChild(feedWrap);
+    return panel;
+  }
+
+  function atRenderFeedCharts() {
+    // No canvas charts needed for feed tab
+  }
+
+  // ================================================================
+  // TAB 2: LEADERBOARD
+  // ================================================================
+  function buildAtLeaderboardPanel() {
+    var panel = document.createElement('div');
+
+    // Podium
+    var podiumWrap = document.createElement('div');
+    podiumWrap.className = 'chart-container';
+    podiumWrap.style.cssText = 'padding:20px;margin-bottom:16px;';
+
+    var podTitle = document.createElement('div');
+    podTitle.className = 'demo-section-heading';
+    podTitle.textContent = 'Hall of Fame — This Week';
+    podiumWrap.appendChild(podTitle);
+
+    var podRow = document.createElement('div');
+    podRow.style.cssText = 'display:flex;justify-content:center;align-items:flex-end;gap:16px;margin-bottom:8px;';
+
+    var podData = [
+      { rank: 2, initials: 'JC', name: 'James Chen', pts: 395, height: 64,  color: '#C0C0C0', medal: '\uD83E\uDD48' },
+      { rank: 1, initials: 'SL', name: 'Sarah Lim',  pts: 428, height: 88,  color: '#FFD700', medal: '\uD83E\uDD47' },
+      { rank: 3, initials: 'LT', name: 'You',        pts: 312, height: 48,  color: '#CD7F32', medal: '\uD83E\uDD49' },
+    ];
+
+    podData.forEach(function(p) {
+      var col = document.createElement('div');
+      col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;';
+
+      var medal = document.createElement('div');
+      medal.style.cssText = 'font-size:1.4rem;';
+      medal.textContent = p.medal;
+
+      var av = atAvatar(p.initials, p.color + '33');
+      av.style.cssText += ';border:2px solid ' + p.color + ';';
+
+      var pName = document.createElement('div');
+      pName.style.cssText = 'font-size:0.72rem;font-weight:700;color:var(--text);text-align:center;max-width:70px;';
+      pName.textContent = p.name;
+
+      var pPts = document.createElement('div');
+      pPts.style.cssText = 'font-size:0.68rem;color:var(--text3);';
+      pPts.textContent = p.pts + ' pts';
+
+      var block = document.createElement('div');
+      block.style.cssText = 'width:64px;height:' + p.height + 'px;background:' + p.color + '22;border:1px solid ' + p.color + '55;border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:' + p.color + ';';
+      block.textContent = '#' + p.rank;
+
+      col.appendChild(medal);
+      col.appendChild(av);
+      col.appendChild(pName);
+      col.appendChild(pPts);
+      col.appendChild(block);
+      podRow.appendChild(col);
+    });
+
+    podiumWrap.appendChild(podRow);
+    panel.appendChild(podiumWrap);
+
+    // Full leaderboard table
+    var lbWrap = document.createElement('div');
+    lbWrap.className = 'chart-container';
+    lbWrap.style.cssText = 'padding:16px;';
+
+    var lbTitle = document.createElement('div');
+    lbTitle.className = 'demo-section-heading';
+    lbTitle.textContent = 'Full Leaderboard';
+    lbWrap.appendChild(lbTitle);
+
+    var lbData = [
+      { rank: 1, initials: 'SL', name: 'Sarah Lim',    pts: 428, streak: 21, trend: '+12', you: false },
+      { rank: 2, initials: 'JC', name: 'James Chen',   pts: 395, streak: 14, trend: '+5',  you: false },
+      { rank: 3, initials: 'LT', name: 'You',          pts: 312, streak: 14, trend: '+3',  you: true  },
+      { rank: 4, initials: 'RN', name: 'Rachel Ng',    pts: 287, streak: 8,  trend: '-2',  you: false },
+      { rank: 5, initials: 'DT', name: 'David Tan',    pts: 264, streak: 5,  trend: '+1',  you: false },
+      { rank: 6, initials: 'MW', name: 'May Wong',     pts: 241, streak: 3,  trend: '-4',  you: false },
+      { rank: 7, initials: 'BT', name: 'Bryan Teo',    pts: 198, streak: 7,  trend: '+8',  you: false },
+      { rank: 8, initials: 'CK', name: 'Cindy Koh',    pts: 176, streak: 2,  trend: '-1',  you: false },
+    ];
+
+    var headerRow = document.createElement('div');
+    headerRow.style.cssText = 'display:grid;grid-template-columns:36px 1fr 80px 56px 48px;gap:8px;padding:6px 8px;font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);margin-bottom:4px;';
+    ['#', 'Name', 'Points', 'Streak', 'Trend'].forEach(function(h) {
+      var hEl = document.createElement('div');
+      hEl.textContent = h;
+      headerRow.appendChild(hEl);
+    });
+    lbWrap.appendChild(headerRow);
+
+    lbData.forEach(function(row) {
+      var lbRow = document.createElement('div');
+      lbRow.style.cssText = 'display:grid;grid-template-columns:36px 1fr 80px 56px 48px;gap:8px;padding:8px;align-items:center;border-radius:6px;' + (row.you ? 'background:rgba(53,90,153,0.15);border:1px solid rgba(107,155,219,0.3);' : '');
+
+      var rankEl = document.createElement('div');
+      rankEl.style.cssText = 'font-size:0.75rem;font-weight:700;color:' + (row.rank === 1 ? '#FFD700' : row.rank === 2 ? '#C0C0C0' : row.rank === 3 ? '#CD7F32' : 'var(--text3)') + ';';
+      rankEl.textContent = '#' + row.rank;
+
+      var nameWrap = document.createElement('div');
+      nameWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      var av = atAvatar(row.initials);
+      av.style.width = '26px';
+      av.style.height = '26px';
+      av.style.fontSize = '0.62rem';
+      var nameEl = document.createElement('div');
+      nameEl.style.cssText = 'font-size:0.8rem;font-weight:' + (row.you ? '700' : '500') + ';color:var(--text);';
+      nameEl.textContent = row.name + (row.you ? ' (you)' : '');
+      nameWrap.appendChild(av);
+      nameWrap.appendChild(nameEl);
+
+      var ptsEl = document.createElement('div');
+      ptsEl.style.cssText = 'font-size:0.8rem;font-weight:600;color:var(--primary-light);';
+      ptsEl.textContent = row.pts + ' pts';
+
+      var streakEl = document.createElement('div');
+      streakEl.style.cssText = 'font-size:0.78rem;color:var(--text2);';
+      streakEl.textContent = row.streak + 'd \uD83D\uDD25';
+
+      var trendEl = document.createElement('div');
+      var trendUp = row.trend.charAt(0) === '+';
+      trendEl.style.cssText = 'font-size:0.75rem;font-weight:600;color:' + (trendUp ? 'var(--green-bright)' : '#ef4444') + ';';
+      trendEl.textContent = (trendUp ? '\u2191' : '\u2193') + ' ' + row.trend.slice(1);
+
+      lbRow.appendChild(rankEl);
+      lbRow.appendChild(nameWrap);
+      lbRow.appendChild(ptsEl);
+      lbRow.appendChild(streakEl);
+      lbRow.appendChild(trendEl);
+      lbWrap.appendChild(lbRow);
+    });
+
+    panel.appendChild(lbWrap);
+    return panel;
+  }
+
+  // ================================================================
+  // TAB 3: HABIT TRACKER
+  // ================================================================
+  function buildAtHabitsPanel() {
+    var panel = document.createElement('div');
+
+    var habitWrap = document.createElement('div');
+    habitWrap.className = 'chart-container';
+    habitWrap.style.cssText = 'padding:16px;margin-bottom:16px;';
+
+    var habitTitle = document.createElement('div');
+    habitTitle.className = 'demo-section-heading';
+    habitTitle.textContent = 'Weekly Habit Tracker';
+    habitWrap.appendChild(habitTitle);
+
+    var days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    var habits = [
+      { name: 'Cold Calls',      streak: 14, checks: [1,1,1,1,1,0,0] },
+      { name: 'Client Meetings', streak: 7,  checks: [1,0,1,1,0,1,0] },
+      { name: 'Follow-ups',      streak: 5,  checks: [1,1,1,0,1,0,0] },
+      { name: 'Social Media',    streak: 21, checks: [1,1,1,1,1,1,0] },
+      { name: 'Product Study',   streak: 3,  checks: [0,1,1,1,0,0,0] },
+      { name: 'Exercise',        streak: 9,  checks: [1,1,0,1,1,0,0] },
+      { name: 'Reading',         streak: 12, checks: [1,1,1,1,1,0,0] },
+    ];
+
+    // Header row
+    var headerGrid = document.createElement('div');
+    headerGrid.style.cssText = 'display:grid;grid-template-columns:140px repeat(7,1fr) 60px;gap:4px;margin-bottom:8px;padding:0 4px;';
+    var emptyH = document.createElement('div');
+    headerGrid.appendChild(emptyH);
+    days.forEach(function(d) {
+      var dEl = document.createElement('div');
+      dEl.style.cssText = 'text-align:center;font-size:0.68rem;color:var(--text3);font-weight:600;text-transform:uppercase;';
+      dEl.textContent = d;
+      headerGrid.appendChild(dEl);
+    });
+    var streakH = document.createElement('div');
+    streakH.style.cssText = 'text-align:center;font-size:0.68rem;color:var(--text3);font-weight:600;text-transform:uppercase;';
+    streakH.textContent = 'Streak';
+    headerGrid.appendChild(streakH);
+    habitWrap.appendChild(headerGrid);
+
+    habits.forEach(function(habit) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:140px repeat(7,1fr) 60px;gap:4px;padding:4px;border-radius:6px;margin-bottom:2px;';
+      row.style.cssText += 'align-items:center;';
+
+      var nameEl = document.createElement('div');
+      nameEl.style.cssText = 'font-size:0.78rem;color:var(--text2);font-weight:500;padding-right:8px;';
+      nameEl.textContent = habit.name;
+      row.appendChild(nameEl);
+
+      habit.checks.forEach(function(checked, di) {
+        var cell = document.createElement('div');
+        cell.style.cssText = 'display:flex;justify-content:center;align-items:center;';
+        var dot = document.createElement('div');
+        var isToday = di === 4; // Friday = today
+        if (isToday && !checked) {
+          dot.style.cssText = 'width:22px;height:22px;border-radius:4px;border:2px dashed var(--border);';
+        } else if (checked) {
+          dot.style.cssText = 'width:22px;height:22px;border-radius:4px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;';
+          var tick = document.createElement('span');
+          tick.style.cssText = 'color:#fff;font-size:0.7rem;font-weight:700;';
+          tick.textContent = '\u2713';
+          dot.appendChild(tick);
+        } else {
+          dot.style.cssText = 'width:22px;height:22px;border-radius:4px;background:var(--bg1);border:1px solid var(--border);opacity:0.5;';
+        }
+        cell.appendChild(dot);
+        row.appendChild(cell);
+      });
+
+      var streakEl = document.createElement('div');
+      streakEl.style.cssText = 'text-align:center;font-size:0.75rem;font-weight:700;color:var(--green-bright);';
+      streakEl.textContent = habit.streak + 'd';
+      row.appendChild(streakEl);
+
+      habitWrap.appendChild(row);
+    });
+
+    panel.appendChild(habitWrap);
+
+    // Mini heatmap
+    var heatWrap = document.createElement('div');
+    heatWrap.className = 'chart-container';
+    heatWrap.style.cssText = 'padding:16px;';
+
+    var heatTitle = document.createElement('div');
+    heatTitle.className = 'demo-section-heading';
+    heatTitle.textContent = '4-Week Activity Heatmap';
+    heatWrap.appendChild(heatTitle);
+
+    var heatGrid = document.createElement('div');
+    heatGrid.style.cssText = 'display:grid;grid-template-columns:repeat(28,1fr);gap:3px;';
+
+    var heatValues = [
+      3,5,4,2,5,1,0, 4,3,5,5,4,2,0, 2,4,3,5,5,1,0, 5,4,5,4,4,0,0
+    ];
+    var heatColors = ['var(--bg1)', 'rgba(53,90,153,0.25)', 'rgba(53,90,153,0.45)', 'rgba(107,155,219,0.6)', 'rgba(107,155,219,0.8)', 'var(--primary-light)'];
+
+    heatValues.forEach(function(v) {
+      var cell = document.createElement('div');
+      cell.style.cssText = 'height:14px;border-radius:2px;background:' + heatColors[v] + ';';
+      heatGrid.appendChild(cell);
+    });
+
+    heatWrap.appendChild(heatGrid);
+
+    var heatLegend = document.createElement('div');
+    heatLegend.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:10px;font-size:0.68rem;color:var(--text3);';
+    heatLegend.textContent = 'Less ';
+    [0,1,2,3,4,5].forEach(function(v) {
+      var sq = document.createElement('div');
+      sq.style.cssText = 'width:12px;height:12px;border-radius:2px;background:' + heatColors[v] + ';';
+      heatLegend.appendChild(sq);
+    });
+    var moreEl = document.createElement('span');
+    moreEl.textContent = ' More';
+    heatLegend.appendChild(moreEl);
+    heatWrap.appendChild(heatLegend);
+
+    panel.appendChild(heatWrap);
+    return panel;
+  }
+
+  // ================================================================
+  // TAB 4: PLEDGE SHEET & CALCULATOR
+  // ================================================================
+  function buildAtPledgePanel() {
+    var panel = document.createElement('div');
+
+    var twoCol = document.createElement('div');
+    twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;';
+
+    // LEFT: Forward Goal
+    var goalWrap = document.createElement('div');
+    goalWrap.className = 'chart-container';
+    goalWrap.style.cssText = 'padding:16px;';
+
+    var goalTitle = document.createElement('div');
+    goalTitle.className = 'demo-section-heading';
+    goalTitle.textContent = 'Forward Goal';
+    goalWrap.appendChild(goalTitle);
+
+    var fycRow = document.createElement('div');
+    fycRow.style.cssText = 'margin-bottom:16px;';
+    var fycLabel = document.createElement('div');
+    fycLabel.style.cssText = 'font-size:0.75rem;color:var(--text3);margin-bottom:6px;';
+    fycLabel.textContent = 'Annual FYC Target';
+    var fycValue = document.createElement('div');
+    fycValue.style.cssText = 'font-size:1.6rem;font-weight:800;color:var(--primary-light);';
+    fycValue.textContent = '$50,000';
+    fycRow.appendChild(fycLabel);
+    fycRow.appendChild(fycValue);
+    goalWrap.appendChild(fycRow);
+
+    var breakdownTitle = document.createElement('div');
+    breakdownTitle.style.cssText = 'font-size:0.75rem;font-weight:700;color:var(--text2);margin-bottom:10px;border-top:1px solid var(--border);padding-top:12px;';
+    breakdownTitle.textContent = 'Weekly Activity Required';
+    goalWrap.appendChild(breakdownTitle);
+
+    var breakdown = [
+      { label: 'Sets needed',     val: '15',  icon: '\uD83D\uDCDE', color: 'var(--text3)' },
+      { label: 'Openings',        val: '8',   icon: '\uD83E\uDD1D', color: 'var(--text3)' },
+      { label: 'Closings/week',   val: '3',   icon: '\uD83D\uDCDD', color: 'var(--primary-light)' },
+      { label: 'Avg case size',   val: '$3,200', icon: '\uD83D\uDCB0', color: 'var(--green-bright)' },
+      { label: 'Hit rate needed', val: '37%', icon: '\uD83C\uDFAF', color: 'var(--accent)' },
+    ];
+
+    breakdown.forEach(function(b) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);';
+      var left = document.createElement('div');
+      left.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--text2);';
+      var icon = document.createElement('span');
+      icon.textContent = b.icon;
+      var lbl = document.createElement('span');
+      lbl.textContent = b.label;
+      left.appendChild(icon);
+      left.appendChild(lbl);
+      var val = document.createElement('div');
+      val.style.cssText = 'font-size:0.82rem;font-weight:700;color:' + b.color + ';';
+      val.textContent = b.val;
+      row.appendChild(left);
+      row.appendChild(val);
+      goalWrap.appendChild(row);
+    });
+
+    twoCol.appendChild(goalWrap);
+
+    // RIGHT: Weekly Pledge
+    var pledgeWrap = document.createElement('div');
+    pledgeWrap.className = 'chart-container';
+    pledgeWrap.style.cssText = 'padding:16px;';
+
+    var pledgeTitle = document.createElement('div');
+    pledgeTitle.className = 'demo-section-heading';
+    pledgeTitle.textContent = 'This Week\'s Pledge';
+    pledgeWrap.appendChild(pledgeTitle);
+
+    var pledgeData = [
+      { type: 'Set',              target: 15, actual: 12, icon: '\uD83D\uDCDE' },
+      { type: 'Opening',          target: 8,  actual: 8,  icon: '\uD83E\uDD1D' },
+      { type: 'Closing',          target: 3,  actual: 2,  icon: '\uD83D\uDCDD' },
+      { type: 'Closed',           target: 2,  actual: 2,  icon: '\u2705' },
+      { type: 'Referral',         target: 4,  actual: 5,  icon: '\uD83D\uDD17' },
+      { type: 'Client Servicing', target: 6,  actual: 4,  icon: '\uD83D\uDD27' },
+    ];
+
+    var pHeader = document.createElement('div');
+    pHeader.style.cssText = 'display:grid;grid-template-columns:1fr 56px 56px 40px;gap:4px;font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);';
+    ['Activity', 'Target', 'Actual', ''].forEach(function(h) {
+      var hEl = document.createElement('div');
+      hEl.textContent = h;
+      pHeader.appendChild(hEl);
+    });
+    pledgeWrap.appendChild(pHeader);
+
+    pledgeData.forEach(function(row) {
+      var met = row.actual >= row.target;
+      var pRow = document.createElement('div');
+      pRow.style.cssText = 'display:grid;grid-template-columns:1fr 56px 56px 40px;gap:4px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);';
+
+      var nameCell = document.createElement('div');
+      nameCell.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--text);';
+      var ic = document.createElement('span');
+      ic.textContent = row.icon;
+      var nm = document.createElement('span');
+      nm.textContent = row.type;
+      nameCell.appendChild(ic);
+      nameCell.appendChild(nm);
+
+      var targetCell = document.createElement('div');
+      targetCell.style.cssText = 'font-size:0.78rem;color:var(--text3);text-align:center;';
+      targetCell.textContent = row.target;
+
+      var actualCell = document.createElement('div');
+      actualCell.style.cssText = 'font-size:0.82rem;font-weight:700;color:' + (met ? 'var(--green-bright)' : 'var(--primary-light)') + ';text-align:center;';
+      actualCell.textContent = row.actual;
+
+      var statusCell = document.createElement('div');
+      statusCell.style.cssText = 'text-align:center;font-size:0.9rem;';
+      statusCell.textContent = met ? '\u2713' : '\u00B7';
+      statusCell.style.color = met ? 'var(--green-bright)' : 'var(--text3)';
+
+      pRow.appendChild(nameCell);
+      pRow.appendChild(targetCell);
+      pRow.appendChild(actualCell);
+      pRow.appendChild(statusCell);
+      pledgeWrap.appendChild(pRow);
+    });
+
+    twoCol.appendChild(pledgeWrap);
+    panel.appendChild(twoCol);
+    return panel;
+  }
+
+  // ================================================================
+  // TAB 5: GAMIFICATION
+  // ================================================================
+  function buildAtGamificationPanel() {
+    var panel = document.createElement('div');
+
+    var twoCol = document.createElement('div');
+    twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;';
+
+    // LEFT: Wheel of Fortune
+    var wheelWrap = document.createElement('div');
+    wheelWrap.className = 'chart-container';
+    wheelWrap.style.cssText = 'padding:16px;text-align:center;';
+
+    var wheelTitle = document.createElement('div');
+    wheelTitle.className = 'demo-section-heading';
+    wheelTitle.textContent = 'Wheel of Fortune';
+    wheelWrap.appendChild(wheelTitle);
+
+    // Wheel SVG
+    var wheelSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    wheelSvg.setAttribute('viewBox', '0 0 200 200');
+    wheelSvg.style.cssText = 'width:160px;height:160px;display:block;margin:0 auto 12px;';
+    wheelSvg.id = 'atWheel';
+
+    var segments = [
+      { label: '50 Credits',   color: '#355A99', textColor: '#fff' },
+      { label: 'Badge',         color: '#C4A24D', textColor: '#fff' },
+      { label: '100 Credits',  color: '#0f7b5a', textColor: '#fff' },
+      { label: 'Free Coffee',   color: '#7c3aed', textColor: '#fff' },
+      { label: '200 Credits',  color: '#be185d', textColor: '#fff' },
+      { label: 'Mystery',       color: '#0e7490', textColor: '#fff' },
+    ];
+    var n = segments.length;
+    var cx = 100, cy = 100, r = 90;
+
+    segments.forEach(function(seg, i) {
+      var startAngle = (i / n) * 2 * Math.PI - Math.PI / 2;
+      var endAngle   = ((i + 1) / n) * 2 * Math.PI - Math.PI / 2;
+
+      var x1 = cx + r * Math.cos(startAngle);
+      var y1 = cy + r * Math.sin(startAngle);
+      var x2 = cx + r * Math.cos(endAngle);
+      var y2 = cy + r * Math.sin(endAngle);
+
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      var d = 'M ' + cx + ' ' + cy + ' L ' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' A ' + r + ' ' + r + ' 0 0 1 ' + x2.toFixed(1) + ' ' + y2.toFixed(1) + ' Z';
+      path.setAttribute('d', d);
+      path.setAttribute('fill', seg.color);
+      path.setAttribute('stroke', '#1e293b');
+      path.setAttribute('stroke-width', '1.5');
+      wheelSvg.appendChild(path);
+
+      var midAngle = (startAngle + endAngle) / 2;
+      var tr = r * 0.65;
+      var tx = cx + tr * Math.cos(midAngle);
+      var ty = cy + tr * Math.sin(midAngle);
+      var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', tx.toFixed(1));
+      text.setAttribute('y', ty.toFixed(1));
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'middle');
+      text.setAttribute('fill', seg.textColor);
+      text.setAttribute('font-size', '8');
+      text.setAttribute('font-weight', '700');
+      text.setAttribute('transform', 'rotate(' + ((midAngle * 180 / Math.PI) + 90) + ' ' + tx.toFixed(1) + ' ' + ty.toFixed(1) + ')');
+      text.textContent = seg.label;
+      wheelSvg.appendChild(text);
+    });
+
+    // Center circle
+    var centerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    centerCircle.setAttribute('cx', '100');
+    centerCircle.setAttribute('cy', '100');
+    centerCircle.setAttribute('r', '14');
+    centerCircle.setAttribute('fill', '#1e293b');
+    centerCircle.setAttribute('stroke', '#334155');
+    centerCircle.setAttribute('stroke-width', '2');
+    wheelSvg.appendChild(centerCircle);
+
+    // Pointer
+    var pointer = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    pointer.setAttribute('points', '100,2 106,14 94,14');
+    pointer.setAttribute('fill', '#FFD700');
+    wheelSvg.appendChild(pointer);
+
+    wheelWrap.appendChild(wheelSvg);
+
+    var spinBtn = document.createElement('button');
+    spinBtn.style.cssText = 'background:var(--primary-light);color:#fff;border:none;border-radius:8px;padding:10px 28px;font-size:0.85rem;font-weight:700;cursor:pointer;transition:transform 0.1s;';
+    spinBtn.textContent = 'Spin!';
+    var wheelRotation = 0;
+    spinBtn.addEventListener('click', function() {
+      var degrees = 720 + Math.floor(Math.random() * 360);
+      wheelRotation += degrees;
+      var allPaths = wheelSvg.querySelectorAll('path,text,circle,polygon');
+      wheelSvg.style.transition = 'transform 2s cubic-bezier(0.17,0.67,0.12,0.99)';
+      wheelSvg.style.transform = 'rotate(' + wheelRotation + 'deg)';
+      wheelSvg.style.transformOrigin = '80px 80px';
+    });
+    wheelWrap.appendChild(spinBtn);
+
+    twoCol.appendChild(wheelWrap);
+
+    // RIGHT: Credits & Rewards
+    var credWrap = document.createElement('div');
+    credWrap.className = 'chart-container';
+    credWrap.style.cssText = 'padding:16px;';
+
+    var credTitle = document.createElement('div');
+    credTitle.className = 'demo-section-heading';
+    credTitle.textContent = 'Credits & Rewards';
+    credWrap.appendChild(credTitle);
+
+    var credBalance = document.createElement('div');
+    credBalance.style.cssText = 'text-align:center;margin-bottom:16px;padding:14px;background:var(--bg1);border-radius:8px;';
+    var credNum = document.createElement('div');
+    credNum.style.cssText = 'font-size:2rem;font-weight:800;color:var(--accent);';
+    credNum.textContent = '1,250';
+    var credLbl = document.createElement('div');
+    credLbl.style.cssText = 'font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;';
+    credLbl.textContent = 'Credits Balance';
+    credBalance.appendChild(credNum);
+    credBalance.appendChild(credLbl);
+    credWrap.appendChild(credBalance);
+
+    var recentTitle = document.createElement('div');
+    recentTitle.style.cssText = 'font-size:0.75rem;font-weight:700;color:var(--text2);margin-bottom:10px;';
+    recentTitle.textContent = 'Recent Rewards';
+    credWrap.appendChild(recentTitle);
+
+    var rewardHistory = [
+      { reward: '100 Credits',  date: 'Mar 31', icon: '\uD83C\uDF1F' },
+      { reward: 'Free Coffee',  date: 'Mar 28', icon: '\u2615'       },
+      { reward: '50 Credits',   date: 'Mar 25', icon: '\uD83C\uDF1F' },
+      { reward: 'Mystery Prize',date: 'Mar 20', icon: '\uD83C\uDF81' },
+    ];
+
+    rewardHistory.forEach(function(rw) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);';
+      var icon = document.createElement('span');
+      icon.style.cssText = 'font-size:1.1rem;';
+      icon.textContent = rw.icon;
+      var info = document.createElement('div');
+      info.style.cssText = 'flex:1;';
+      var rwName = document.createElement('div');
+      rwName.style.cssText = 'font-size:0.78rem;font-weight:600;color:var(--text);';
+      rwName.textContent = rw.reward;
+      var rwDate = document.createElement('div');
+      rwDate.style.cssText = 'font-size:0.7rem;color:var(--text3);';
+      rwDate.textContent = rw.date;
+      info.appendChild(rwName);
+      info.appendChild(rwDate);
+      row.appendChild(icon);
+      row.appendChild(info);
+      credWrap.appendChild(row);
+    });
+
+    twoCol.appendChild(credWrap);
+    panel.appendChild(twoCol);
+
+    // Tree Forest Preview
+    var forestWrap = document.createElement('div');
+    forestWrap.className = 'chart-container';
+    forestWrap.style.cssText = 'padding:16px;';
+
+    var forestTitle = document.createElement('div');
+    forestTitle.className = 'demo-section-heading';
+    forestTitle.textContent = 'Your Forest — 12 Trees Planted';
+    forestWrap.appendChild(forestTitle);
+
+    var forestScene = document.createElement('div');
+    forestScene.style.cssText = [
+      'background:linear-gradient(180deg,#0a2e1a 0%,#0f4d2a 60%,#1a6b3c 100%)',
+      'min-height:180px', 'position:relative', 'border-radius:8px', 'overflow:hidden',
+    ].join(';');
+
+    var treeData = [
+      { species: 'cherry_blossom', left: '5%',  bottom: '10%', width: 62 },
+      { species: 'mighty_oak',     left: '18%', bottom: '6%',  width: 78 },
+      { species: 'coconut_palm',   left: '31%', bottom: '8%',  width: 58 },
+      { species: 'apple_tree',     left: '44%', bottom: '5%',  width: 70 },
+      { species: 'lucky_bamboo',   left: '57%', bottom: '12%', width: 52 },
+      { species: 'blue_spruce',    left: '70%', bottom: '7%',  width: 74 },
+    ];
+
+    treeData.forEach(function(t) {
+      var treeDiv = document.createElement('div');
+      treeDiv.style.cssText = 'position:absolute;left:' + t.left + ';bottom:' + t.bottom + ';width:' + t.width + 'px;';
+      var img = document.createElement('img');
+      img.src = 'https://tree-showcase-omega.vercel.app/trees/stages/' + t.species + '_full.png';
+      img.alt = t.species.replace(/_/g, ' ');
+      img.style.cssText = 'width:100%;height:auto;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));';
+      img.onerror = function() { treeDiv.textContent = '\uD83C\uDF33'; treeDiv.style.fontSize = '2rem'; };
+      treeDiv.appendChild(img);
+      forestScene.appendChild(treeDiv);
+    });
+
+    forestWrap.appendChild(forestScene);
+    panel.appendChild(forestWrap);
+    return panel;
+  }
+
+  // ================================================================
+  // TAB 6: COACHING & REFLECTIONS
+  // ================================================================
+  function buildAtCoachingPanel() {
+    var panel = document.createElement('div');
+
+    var twoCol = document.createElement('div');
+    twoCol.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;';
+
+    // LEFT: Coaching Calendar
+    var calWrap = document.createElement('div');
+    calWrap.className = 'chart-container';
+    calWrap.style.cssText = 'padding:16px;';
+
+    var calTitle = document.createElement('div');
+    calTitle.className = 'demo-section-heading';
+    calTitle.textContent = 'Book Coaching Session';
+    calWrap.appendChild(calTitle);
+
+    var calDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    var calHours = ['9am', '10am', '11am', '1pm', '2pm', '3pm', '4pm'];
+    var booked   = { '10am-Tue': true, '2pm-Thu': true, '9am-Wed': true };
+    var yourSlot = '11am-Mon';
+
+    var calHeaderRow = document.createElement('div');
+    calHeaderRow.style.cssText = 'display:grid;grid-template-columns:40px repeat(5,1fr);gap:3px;margin-bottom:4px;';
+    var emptyCorner = document.createElement('div');
+    calHeaderRow.appendChild(emptyCorner);
+    calDays.forEach(function(d) {
+      var dEl = document.createElement('div');
+      dEl.style.cssText = 'text-align:center;font-size:0.65rem;color:var(--text3);font-weight:600;padding:2px;';
+      dEl.textContent = d;
+      calHeaderRow.appendChild(dEl);
+    });
+    calWrap.appendChild(calHeaderRow);
+
+    calHours.forEach(function(h) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:40px repeat(5,1fr);gap:3px;margin-bottom:3px;';
+      var hLabel = document.createElement('div');
+      hLabel.style.cssText = 'font-size:0.62rem;color:var(--text3);display:flex;align-items:center;padding-right:4px;justify-content:flex-end;';
+      hLabel.textContent = h;
+      row.appendChild(hLabel);
+      calDays.forEach(function(d) {
+        var key = h + '-' + d;
+        var cell = document.createElement('div');
+        var isBooked = booked[key];
+        var isYours  = key === yourSlot;
+        cell.style.cssText = 'height:22px;border-radius:4px;cursor:pointer;';
+        if (isYours) {
+          cell.style.background = 'var(--primary-light)';
+          cell.style.border = '1px solid rgba(107,155,219,0.6)';
+          cell.title = 'Your session';
+        } else if (isBooked) {
+          cell.style.background = 'rgba(107,155,219,0.15)';
+          cell.style.border = '1px solid rgba(107,155,219,0.2)';
+          cell.style.opacity = '0.5';
+        } else {
+          cell.style.background = 'rgba(52,211,153,0.1)';
+          cell.style.border = '1px solid rgba(52,211,153,0.2)';
+        }
+        row.appendChild(cell);
+      });
+      calWrap.appendChild(row);
+    });
+
+    var calLegend = document.createElement('div');
+    calLegend.style.cssText = 'display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;';
+    [
+      { color: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.2)', label: 'Available' },
+      { color: 'var(--primary-light)', border: 'transparent', label: 'Your booking' },
+      { color: 'rgba(107,155,219,0.15)', border: 'rgba(107,155,219,0.2)', label: 'Booked' },
+    ].forEach(function(l) {
+      var item = document.createElement('div');
+      item.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:0.68rem;color:var(--text3);';
+      var sq = document.createElement('div');
+      sq.style.cssText = 'width:12px;height:12px;border-radius:2px;background:' + l.color + ';border:1px solid ' + l.border + ';';
+      var lb = document.createElement('span');
+      lb.textContent = l.label;
+      item.appendChild(sq);
+      item.appendChild(lb);
+      calLegend.appendChild(item);
+    });
+    calWrap.appendChild(calLegend);
+    twoCol.appendChild(calWrap);
+
+    // RIGHT: Weekly Reflection
+    var reflectWrap = document.createElement('div');
+    reflectWrap.className = 'chart-container';
+    reflectWrap.style.cssText = 'padding:16px;';
+
+    var reflectTitle = document.createElement('div');
+    reflectTitle.className = 'demo-section-heading';
+    reflectTitle.textContent = 'Weekly Reflection';
+    reflectWrap.appendChild(reflectTitle);
+
+    var reflectData = [
+      {
+        q: 'What went well this week?',
+        a: "Exceeded my daily call targets Mon-Thu. Converted 2 out of 3 openings into full proposals. Client referral from Mrs. Lim generated a warm prospect.",
+      },
+      {
+        q: 'What will you improve next week?',
+        a: "Follow up on 4 pending proposals before end of week. Increase social media posting to daily. Block 30 mins each morning for product knowledge review.",
+      },
+    ];
+
+    reflectData.forEach(function(r) {
+      var qEl = document.createElement('div');
+      qEl.style.cssText = 'font-size:0.75rem;font-weight:700;color:var(--text2);margin-bottom:6px;margin-top:12px;';
+      qEl.textContent = r.q;
+      var aEl = document.createElement('div');
+      aEl.style.cssText = 'font-size:0.78rem;color:var(--text3);line-height:1.6;background:var(--bg1);border-radius:6px;padding:10px 12px;border-left:3px solid var(--primary-light);';
+      aEl.textContent = r.a;
+      reflectWrap.appendChild(qEl);
+      reflectWrap.appendChild(aEl);
+    });
+
+    twoCol.appendChild(reflectWrap);
+    panel.appendChild(twoCol);
+
+    // AI Coaching suggestion
+    var aiWrap = document.createElement('div');
+    aiWrap.className = 'chart-container';
+    aiWrap.style.cssText = 'padding:16px;';
+
+    var aiHeader = document.createElement('div');
+    aiHeader.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px;';
+    var aiIcon = document.createElement('div');
+    aiIcon.style.cssText = 'width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#355A99,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;';
+    aiIcon.textContent = '\uD83E\uDD16';
+    var aiTitle = document.createElement('div');
+    aiTitle.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--text);';
+    aiTitle.textContent = 'AI Coach Feedback';
+    aiHeader.appendChild(aiIcon);
+    aiHeader.appendChild(aiTitle);
+    aiWrap.appendChild(aiHeader);
+
+    var aiMsg = document.createElement('div');
+    aiMsg.style.cssText = 'font-size:0.82rem;color:var(--text2);line-height:1.7;background:var(--bg1);border-radius:8px;padding:14px;border:1px solid var(--border);';
+    aiMsg.textContent = "Great week, Leo! Your set-to-opening conversion rate of 53% is above team average (42%). Focus area: your closing ratio dropped to 25% — consider practising the 3 objection-handling scripts before your next proposal presentation. Your consistency streak of 14 days is your strongest asset — keep the momentum!";
+    aiWrap.appendChild(aiMsg);
+
+    panel.appendChild(aiWrap);
+    return panel;
+  }
+
+  // ================================================================
+  // TAB 7: SALES DASHBOARD
+  // ================================================================
+  function buildAtDashboardPanel() {
+    var panel = document.createElement('div');
+
+    // 4 metric cards
+    var cardsGrid = document.createElement('div');
+    cardsGrid.className = 'stat-boxes';
+    cardsGrid.style.cssText = 'grid-template-columns:repeat(4,1fr);margin-bottom:16px;';
+
+    var metrics = [
+      { val: '$42,800', label: 'FYC YTD',       color: 'var(--primary-light)' },
+      { val: '18',      label: 'Cases Closed',   color: 'var(--green-bright)'  },
+      { val: '$2,378',  label: 'Avg Case Size',  color: 'var(--accent)'        },
+      { val: '34%',     label: 'Hit Rate',       color: 'var(--purple)'        },
+    ];
+
+    metrics.forEach(function(m) {
+      var card = document.createElement('div');
+      card.className = 'stat-box';
+      var val = document.createElement('div');
+      val.className = 'stat-box-value';
+      val.style.color = m.color;
+      val.textContent = m.val;
+      var lbl = document.createElement('div');
+      lbl.className = 'stat-box-label';
+      lbl.textContent = m.label;
+      card.appendChild(val);
+      card.appendChild(lbl);
+      cardsGrid.appendChild(card);
+    });
+
+    panel.appendChild(cardsGrid);
+
+    // Bar chart — Monthly FYC
+    var barWrap = document.createElement('div');
+    barWrap.className = 'chart-container';
+    barWrap.style.cssText = 'padding:16px;margin-bottom:16px;';
+
+    var barTitle = document.createElement('div');
+    barTitle.className = 'demo-section-heading';
+    barTitle.textContent = 'Monthly FYC (Last 6 Months)';
+    barWrap.appendChild(barTitle);
+
+    var barCanvas = document.createElement('canvas');
+    barCanvas.id = 'atDashBarChart';
+    barWrap.appendChild(barCanvas);
+    panel.appendChild(barWrap);
+
+    // Category breakdown table
+    var tableWrap = document.createElement('div');
+    tableWrap.className = 'chart-container';
+    tableWrap.style.cssText = 'padding:16px;';
+
+    var tableTitle = document.createElement('div');
+    tableTitle.className = 'demo-section-heading';
+    tableTitle.textContent = 'FYC by Category';
+    tableWrap.appendChild(tableTitle);
+
+    var catData = [
+      { cat: 'Life Insurance',    fyc: 24800, cases: 8,  color: '#355A99'  },
+      { cat: 'Health Insurance',  fyc: 12400, cases: 6,  color: '#0f7b5a'  },
+      { cat: 'A&H / PA',          fyc: 5600,  cases: 4,  color: '#C4A24D'  },
+    ];
+    var totalFyc = catData.reduce(function(s, c) { return s + c.fyc; }, 0);
+
+    var tHeader = document.createElement('div');
+    tHeader.style.cssText = 'display:grid;grid-template-columns:1fr 80px 56px 80px;gap:8px;font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);';
+    ['Category', 'FYC', 'Cases', 'Share'].forEach(function(h) {
+      var hEl = document.createElement('div');
+      hEl.textContent = h;
+      tHeader.appendChild(hEl);
+    });
+    tableWrap.appendChild(tHeader);
+
+    catData.forEach(function(row) {
+      var pct = Math.round(row.fyc / totalFyc * 100);
+      var tRow = document.createElement('div');
+      tRow.style.cssText = 'display:grid;grid-template-columns:1fr 80px 56px 80px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);';
+
+      var catCell = document.createElement('div');
+      catCell.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      var dot = document.createElement('div');
+      dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + row.color + ';flex-shrink:0;';
+      var catName = document.createElement('span');
+      catName.style.cssText = 'font-size:0.8rem;color:var(--text);';
+      catName.textContent = row.cat;
+      catCell.appendChild(dot);
+      catCell.appendChild(catName);
+
+      var fycCell = document.createElement('div');
+      fycCell.style.cssText = 'font-size:0.82rem;font-weight:700;color:' + row.color + ';';
+      fycCell.textContent = '$' + row.fyc.toLocaleString();
+
+      var casesCell = document.createElement('div');
+      casesCell.style.cssText = 'font-size:0.8rem;color:var(--text2);';
+      casesCell.textContent = row.cases;
+
+      var shareWrap = document.createElement('div');
+      var shareBar = document.createElement('div');
+      shareBar.style.cssText = 'background:var(--bg1);border-radius:99px;height:6px;margin-bottom:3px;overflow:hidden;';
+      var shareFill = document.createElement('div');
+      shareFill.style.cssText = 'height:100%;border-radius:99px;width:' + pct + '%;background:' + row.color + ';';
+      shareBar.appendChild(shareFill);
+      var sharePct = document.createElement('div');
+      sharePct.style.cssText = 'font-size:0.68rem;color:var(--text3);';
+      sharePct.textContent = pct + '%';
+      shareWrap.appendChild(shareBar);
+      shareWrap.appendChild(sharePct);
+
+      tRow.appendChild(catCell);
+      tRow.appendChild(fycCell);
+      tRow.appendChild(casesCell);
+      tRow.appendChild(shareWrap);
+      tableWrap.appendChild(tRow);
+    });
+
+    panel.appendChild(tableWrap);
+    return panel;
+  }
+
+  function atRenderDashboardCharts() {
+    var canvas = document.getElementById('atDashBarChart');
+    if (!canvas) return;
+    var chartData = [
+      { label: 'Oct', value: 5200  },
+      { label: 'Nov', value: 7800  },
+      { label: 'Dec', value: 9400  },
+      { label: 'Jan', value: 6100  },
+      { label: 'Feb', value: 8300  },
+      { label: 'Mar', value: 6000  },
+    ];
+    Charts.horizontalBar(canvas, chartData, { height: 200 });
   }
 };
-
-/* ---- Global toggle for activity tracker ---- */
-function toggleActivity(idx) {
-  var listEl = document.getElementById('trackerActivityList');
-  if (!listEl) return;
-  var items = listEl.querySelectorAll('.activity-item');
-  var item  = items[idx];
-  if (!item) return;
-  item.classList.toggle('done');
-
-  // Recalculate from DOM state
-  var done = 0;
-  var total = 0;
-  var allItems = listEl.querySelectorAll('.activity-item');
-  allItems.forEach(function(el) {
-    var ptsEl = el.querySelector('.activity-pts');
-    var pts = ptsEl ? parseInt(ptsEl.textContent.replace('+', ''), 10) : 0;
-    total += pts;
-    if (el.classList.contains('done')) done += pts;
-  });
-
-  // Update ring
-  var canvas = document.getElementById('trackerRing');
-  if (canvas) {
-    Charts.progressRing(canvas, total > 0 ? done / total : 0, {
-      size:         160,
-      lineWidth:    12,
-      trackColor:   '#1e293b',
-      fillColor:    '#355A99',
-      fillColorEnd: '#6b9bdb',
-    });
-  }
-  var ptsEl = document.getElementById('trackerPts');
-  if (ptsEl) ptsEl.textContent = done + ' pts';
-}
 
 /* ============================================================
    PRODUCT COMPASS DEMO
