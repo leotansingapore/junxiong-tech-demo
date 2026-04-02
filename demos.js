@@ -1675,6 +1675,646 @@ function selectExam(idx) {
 }
 
 /* ============================================================
+   AD LAUNCHPAD DEMO — 5-step campaign wizard
+   ============================================================ */
+DEMO_RENDERERS.launchpad = function(container) {
+  container.innerHTML = '';
+
+  // Init global wizard state
+  window._wizardStep = window._wizardStep || 0;
+  window._wizardData = window._wizardData || {
+    template: null,
+    headline: "Protect Your Family's Future Today",
+    text: "As a parent, your family's financial security matters most. Get a free consultation with a certified financial advisor.",
+    cta: "Book Free Consultation",
+    audience: ['25-34', 'Singapore', 'Insurance'],
+    budget: 30
+  };
+
+  var stepLabels = ['Template', 'Copy', 'Audience', 'Budget', 'Review'];
+
+  // Wrapper
+  var wrap = document.createElement('div');
+  wrap.id = 'launchpadWizard';
+  wrap.style.cssText = 'max-width:780px;margin:0 auto;padding:24px 16px;font-family:inherit;';
+
+  // ---- Progress bar ----
+  var progressBar = document.createElement('div');
+  progressBar.style.cssText = 'display:flex;flex-direction:column;align-items:center;margin-bottom:32px;';
+
+  var dotsRow = document.createElement('div');
+  dotsRow.style.cssText = 'display:flex;align-items:center;gap:0;width:100%;max-width:480px;';
+
+  var labelsRow = document.createElement('div');
+  labelsRow.style.cssText = 'display:flex;justify-content:space-between;width:100%;max-width:480px;margin-top:8px;';
+
+  stepLabels.forEach(function(label, i) {
+    // Dot
+    var dot = document.createElement('div');
+    dot.className = 'wizard-step-dot' +
+      (i < window._wizardStep ? ' done' : '') +
+      (i === window._wizardStep ? ' active' : '');
+    dot.style.cssText = 'width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;transition:all .2s;' +
+      (i < window._wizardStep
+        ? 'background:var(--green-bright,#34d399);color:#0a0f1a;border:2px solid var(--green-bright,#34d399);'
+        : i === window._wizardStep
+          ? 'background:var(--blue-bright,#3b82f6);color:#fff;border:2px solid var(--blue-bright,#3b82f6);box-shadow:0 0 0 4px rgba(59,130,246,0.2);'
+          : 'background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:2px solid rgba(255,255,255,0.12);');
+    dot.textContent = i < window._wizardStep ? '✓' : (i + 1);
+    dotsRow.appendChild(dot);
+
+    // Connector line (between dots)
+    if (i < stepLabels.length - 1) {
+      var line = document.createElement('div');
+      line.style.cssText = 'flex:1;height:2px;' +
+        (i < window._wizardStep
+          ? 'background:var(--green-bright,#34d399);'
+          : 'background:rgba(255,255,255,0.1);');
+      dotsRow.appendChild(line);
+    }
+
+    // Label
+    var lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:11px;text-align:center;' +
+      (i === window._wizardStep
+        ? 'color:var(--blue-bright,#3b82f6);font-weight:600;'
+        : i < window._wizardStep
+          ? 'color:var(--green-bright,#34d399);'
+          : 'color:rgba(255,255,255,0.35);');
+    lbl.textContent = label;
+    labelsRow.appendChild(lbl);
+  });
+
+  progressBar.appendChild(dotsRow);
+  progressBar.appendChild(labelsRow);
+  wrap.appendChild(progressBar);
+
+  // ---- Step content ----
+  var stepContent = document.createElement('div');
+  stepContent.id = 'launchpadStepContent';
+  stepContent.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;min-height:320px;';
+  wrap.appendChild(stepContent);
+
+  // ---- Navigation ----
+  var navRow = document.createElement('div');
+  navRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:20px;';
+
+  var backBtn = document.createElement('button');
+  backBtn.id = 'wizardBackBtn';
+  backBtn.textContent = '← Back';
+  backBtn.onclick = function() { wizardBack(); };
+  backBtn.style.cssText = 'padding:10px 24px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.7);cursor:pointer;font-size:14px;display:' + (window._wizardStep === 0 ? 'none' : 'block') + ';';
+
+  var nextBtn = document.createElement('button');
+  nextBtn.id = 'wizardNextBtn';
+  nextBtn.textContent = window._wizardStep === 4 ? '🚀 Launch Campaign (Paused)' : 'Next →';
+  nextBtn.onclick = function() { wizardNext(); };
+  nextBtn.style.cssText = 'padding:10px 28px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;' +
+    (window._wizardStep === 4
+      ? 'background:var(--green-bright,#34d399);color:#0a0f1a;'
+      : 'background:var(--blue-bright,#3b82f6);color:#fff;');
+
+  navRow.appendChild(backBtn);
+  navRow.appendChild(nextBtn);
+  wrap.appendChild(navRow);
+
+  container.appendChild(wrap);
+
+  // Render initial step
+  _renderWizardStep();
+
+  // ---- GLOBAL HELPER FUNCTIONS ----
+
+  window.renderWizard = function() {
+    DEMO_RENDERERS.launchpad(container);
+  };
+
+  window.selectTemplate = function(id) {
+    window._wizardData.template = id;
+    renderWizard();
+  };
+
+  window.wizardNext = function() {
+    if (window._wizardStep === 4) {
+      alert('🎉 Demo Mode — campaign would be submitted for review and launched in paused state. No budget is charged until you unpause.');
+      return;
+    }
+    if (window._wizardStep < 4) {
+      window._wizardStep++;
+      renderWizard();
+    }
+  };
+
+  window.wizardBack = function() {
+    if (window._wizardStep > 0) {
+      window._wizardStep--;
+      renderWizard();
+    }
+  };
+
+  window.updateAdPreview = function() {
+    var hl = document.getElementById('wiz_headline');
+    var tx = document.getElementById('wiz_text');
+    var ct = document.getElementById('wiz_cta');
+    if (hl) window._wizardData.headline = hl.value;
+    if (tx) window._wizardData.text = tx.value;
+    if (ct) window._wizardData.cta = ct.value;
+
+    // Update char counts
+    if (hl) { var hc = document.getElementById('wiz_headline_count'); if (hc) hc.textContent = hl.value.length + '/90'; }
+    if (tx) { var tc = document.getElementById('wiz_text_count'); if (tc) tc.textContent = tx.value.length + '/500'; }
+    if (ct) { var cc = document.getElementById('wiz_cta_count'); if (cc) cc.textContent = ct.value.length + '/25'; }
+
+    // Update preview elements
+    var prevHl = document.getElementById('previewHeadline');
+    var prevTx = document.getElementById('previewText');
+    var prevCta = document.getElementById('previewCTA');
+    if (prevHl) prevHl.textContent = window._wizardData.headline;
+    if (prevTx) prevTx.textContent = window._wizardData.text;
+    if (prevCta) prevCta.textContent = window._wizardData.cta;
+  };
+
+  window.toggleAudience = function(val, el) {
+    var arr = window._wizardData.audience;
+    var idx = arr.indexOf(val);
+    if (idx === -1) {
+      arr.push(val);
+      el.style.background = 'rgba(59,130,246,0.2)';
+      el.style.borderColor = 'var(--blue-bright,#3b82f6)';
+      el.style.color = '#fff';
+    } else {
+      arr.splice(idx, 1);
+      el.style.background = 'rgba(255,255,255,0.05)';
+      el.style.borderColor = 'rgba(255,255,255,0.15)';
+      el.style.color = 'rgba(255,255,255,0.6)';
+    }
+    var sizeEl = document.getElementById('audienceSizeDisplay');
+    if (sizeEl) sizeEl.textContent = (window._wizardData.audience.length * 45000).toLocaleString();
+  };
+
+  window.updateBudget = function() {
+    var slider = document.getElementById('budgetSlider');
+    if (slider) {
+      window._wizardData.budget = parseInt(slider.value);
+      var budgetDisplay = document.getElementById('budgetDisplay');
+      if (budgetDisplay) budgetDisplay.textContent = '$' + window._wizardData.budget;
+      var reach = document.getElementById('budgetReach');
+      var clicks = document.getElementById('budgetClicks');
+      var cpl = document.getElementById('budgetCPL');
+      var totalBudget = document.getElementById('budget14day');
+      if (reach) reach.textContent = (window._wizardData.budget * 180).toLocaleString();
+      if (clicks) clicks.textContent = (window._wizardData.budget * 6).toLocaleString();
+      if (cpl) cpl.textContent = '$' + (window._wizardData.budget > 0 ? (window._wizardData.budget / (window._wizardData.budget * 6) * 100).toFixed(2) : '0.00');
+      if (totalBudget) totalBudget.textContent = '$' + (window._wizardData.budget * 14).toLocaleString();
+    }
+  };
+};
+
+function _renderWizardStep() {
+  var content = document.getElementById('launchpadStepContent');
+  if (!content) return;
+  content.innerHTML = '';
+
+  var step = window._wizardStep;
+  var d = window._wizardData;
+
+  if (step === 0) {
+    // ---- Step 0: Select Template ----
+    var title = document.createElement('h3');
+    title.textContent = 'Choose a Campaign Template';
+    title.style.cssText = 'margin:0 0 8px;font-size:18px;color:#fff;';
+    content.appendChild(title);
+
+    var sub = document.createElement('p');
+    sub.textContent = 'Select the goal that best fits your campaign objective.';
+    sub.style.cssText = 'margin:0 0 24px;color:rgba(255,255,255,0.5);font-size:14px;';
+    content.appendChild(sub);
+
+    var templates = [
+      { id: 'lead_gen', icon: '📋', name: 'Lead Generation', desc: 'Collect leads with a contact form' },
+      { id: 'brand', icon: '🏢', name: 'Brand Awareness', desc: 'Increase visibility and reach' },
+      { id: 'event', icon: '📅', name: 'Event Promotion', desc: 'Drive registrations for seminars' },
+    ];
+
+    var grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;';
+
+    templates.forEach(function(tpl) {
+      var card = document.createElement('div');
+      var isSelected = d.template === tpl.id;
+      card.style.cssText = 'padding:24px 20px;border-radius:12px;border:2px solid;cursor:pointer;transition:all .2s;text-align:center;' +
+        (isSelected
+          ? 'background:rgba(59,130,246,0.15);border-color:var(--blue-bright,#3b82f6);'
+          : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);');
+      if (isSelected) card.classList.add('selected');
+
+      var iconEl = document.createElement('div');
+      iconEl.style.cssText = 'font-size:36px;margin-bottom:12px;';
+      iconEl.textContent = tpl.icon;
+
+      var nameEl = document.createElement('div');
+      nameEl.style.cssText = 'font-size:15px;font-weight:700;color:#fff;margin-bottom:6px;';
+      nameEl.textContent = tpl.name;
+
+      var descEl = document.createElement('div');
+      descEl.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.5);line-height:1.5;';
+      descEl.textContent = tpl.desc;
+
+      card.appendChild(iconEl);
+      card.appendChild(nameEl);
+      card.appendChild(descEl);
+
+      card.onclick = function() { selectTemplate(tpl.id); };
+
+      card.onmouseenter = function() {
+        if (!card.classList.contains('selected')) {
+          card.style.borderColor = 'rgba(59,130,246,0.5)';
+          card.style.background = 'rgba(59,130,246,0.08)';
+        }
+      };
+      card.onmouseleave = function() {
+        if (!card.classList.contains('selected')) {
+          card.style.borderColor = 'rgba(255,255,255,0.1)';
+          card.style.background = 'rgba(255,255,255,0.04)';
+        }
+      };
+
+      grid.appendChild(card);
+    });
+    content.appendChild(grid);
+
+  } else if (step === 1) {
+    // ---- Step 1: Customize Copy ----
+    var title = document.createElement('h3');
+    title.textContent = 'Customize Your Ad Copy';
+    title.style.cssText = 'margin:0 0 20px;font-size:18px;color:#fff;';
+    content.appendChild(title);
+
+    var cols = document.createElement('div');
+    cols.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:24px;';
+
+    // Left: form
+    var leftCol = document.createElement('div');
+    leftCol.style.cssText = 'display:flex;flex-direction:column;gap:16px;';
+
+    function makeField(label, tag, id, value, maxLen, countId, rows) {
+      var group = document.createElement('div');
+
+      var lbl = document.createElement('label');
+      lbl.style.cssText = 'display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;';
+      var lblText = document.createElement('span');
+      lblText.textContent = label;
+      var counter = document.createElement('span');
+      counter.id = countId;
+      counter.textContent = value.length + '/' + maxLen;
+      lbl.appendChild(lblText);
+      lbl.appendChild(counter);
+
+      var input;
+      if (tag === 'textarea') {
+        input = document.createElement('textarea');
+        input.rows = rows || 4;
+        input.style.cssText = 'width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.5;';
+      } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.style.cssText = 'width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;';
+      }
+      input.id = id;
+      input.value = value;
+      input.maxLength = maxLen;
+      input.oninput = function() { updateAdPreview(); };
+      input.onfocus = function() { this.style.borderColor = 'var(--blue-bright,#3b82f6)'; };
+      input.onblur = function() { this.style.borderColor = 'rgba(255,255,255,0.12)'; };
+
+      group.appendChild(lbl);
+      group.appendChild(input);
+      return group;
+    }
+
+    leftCol.appendChild(makeField('Headline', 'input', 'wiz_headline', d.headline, 90, 'wiz_headline_count'));
+    leftCol.appendChild(makeField('Primary Text', 'textarea', 'wiz_text', d.text, 500, 'wiz_text_count', 5));
+    leftCol.appendChild(makeField('Call-to-Action', 'input', 'wiz_cta', d.cta, 25, 'wiz_cta_count'));
+
+    // Right: live preview
+    var rightCol = document.createElement('div');
+
+    var previewLabel = document.createElement('div');
+    previewLabel.textContent = 'Live Preview';
+    previewLabel.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;';
+    rightCol.appendChild(previewLabel);
+
+    var fbCard = document.createElement('div');
+    fbCard.style.cssText = 'background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.4);max-width:320px;';
+
+    // Header
+    var fbHeader = document.createElement('div');
+    fbHeader.style.cssText = 'padding:10px 12px;display:flex;align-items:center;gap:8px;';
+    var avatar = document.createElement('div');
+    avatar.style.cssText = 'width:36px;height:36px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0;';
+    avatar.textContent = 'JX';
+    var headerInfo = document.createElement('div');
+    var pageName = document.createElement('div');
+    pageName.style.cssText = 'font-size:13px;font-weight:700;color:#050505;';
+    pageName.textContent = 'Junxiong Financial Advisory';
+    var sponsored = document.createElement('div');
+    sponsored.style.cssText = 'font-size:11px;color:#606770;';
+    sponsored.textContent = 'Sponsored · 🌐';
+    headerInfo.appendChild(pageName);
+    headerInfo.appendChild(sponsored);
+    fbHeader.appendChild(avatar);
+    fbHeader.appendChild(headerInfo);
+
+    // Primary text
+    var fbText = document.createElement('div');
+    fbText.id = 'previewText';
+    fbText.style.cssText = 'padding:0 12px 10px;font-size:13px;color:#050505;line-height:1.5;';
+    fbText.textContent = d.text;
+
+    // Image area
+    var fbImage = document.createElement('div');
+    fbImage.style.cssText = 'height:160px;background:linear-gradient(135deg,#1877f2,#42b883);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
+    var fbHeadline = document.createElement('div');
+    fbHeadline.id = 'previewHeadline';
+    fbHeadline.style.cssText = 'font-size:16px;font-weight:800;color:#fff;text-align:center;line-height:1.3;text-shadow:0 1px 4px rgba(0,0,0,0.3);';
+    fbHeadline.textContent = d.headline;
+    fbImage.appendChild(fbHeadline);
+
+    // CTA bar
+    var fbCTABar = document.createElement('div');
+    fbCTABar.style.cssText = 'padding:10px 12px;background:#f0f2f5;display:flex;align-items:center;justify-content:space-between;';
+    var ctaInfo = document.createElement('div');
+    ctaInfo.style.cssText = 'font-size:11px;color:#606770;';
+    ctaInfo.textContent = 'junxiongfa.com';
+    var ctaBtn = document.createElement('div');
+    ctaBtn.id = 'previewCTA';
+    ctaBtn.style.cssText = 'background:#1877f2;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;';
+    ctaBtn.textContent = d.cta;
+    fbCTABar.appendChild(ctaInfo);
+    fbCTABar.appendChild(ctaBtn);
+
+    fbCard.appendChild(fbHeader);
+    fbCard.appendChild(fbText);
+    fbCard.appendChild(fbImage);
+    fbCard.appendChild(fbCTABar);
+    rightCol.appendChild(fbCard);
+
+    cols.appendChild(leftCol);
+    cols.appendChild(rightCol);
+    content.appendChild(cols);
+
+  } else if (step === 2) {
+    // ---- Step 2: Target Audience ----
+    var title = document.createElement('h3');
+    title.textContent = 'Target Audience';
+    title.style.cssText = 'margin:0 0 6px;font-size:18px;color:#fff;';
+    content.appendChild(title);
+
+    var sub = document.createElement('p');
+    sub.textContent = 'Select the audience segments you want to reach.';
+    sub.style.cssText = 'margin:0 0 24px;color:rgba(255,255,255,0.5);font-size:14px;';
+    content.appendChild(sub);
+
+    var groups = [
+      { label: 'Age Groups', chips: ['18-24', '25-34', '35-44', '45-54', '55+'] },
+      { label: 'Location', chips: ['Singapore', 'Malaysia'] },
+      { label: 'Interests', chips: ['Insurance', 'Investments', 'Retirement', 'Property', 'Parents', 'PMETs', 'Business Owners'] },
+    ];
+
+    groups.forEach(function(group) {
+      var groupEl = document.createElement('div');
+      groupEl.style.cssText = 'margin-bottom:20px;';
+
+      var groupLabel = document.createElement('div');
+      groupLabel.textContent = group.label;
+      groupLabel.style.cssText = 'font-size:12px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;';
+      groupEl.appendChild(groupLabel);
+
+      var chipsRow = document.createElement('div');
+      chipsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+
+      group.chips.forEach(function(chip) {
+        var isActive = d.audience.indexOf(chip) !== -1;
+        var chipEl = document.createElement('button');
+        chipEl.textContent = chip;
+        chipEl.style.cssText = 'padding:6px 14px;border-radius:20px;border:1px solid;cursor:pointer;font-size:13px;transition:all .15s;' +
+          (isActive
+            ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#fff;'
+            : 'background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);');
+        chipEl.onclick = function() { toggleAudience(chip, chipEl); };
+        chipsRow.appendChild(chipEl);
+      });
+
+      groupEl.appendChild(chipsRow);
+      content.appendChild(groupEl);
+    });
+
+    // Estimated audience size
+    var sizeBox = document.createElement('div');
+    sizeBox.style.cssText = 'margin-top:8px;padding:14px 16px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;display:flex;align-items:center;justify-content:space-between;';
+    var sizeLabel = document.createElement('span');
+    sizeLabel.textContent = 'Estimated Audience Size';
+    sizeLabel.style.cssText = 'font-size:13px;color:rgba(255,255,255,0.6);';
+    var sizeNum = document.createElement('span');
+    sizeNum.id = 'audienceSizeDisplay';
+    sizeNum.textContent = (d.audience.length * 45000).toLocaleString();
+    sizeNum.style.cssText = 'font-size:18px;font-weight:700;color:var(--blue-bright,#3b82f6);';
+    sizeBox.appendChild(sizeLabel);
+    sizeBox.appendChild(sizeNum);
+    content.appendChild(sizeBox);
+
+  } else if (step === 3) {
+    // ---- Step 3: Budget & Schedule ----
+    var title = document.createElement('h3');
+    title.textContent = 'Budget & Schedule';
+    title.style.cssText = 'margin:0 0 24px;font-size:18px;color:#fff;';
+    content.appendChild(title);
+
+    // Slider
+    var sliderSection = document.createElement('div');
+    sliderSection.style.cssText = 'margin-bottom:28px;';
+
+    var sliderHeader = document.createElement('div');
+    sliderHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;';
+    var sliderLbl = document.createElement('span');
+    sliderLbl.textContent = 'Daily Budget';
+    sliderLbl.style.cssText = 'font-size:14px;color:rgba(255,255,255,0.6);';
+    var sliderVal = document.createElement('span');
+    sliderVal.id = 'budgetDisplay';
+    sliderVal.textContent = '$' + d.budget;
+    sliderVal.style.cssText = 'font-size:22px;font-weight:700;color:var(--blue-bright,#3b82f6);';
+    sliderHeader.appendChild(sliderLbl);
+    sliderHeader.appendChild(sliderVal);
+    sliderSection.appendChild(sliderHeader);
+
+    var slider = document.createElement('input');
+    slider.type = 'range';
+    slider.id = 'budgetSlider';
+    slider.min = '10';
+    slider.max = '100';
+    slider.step = '5';
+    slider.value = d.budget;
+    slider.style.cssText = 'width:100%;accent-color:var(--blue-bright,#3b82f6);cursor:pointer;';
+    slider.oninput = function() { updateBudget(); };
+    sliderSection.appendChild(slider);
+
+    var sliderRange = document.createElement('div');
+    sliderRange.style.cssText = 'display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;';
+    sliderRange.innerHTML = '<span>$10/day</span><span>$100/day</span>';
+    sliderSection.appendChild(sliderRange);
+
+    content.appendChild(sliderSection);
+
+    // Dates
+    var dateSection = document.createElement('div');
+    dateSection.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;';
+    [['Start Date', '2026-04-07'], ['End Date', '2026-04-21']].forEach(function(pair) {
+      var dateGroup = document.createElement('div');
+      var dateLbl = document.createElement('label');
+      dateLbl.textContent = pair[0];
+      dateLbl.style.cssText = 'display:block;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;';
+      var dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.value = pair[1];
+      dateInput.style.cssText = 'width:100%;padding:9px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:rgba(255,255,255,0.7);font-size:13px;box-sizing:border-box;';
+      dateGroup.appendChild(dateLbl);
+      dateGroup.appendChild(dateInput);
+      dateSection.appendChild(dateGroup);
+    });
+    content.appendChild(dateSection);
+
+    // Result cards
+    var cardsGrid = document.createElement('div');
+    cardsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:12px;';
+
+    var budgetMetrics = [
+      { label: '14-Day Budget', id: 'budget14day', value: '$' + (d.budget * 14).toLocaleString() },
+      { label: 'Est. Reach', id: 'budgetReach', value: (d.budget * 180).toLocaleString() },
+      { label: 'Est. Clicks', id: 'budgetClicks', value: (d.budget * 6).toLocaleString() },
+      { label: 'Est. CPL', id: 'budgetCPL', value: '$' + (d.budget > 0 ? (d.budget / (d.budget * 6) * 100).toFixed(2) : '0.00') },
+    ];
+
+    budgetMetrics.forEach(function(m) {
+      var card = document.createElement('div');
+      card.style.cssText = 'padding:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;text-align:center;';
+      var lbl = document.createElement('div');
+      lbl.textContent = m.label;
+      lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;';
+      var val = document.createElement('div');
+      val.id = m.id;
+      val.textContent = m.value;
+      val.style.cssText = 'font-size:20px;font-weight:700;color:#fff;';
+      card.appendChild(lbl);
+      card.appendChild(val);
+      cardsGrid.appendChild(card);
+    });
+    content.appendChild(cardsGrid);
+
+  } else if (step === 4) {
+    // ---- Step 4: Review & Launch ----
+    var title = document.createElement('h3');
+    title.textContent = 'Review Your Campaign';
+    title.style.cssText = 'margin:0 0 20px;font-size:18px;color:#fff;';
+    content.appendChild(title);
+
+    var cols = document.createElement('div');
+    cols.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:24px;';
+
+    // Left: summary table
+    var leftCol = document.createElement('div');
+
+    var summaryLabel = document.createElement('div');
+    summaryLabel.textContent = 'Campaign Summary';
+    summaryLabel.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;';
+    leftCol.appendChild(summaryLabel);
+
+    var tplNames = { lead_gen: 'Lead Generation', brand: 'Brand Awareness', event: 'Event Promotion' };
+    var rows = [
+      ['Template', d.template ? (tplNames[d.template] || d.template) : 'Not selected'],
+      ['Headline', d.headline],
+      ['CTA', d.cta],
+      ['Audience', d.audience.join(', ') || 'None selected'],
+      ['Daily Budget', '$' + d.budget],
+      ['Total Budget', '$' + (d.budget * 14).toLocaleString()],
+      ['Est. Reach', (d.budget * 180).toLocaleString()],
+      ['Est. Clicks', (d.budget * 6).toLocaleString()],
+    ];
+
+    var table = document.createElement('table');
+    table.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+    rows.forEach(function(row) {
+      var tr = document.createElement('tr');
+      tr.style.cssText = 'border-bottom:1px solid rgba(255,255,255,0.06);';
+      var td1 = document.createElement('td');
+      td1.textContent = row[0];
+      td1.style.cssText = 'padding:8px 0;color:rgba(255,255,255,0.4);width:42%;vertical-align:top;';
+      var td2 = document.createElement('td');
+      td2.textContent = row[1];
+      td2.style.cssText = 'padding:8px 0;color:#fff;font-weight:500;word-break:break-word;';
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      table.appendChild(tr);
+    });
+    leftCol.appendChild(table);
+
+    // Right: ad preview (compact)
+    var rightCol = document.createElement('div');
+
+    var prevLabel = document.createElement('div');
+    prevLabel.textContent = 'Ad Preview';
+    prevLabel.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;';
+    rightCol.appendChild(prevLabel);
+
+    var fbCard = document.createElement('div');
+    fbCard.style.cssText = 'background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.4);';
+
+    var fbHeader = document.createElement('div');
+    fbHeader.style.cssText = 'padding:8px 10px;display:flex;align-items:center;gap:8px;';
+    var avatar = document.createElement('div');
+    avatar.style.cssText = 'width:30px;height:30px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;flex-shrink:0;';
+    avatar.textContent = 'JX';
+    var headerInfo = document.createElement('div');
+    var pageName = document.createElement('div');
+    pageName.style.cssText = 'font-size:12px;font-weight:700;color:#050505;';
+    pageName.textContent = 'Junxiong Financial Advisory';
+    var sponsored = document.createElement('div');
+    sponsored.style.cssText = 'font-size:10px;color:#606770;';
+    sponsored.textContent = 'Sponsored';
+    headerInfo.appendChild(pageName);
+    headerInfo.appendChild(sponsored);
+    fbHeader.appendChild(avatar);
+    fbHeader.appendChild(headerInfo);
+
+    var fbImage = document.createElement('div');
+    fbImage.style.cssText = 'height:110px;background:linear-gradient(135deg,#1877f2,#42b883);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;';
+    var fbHl = document.createElement('div');
+    fbHl.style.cssText = 'font-size:13px;font-weight:800;color:#fff;text-align:center;line-height:1.3;text-shadow:0 1px 4px rgba(0,0,0,0.3);';
+    fbHl.textContent = d.headline;
+    fbImage.appendChild(fbHl);
+
+    var fbCTABar = document.createElement('div');
+    fbCTABar.style.cssText = 'padding:8px 10px;background:#f0f2f5;display:flex;align-items:center;justify-content:space-between;';
+    var ctaInfo = document.createElement('div');
+    ctaInfo.style.cssText = 'font-size:10px;color:#606770;';
+    ctaInfo.textContent = 'junxiongfa.com';
+    var ctaBtn = document.createElement('div');
+    ctaBtn.style.cssText = 'background:#1877f2;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;';
+    ctaBtn.textContent = d.cta;
+    fbCTABar.appendChild(ctaInfo);
+    fbCTABar.appendChild(ctaBtn);
+
+    fbCard.appendChild(fbHeader);
+    fbCard.appendChild(fbImage);
+    fbCard.appendChild(fbCTABar);
+    rightCol.appendChild(fbCard);
+
+    cols.appendChild(leftCol);
+    cols.appendChild(rightCol);
+    content.appendChild(cols);
+  }
+}
+
+/* ============================================================
    MOBILE MENU TOGGLE
    ============================================================ */
 function toggleMobileMenu() {
