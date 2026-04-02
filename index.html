@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Junxiong Tech Suite — See the Platform in Action</title>
+<meta name="description" content="Interactive demo of 5 integrated platforms built for financial advisors.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!-- Nav -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <div class="nav-brand">Junxiong Tech Suite</div>
+    <div class="nav-links" id="navLinks">
+      <a href="#platforms">Platforms</a>
+    </div>
+    <button class="nav-hamburger" id="hamburger" onclick="toggleMobileMenu()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#platforms" onclick="toggleMobileMenu()">Platforms</a>
+  </div>
+</nav>
+<!-- Hero -->
+<section class="hero" id="hero"></section>
+<!-- Platform Grid -->
+<section class="platforms" id="platforms"></section>
+<!-- Demo Modals -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle"></span>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+<footer class="footer">
+  <p>Built with precision for financial advisors who want an unfair advantage.</p>
+</footer>
+<script src="charts.js"></script>
+<script src="demos.js"></script>
+</body>
+</html>
