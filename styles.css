@@ -389,14 +389,15 @@ button {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 200;
   display: none;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  overflow-y: auto;
 }
 
 .modal-overlay.open {
@@ -497,6 +498,11 @@ button {
 .demo-tab.active {
   background: var(--bg2);
   color: var(--text);
+}
+
+/* Calculator tab panels */
+.calc-tab-panel {
+  animation: fadeInUp 0.2s ease;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -1763,8 +1769,17 @@ button {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-start;
+  }
+
   .modal {
-    max-height: 95vh;
+    max-width: 100%;
+    max-height: none;
+    min-height: 100vh;
+    border-radius: 0;
+    border: none;
   }
 
   .modal-body {
