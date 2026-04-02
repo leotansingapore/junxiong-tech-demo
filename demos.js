@@ -24,12 +24,12 @@ const PLATFORMS = [
     icon: '🌳',
     iconClass: 'tracker',
     title: 'Activity Tracker',
-    desc: 'Gamified team performance platform with 11 modules',
+    desc: '11-module gamified performance platform for advisory teams',
     features: [
-      'Real-time activity feed & GPS logging',
+      'Real-time activity feed with GPS',
       'Hall of Fame leaderboard',
-      'Habit tracking with heatmaps',
-      'Digital pledge sheet & FYC calculator',
+      'Interactive pricing builder',
+      'AI coaching & team reflections',
     ],
   },
   {
@@ -1260,685 +1260,514 @@ function initScrollReveal() {
 }
 
 /* ============================================================
-   ACTIVITY TRACKER DEMO — Module Showcase with Subtabs
+   ACTIVITY TRACKER DEMO — Full Product Demo with Pricing Builder
    ============================================================ */
 DEMO_RENDERERS.tracker = function(container) {
   container.id = 'trackerDemo';
+  while (container.firstChild) { container.removeChild(container.firstChild); }
 
-  /* ---- Helper: avatar initials bubble ---- */
-  function atAvatar(initials, color) {
-    var av = document.createElement('div');
-    av.style.cssText = [
-      'width:28px', 'height:28px', 'border-radius:50%',
-      'background:' + (color || 'var(--bg2)'),
-      'border:1px solid var(--border)',
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'font-size:0.62rem', 'font-weight:700', 'color:#fff', 'flex-shrink:0',
+  /* ---- Shared helpers ---- */
+  function sgd(n) {
+    return '$' + n.toLocaleString();
+  }
+
+  function showToast(msg) {
+    var t = document.createElement('div');
+    t.style.cssText = [
+      'position:fixed', 'bottom:28px', 'left:50%', 'transform:translateX(-50%)',
+      'background:#1a2235', 'border:1px solid var(--border)',
+      'color:var(--text)', 'font-size:0.82rem', 'font-weight:600',
+      'padding:10px 20px', 'border-radius:8px',
+      'box-shadow:0 4px 24px rgba(0,0,0,.5)',
+      'z-index:9999', 'white-space:nowrap',
+      'opacity:0', 'transition:opacity .2s',
     ].join(';');
-    av.textContent = initials;
-    return av;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(function() { t.style.opacity = '1'; });
+    setTimeout(function() {
+      t.style.opacity = '0';
+      setTimeout(function() { t.remove(); }, 300);
+    }, 2600);
   }
 
-  /* ---- Helper: feature pill ---- */
-  function atPill(label) {
-    var p = document.createElement('span');
-    p.style.cssText = 'display:inline-block;padding:2px 9px;border-radius:99px;font-size:0.66rem;font-weight:600;background:rgba(107,155,219,0.15);color:var(--primary-light);border:1px solid rgba(107,155,219,0.25);white-space:nowrap;';
-    p.textContent = label;
-    return p;
-  }
-
-  /* ---- Helper: badge ---- */
-  function atBadge(label, color) {
-    var b = document.createElement('span');
-    b.style.cssText = 'display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:' + (color || 'rgba(52,211,153,0.15)') + ';color:' + (color ? '#fff' : 'var(--green-bright)') + ';';
-    b.textContent = label;
-    return b;
-  }
-
-  /* ---- Helper: build a core module card ---- */
-  function buildModuleCard(opts) {
-    var card = document.createElement('div');
-    card.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;';
-
-    var header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:11px 14px 9px;border-bottom:1px solid var(--border);';
-    var htitle = document.createElement('div');
-    htitle.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:0.84rem;font-weight:700;color:var(--text);';
-    var emoji = document.createElement('span');
-    emoji.textContent = opts.emoji;
-    emoji.style.fontSize = '1rem';
-    var nm = document.createElement('span');
-    nm.textContent = opts.name;
-    htitle.appendChild(emoji);
-    htitle.appendChild(nm);
-    header.appendChild(htitle);
-    if (opts.badge) { header.appendChild(atBadge(opts.badge, opts.badgeColor || null)); }
-    card.appendChild(header);
-
-    var body = document.createElement('div');
-    body.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:0;';
-
-    var left = document.createElement('div');
-    left.style.cssText = 'padding:14px 14px 14px;display:flex;flex-direction:column;gap:10px;border-right:1px solid var(--border);';
-    var desc = document.createElement('div');
-    desc.style.cssText = 'font-size:0.78rem;color:var(--text2);line-height:1.6;';
-    desc.textContent = opts.desc;
-    left.appendChild(desc);
-    if (opts.pills && opts.pills.length) {
-      var pillRow = document.createElement('div');
-      pillRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-top:auto;';
-      opts.pills.forEach(function(pl) { pillRow.appendChild(atPill(pl)); });
-      left.appendChild(pillRow);
-    }
-    body.appendChild(left);
-
-    var right = document.createElement('div');
-    right.style.cssText = 'padding:12px;background:var(--bg1);';
-    if (opts.previewFn) opts.previewFn(right);
-    body.appendChild(right);
-
-    card.appendChild(body);
-    return card;
+  function clearChildren(el) {
+    while (el.firstChild) { el.removeChild(el.firstChild); }
   }
 
   /* ================================================================
-     SUBTAB BAR
+     SECTION 1: PLATFORM OVERVIEW
      ================================================================ */
-  var atSubtabs = [
-    { id: 'overview',     label: 'Overview'      },
-    { id: 'feed',         label: 'Activity Feed' },
-    { id: 'leaderboard',  label: 'Leaderboard'   },
-    { id: 'pledge',       label: 'Pledge Sheet'  },
-    { id: 'gamification', label: 'Gamification'  },
+  var s1 = document.createElement('div');
+  s1.style.cssText = 'text-align:center;padding:28px 20px 24px;background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(52,211,153,.06));border-radius:12px;margin-bottom:24px;border:1px solid var(--border);';
+
+  var s1h = document.createElement('h2');
+  s1h.style.cssText = 'font-size:1.28rem;font-weight:800;color:var(--text);margin:0 0 8px;line-height:1.3;';
+  s1h.textContent = 'The Complete Activity Tracking Platform';
+  s1.appendChild(s1h);
+
+  var s1sub = document.createElement('p');
+  s1sub.style.cssText = 'font-size:0.84rem;color:var(--text2);margin:0 0 18px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;';
+  s1sub.textContent = '11 integrated modules for financial advisory teams. Everything from daily tracking to AI-powered coaching.';
+  s1.appendChild(s1sub);
+
+  var statsRow = document.createElement('div');
+  statsRow.style.cssText = 'display:flex;flex-wrap:wrap;justify-content:center;gap:6px;';
+  var statItems = ['11 Modules', '4 Core', '7 Add-ons', 'Built for Teams of 5\u2013100'];
+  statItems.forEach(function(st) {
+    var pill = document.createElement('span');
+    pill.style.cssText = 'padding:4px 14px;background:rgba(107,155,219,.12);border:1px solid rgba(107,155,219,.25);border-radius:99px;font-size:0.74rem;font-weight:600;color:var(--primary-light,#6b9bdb);white-space:nowrap;';
+    pill.textContent = st;
+    statsRow.appendChild(pill);
+  });
+  s1.appendChild(statsRow);
+  container.appendChild(s1);
+
+  /* ================================================================
+     SECTION 2: MODULE CARDS GRID
+     ================================================================ */
+  var s2head = document.createElement('div');
+  s2head.style.cssText = 'display:flex;align-items:baseline;gap:10px;margin-bottom:14px;';
+  var s2title = document.createElement('h3');
+  s2title.style.cssText = 'font-size:1rem;font-weight:700;color:var(--text);margin:0;';
+  s2title.textContent = 'All 11 Modules';
+  var s2sub = document.createElement('span');
+  s2sub.style.cssText = 'font-size:0.74rem;color:var(--text3);';
+  s2sub.textContent = 'Click any card to explore';
+  s2head.appendChild(s2title);
+  s2head.appendChild(s2sub);
+  container.appendChild(s2head);
+
+  var moduleData = [
+    { emoji: '\u{1F4CA}', name: 'Activity Tracking & Feed',    type: 'core',   desc: 'Real-time activity logging, team feed, reactions, GPS verification, daily progress tracking' },
+    { emoji: '\u{1F3C6}', name: 'Leaderboard & Analytics',     type: 'core',   desc: 'Hall of Fame podium, full activity leaderboard, sales funnel, team trends & inactivity alerts' },
+    { emoji: '\u2705',    name: 'Habit Tracker',               type: 'core',   desc: 'Daily habits, streak tracking, contribution heatmaps, work & personal separation' },
+    { emoji: '\u{1F4CB}', name: 'Digital Pledge Sheet',        type: 'core',   desc: 'Reverse-engineer activity targets from FYC goals. Presets, save/load sheets, PDF export' },
+    { emoji: '\u{1F4B0}', name: 'Commission Calculator',       type: 'addon',  desc: '30+ AIA product commission rates with SPI, AI bonuses, and career totals' },
+    { emoji: '\u{1F4C8}', name: 'Income Projection',           type: 'addon',  desc: 'Multi-year income layering with 9 streams: FYC, SPI, renewals, career benefits' },
+    { emoji: '\u{1F4CA}', name: 'Sales Dashboard',             type: 'addon',  isNew: true, desc: 'Centralized FYC leaderboard with Life, HSG, A&H breakdowns, filters, PDF export' },
+    { emoji: '\u{1F3B0}', name: 'Gamification & Rewards',      type: 'addon',  isNew: true, desc: 'Wheel of Fortune, activity credits, real-life reward redemptions' },
+    { emoji: '\u{1F4C5}', name: 'Coaching & Booking',          type: 'addon',  desc: 'Public booking pages, calendar view, Google Calendar sync, email confirmations' },
+    { emoji: '\u{1F4AD}', name: 'Team Reflections',            type: 'addon',  desc: 'Weekly reflections, submission tracking, AI coaching feedback, automated reminders' },
+    { emoji: '\u2705',    name: 'Accountability Board',        type: 'addon',  isNew: true, desc: 'Scheduled to-do lists, shared tasks, XP streaks, team visibility' },
   ];
 
-  var atTabBar = document.createElement('div');
-  atTabBar.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:4px;';
+  var grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:28px;';
 
-  var atPanes = {};
-
-  atSubtabs.forEach(function(st) {
-    var btn = document.createElement('button');
-    btn.id = 'atTab_' + st.id;
-    btn.style.cssText = [
-      'background:transparent', 'border:none', 'border-bottom:2px solid transparent',
-      'color:var(--text3)', 'font-size:0.75rem', 'font-weight:600',
-      'padding:6px 10px', 'cursor:pointer', 'transition:color 0.2s,border-color 0.2s', 'white-space:nowrap',
+  moduleData.forEach(function(mod) {
+    var card = document.createElement('div');
+    card.style.cssText = [
+      'background:var(--bg2)',
+      'border:1px solid var(--border)',
+      'border-radius:10px',
+      'padding:16px',
+      'display:flex',
+      'flex-direction:column',
+      'gap:10px',
+      'cursor:pointer',
+      'transition:border-color .15s,box-shadow .15s',
     ].join(';');
-    btn.textContent = st.label;
-    btn.onclick = (function(id) { return function() { atSwitchTab(id); }; })(st.id);
-    atTabBar.appendChild(btn);
 
-    var pane = document.createElement('div');
-    pane.id = 'atPane_' + st.id;
-    pane.style.display = 'none';
-    atPanes[st.id] = pane;
-    container.appendChild(pane);
-  });
-
-  container.insertBefore(atTabBar, atPanes[atSubtabs[0].id]);
-
-  function atSwitchTab(id) {
-    atSubtabs.forEach(function(st) {
-      var pane = document.getElementById('atPane_' + st.id);
-      var btn  = document.getElementById('atTab_' + st.id);
-      if (!pane || !btn) return;
-      var active = st.id === id;
-      pane.style.display    = active ? 'block' : 'none';
-      btn.style.color       = active ? 'var(--primary-light)' : 'var(--text3)';
-      btn.style.borderColor = active ? 'var(--primary-light)' : 'transparent';
+    card.addEventListener('mouseenter', function() {
+      card.style.borderColor = 'var(--accent,#3b82f6)';
+      card.style.boxShadow = '0 2px 12px rgba(59,130,246,.15)';
     });
-  }
-
-  /* ================================================================
-     PANE 1: OVERVIEW — existing module showcase
-     ================================================================ */
-  (function() {
-    var pane = atPanes.overview;
-
-    var statsRow = document.createElement('div');
-    statsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;';
-    ['11 Modules', '4 Core', '7 Add-ons', 'Used by 50+ advisors'].forEach(function(s) {
-      var b = document.createElement('div');
-      b.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;background:var(--bg2);border:1px solid var(--border);font-size:0.75rem;font-weight:600;color:var(--text2);';
-      b.textContent = s;
-      statsRow.appendChild(b);
+    card.addEventListener('mouseleave', function() {
+      card.style.borderColor = 'var(--border)';
+      card.style.boxShadow = 'none';
     });
-    pane.appendChild(statsRow);
 
-    var coreHeader = document.createElement('div');
-    coreHeader.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:12px;';
-    var coreLabel = document.createElement('div');
-    coreLabel.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);';
-    coreLabel.textContent = 'CORE MODULES';
-    coreHeader.appendChild(coreLabel);
-    coreHeader.appendChild(atBadge('Included'));
-    pane.appendChild(coreHeader);
+    /* Top row: icon + badges */
+    var topRow = document.createElement('div');
+    topRow.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;';
 
-    pane.appendChild(buildModuleCard({
-      emoji: '\uD83D\uDCF1', name: 'Activity Tracking & Feed', badge: 'CORE', badgeColor: 'rgba(52,211,153,0.8)',
-      desc: 'Real-time activity logging with team feed, reactions, GPS verification, and daily progress tracking.',
-      pills: ['GPS Verified', 'Team Feed', 'Daily Goals'],
-      previewFn: function(wrap) {
-        [
-          { initials: 'LT', color: '#355A99', name: 'You',        type: 'Closing', icon: '\uD83D\uDCDD', pts: '+4pt', time: '2m ago'  },
-          { initials: 'SL', color: '#0f7b5a', name: 'Sarah Lim',  type: 'Set',     icon: '\uD83D\uDCDE', pts: '+1pt', time: '14m ago' },
-          { initials: 'JC', color: '#7c3aed', name: 'James Chen', type: 'Opening', icon: '\uD83E\uDD1D', pts: '+3pt', time: '28m ago' },
-        ].forEach(function(row) {
-          var item = document.createElement('div');
-          item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);';
-          item.appendChild(atAvatar(row.initials, row.color));
-          var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0;';
-          var nm2 = document.createElement('div'); nm2.style.cssText = 'font-size:0.74rem;font-weight:600;color:var(--text);'; nm2.textContent = row.name;
-          var tl = document.createElement('div'); tl.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-top:1px;'; tl.textContent = row.icon + ' ' + row.type;
-          info.appendChild(nm2); info.appendChild(tl); item.appendChild(info);
-          var rght = document.createElement('div'); rght.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;';
-          var pts = document.createElement('div'); pts.style.cssText = 'font-size:0.68rem;font-weight:700;color:var(--green-bright);background:rgba(52,211,153,0.12);padding:1px 6px;border-radius:99px;'; pts.textContent = row.pts;
-          var tm = document.createElement('div'); tm.style.cssText = 'font-size:0.64rem;color:var(--text3);'; tm.textContent = row.time;
-          rght.appendChild(pts); rght.appendChild(tm); item.appendChild(rght); wrap.appendChild(item);
-        });
-      },
-    }));
+    var iconCircle = document.createElement('div');
+    var iconBg = mod.type === 'core'
+      ? 'background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.25);'
+      : 'background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.2);';
+    iconCircle.style.cssText = 'width:48px;height:48px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;' + iconBg;
+    iconCircle.textContent = mod.emoji;
+    topRow.appendChild(iconCircle);
 
-    pane.appendChild(buildModuleCard({
-      emoji: '\uD83C\uDFC6', name: 'Leaderboard & Analytics', badge: 'CORE', badgeColor: 'rgba(52,211,153,0.8)',
-      desc: 'Hall of Fame podium, full activity leaderboard, sales funnel analytics, team trends & inactivity alerts.',
-      pills: ['Hall of Fame', 'Trend Arrows', 'Inactivity Alerts'],
-      previewFn: function(wrap) {
-        var podRow2 = document.createElement('div'); podRow2.style.cssText = 'display:flex;justify-content:center;align-items:flex-end;gap:12px;';
-        [
-          { rank: 2, initials: 'JC', name: 'James Chen', pts: 395, color: '#C0C0C0', medal: '\uD83E\uDD48' },
-          { rank: 1, initials: 'SL', name: 'Sarah Lim',  pts: 428, color: '#FFD700', medal: '\uD83E\uDD47' },
-          { rank: 3, initials: 'LT', name: 'You',        pts: 312, color: '#CD7F32', medal: '\uD83E\uDD49' },
-        ].forEach(function(p) {
-          var col = document.createElement('div'); col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
-          var medal = document.createElement('div'); medal.style.cssText = 'font-size:1rem;'; medal.textContent = p.medal;
-          var av = atAvatar(p.initials, p.color + '55'); av.style.cssText += ';border:2px solid ' + p.color + ';width:30px;height:30px;';
-          var pn = document.createElement('div'); pn.style.cssText = 'font-size:0.62rem;font-weight:700;color:var(--text);text-align:center;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'; pn.textContent = p.name.split(' ')[0];
-          var pp = document.createElement('div'); pp.style.cssText = 'font-size:0.62rem;color:var(--text3);'; pp.textContent = p.pts + ' pts';
-          var h = p.rank === 1 ? '36px' : p.rank === 2 ? '26px' : '18px';
-          var blk = document.createElement('div'); blk.style.cssText = 'width:44px;height:' + h + ';background:' + p.color + '22;border:1px solid ' + p.color + '55;border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;color:' + p.color + ';'; blk.textContent = '#' + p.rank;
-          col.appendChild(medal); col.appendChild(av); col.appendChild(pn); col.appendChild(pp); col.appendChild(blk); podRow2.appendChild(col);
-        });
-        wrap.appendChild(podRow2);
-      },
-    }));
+    var badges = document.createElement('div');
+    badges.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;';
 
-    pane.appendChild(buildModuleCard({
-      emoji: '\uD83D\uDD25', name: 'Habit Tracker', badge: 'CORE', badgeColor: 'rgba(52,211,153,0.8)',
-      desc: 'Daily habits with streak tracking, contribution heatmaps, work & personal habit separation.',
-      pills: ['Streak Tracking', 'Heatmaps', 'Work/Personal Split'],
-      previewFn: function(wrap) {
-        var hv = [3,5,4,2,5,1,0, 4,3,5,5,4,2,0, 2,4,3,5,5,1,0, 5,4,5,4,4,0,0];
-        var hc = ['var(--bg2)','rgba(53,90,153,0.25)','rgba(53,90,153,0.45)','rgba(107,155,219,0.6)','rgba(107,155,219,0.8)','var(--primary-light)'];
-        var lbl2 = document.createElement('div'); lbl2.style.cssText = 'font-size:0.68rem;color:var(--text3);font-weight:600;margin-bottom:7px;'; lbl2.textContent = '4-Week Heatmap'; wrap.appendChild(lbl2);
-        var grid2 = document.createElement('div'); grid2.style.cssText = 'display:grid;grid-template-columns:repeat(28,1fr);gap:2px;';
-        hv.forEach(function(v) { var c2 = document.createElement('div'); c2.style.cssText = 'height:11px;border-radius:2px;background:' + hc[v] + ';'; grid2.appendChild(c2); });
-        wrap.appendChild(grid2);
-        var leg = document.createElement('div'); leg.style.cssText = 'display:flex;align-items:center;gap:4px;margin-top:7px;font-size:0.62rem;color:var(--text3);'; leg.textContent = 'Less ';
-        [0,1,2,3,4,5].forEach(function(v) { var sq = document.createElement('div'); sq.style.cssText = 'width:10px;height:10px;border-radius:2px;background:' + hc[v] + ';border:1px solid var(--border);'; leg.appendChild(sq); });
-        var more = document.createElement('span'); more.textContent = ' More'; leg.appendChild(more); wrap.appendChild(leg);
-      },
-    }));
+    var typeBadge = document.createElement('span');
+    typeBadge.style.cssText = mod.type === 'core'
+      ? 'padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(52,211,153,.15);color:var(--green-bright,#34d399);border:1px solid rgba(52,211,153,.3);'
+      : 'padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);';
+    typeBadge.textContent = mod.type === 'core' ? 'Core' : 'Add-on';
+    badges.appendChild(typeBadge);
 
-    pane.appendChild(buildModuleCard({
-      emoji: '\uD83D\uDCCB', name: 'Digital Pledge Sheet & Calculator', badge: 'CORE', badgeColor: 'rgba(52,211,153,0.8)',
-      desc: 'Reverse-engineer activity targets from FYC goals. Save/load pledge sheets, presets, PDF export.',
-      pills: ['Reverse Calculator', 'PDF Export', 'Presets'],
-      previewFn: function(wrap) {
-        var fr = document.createElement('div'); fr.style.cssText = 'margin-bottom:10px;padding:9px;background:rgba(53,90,153,0.12);border:1px solid rgba(107,155,219,0.2);border-radius:7px;';
-        var fl = document.createElement('div'); fl.style.cssText = 'font-size:0.64rem;color:var(--text3);margin-bottom:3px;'; fl.textContent = 'FYC Target';
-        var fv = document.createElement('div'); fv.style.cssText = 'font-size:1.1rem;font-weight:800;color:var(--primary-light);'; fv.textContent = '$50,000';
-        fr.appendChild(fl); fr.appendChild(fv); wrap.appendChild(fr);
-        [{ icon: '\uD83D\uDCDE', label: 'Sets / week', val: '12' }, { icon: '\uD83E\uDD1D', label: 'Openings', val: '4' }, { icon: '\uD83D\uDCDD', label: 'Closings', val: '2' }].forEach(function(r) {
-          var row2 = document.createElement('div'); row2.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);';
-          var lft2 = document.createElement('div'); lft2.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text2);'; lft2.textContent = r.icon + ' ' + r.label;
-          var val2 = document.createElement('div'); val2.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--green-bright);'; val2.textContent = r.val;
-          row2.appendChild(lft2); row2.appendChild(val2); wrap.appendChild(row2);
-        });
-      },
-    }));
-
-    var addonHeader = document.createElement('div');
-    addonHeader.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:8px;margin-bottom:12px;';
-    var addonLabel = document.createElement('div');
-    addonLabel.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);';
-    addonLabel.textContent = 'ADD-ON MODULES';
-    addonHeader.appendChild(addonLabel);
-    addonHeader.appendChild(atBadge('Growth & Coaching', 'rgba(107,155,219,0.8)'));
-    pane.appendChild(addonHeader);
-
-    var addonGrid = document.createElement('div');
-    addonGrid.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px;';
-    [
-      { icon: '\uD83D\uDCB0', title: 'Commission Calculator',   desc: '30+ AIA product commission rates',              isNew: false },
-      { icon: '\uD83D\uDCC8', title: 'Income Projection',       desc: 'Multi-year income layering with 9 streams',      isNew: false },
-      { icon: '\uD83D\uDCCA', title: 'Sales Dashboard',         desc: 'FYC leaderboard with Life, HSG, A&H breakdowns', isNew: true  },
-      { icon: '\uD83C\uDFA0', title: 'Gamification & Rewards',  desc: 'Wheel of Fortune, credits, real-life rewards',   isNew: true  },
-      { icon: '\uD83D\uDCC5', title: 'Coaching & Booking',      desc: 'Public booking pages, Google Calendar sync',     isNew: false },
-      { icon: '\uD83D\uDCAD', title: 'Team Reflections',        desc: 'Weekly reflections with AI coaching feedback',   isNew: false },
-      { icon: '\u2705',       title: 'Accountability Board',    desc: 'Scheduled to-do lists with team visibility',     isNew: true  },
-    ].forEach(function(a) {
-      var card2 = document.createElement('div'); card2.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;display:flex;gap:10px;align-items:flex-start;';
-      var ie = document.createElement('div'); ie.style.cssText = 'font-size:1.1rem;flex-shrink:0;margin-top:1px;'; ie.textContent = a.icon; card2.appendChild(ie);
-      var inf2 = document.createElement('div'); inf2.style.cssText = 'flex:1;min-width:0;';
-      var tr2 = document.createElement('div'); tr2.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:3px;';
-      var te2 = document.createElement('div'); te2.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--text);'; te2.textContent = a.title; tr2.appendChild(te2);
-      if (a.isNew) { var nb2 = document.createElement('span'); nb2.style.cssText = 'display:inline-block;padding:1px 6px;border-radius:4px;font-size:0.58rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;background:#355A99;color:#fff;'; nb2.textContent = 'NEW'; tr2.appendChild(nb2); }
-      inf2.appendChild(tr2);
-      var ds2 = document.createElement('div'); ds2.style.cssText = 'font-size:0.71rem;color:var(--text3);line-height:1.5;'; ds2.textContent = a.desc; inf2.appendChild(ds2);
-      card2.appendChild(inf2); addonGrid.appendChild(card2);
-    });
-    pane.appendChild(addonGrid);
-
-    var forestWrap = document.createElement('div');
-    forestWrap.className = 'chart-container';
-    forestWrap.style.cssText = 'padding:14px 16px;';
-    var forestTitle2 = document.createElement('div');
-    forestTitle2.className = 'demo-section-heading';
-    forestTitle2.textContent = 'Your Personal Forest';
-    forestWrap.appendChild(forestTitle2);
-    var forestScene2 = document.createElement('div');
-    forestScene2.style.cssText = 'background:linear-gradient(180deg,#0a2e1a 0%,#0f4d2a 60%,#1a6b3c 100%);min-height:160px;position:relative;border-radius:8px;overflow:hidden;';
-    [
-      { species: 'cherry_blossom', left: '4%',  bottom: '8%',  width: 58 },
-      { species: 'mighty_oak',     left: '17%', bottom: '5%',  width: 72 },
-      { species: 'coconut_palm',   left: '30%', bottom: '7%',  width: 54 },
-      { species: 'apple_tree',     left: '45%', bottom: '4%',  width: 66 },
-      { species: 'lucky_bamboo',   left: '59%', bottom: '10%', width: 48 },
-      { species: 'blue_spruce',    left: '72%', bottom: '6%',  width: 68 },
-    ].forEach(function(t) {
-      var td = document.createElement('div'); td.style.cssText = 'position:absolute;left:' + t.left + ';bottom:' + t.bottom + ';width:' + t.width + 'px;';
-      var im = document.createElement('img'); im.src = 'https://tree-showcase-omega.vercel.app/trees/stages/' + t.species + '_full.png'; im.alt = t.species.replace(/_/g, ' ');
-      im.style.cssText = 'width:100%;height:auto;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5));';
-      im.onerror = function() { td.textContent = '\uD83C\uDF33'; td.style.fontSize = '2rem'; };
-      td.appendChild(im); forestScene2.appendChild(td);
-    });
-    forestWrap.appendChild(forestScene2);
-    var forestCaption2 = document.createElement('div');
-    forestCaption2.style.cssText = 'font-size:0.74rem;color:var(--text3);margin-top:10px;text-align:center;';
-    forestCaption2.textContent = 'Advisors grow their personal forest by hitting daily activity targets';
-    forestWrap.appendChild(forestCaption2);
-    pane.appendChild(forestWrap);
-  })();
-
-  /* ================================================================
-     PANE 2: ACTIVITY FEED
-     ================================================================ */
-  (function() {
-    var pane = atPanes.feed;
-
-    /* Today's progress bar */
-    var progressCard = document.createElement('div');
-    progressCard.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;';
-    var progressTop = document.createElement('div');
-    progressTop.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
-    var progressLabel = document.createElement('div');
-    progressLabel.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--text);';
-    progressLabel.textContent = "Today's Progress";
-    var progressPts = document.createElement('div');
-    progressPts.style.cssText = 'font-size:0.9rem;font-weight:800;color:var(--primary-light);';
-    progressPts.textContent = '45 / 60 pts';
-    progressTop.appendChild(progressLabel);
-    progressTop.appendChild(progressPts);
-    progressCard.appendChild(progressTop);
-    var barBg = document.createElement('div');
-    barBg.style.cssText = 'height:10px;border-radius:99px;background:var(--bg3);overflow:hidden;margin-bottom:8px;';
-    var barFill = document.createElement('div');
-    barFill.style.cssText = 'height:100%;width:75%;border-radius:99px;background:linear-gradient(90deg,#34d399,#6bdb99);';
-    barBg.appendChild(barFill);
-    progressCard.appendChild(barBg);
-    var statusText = document.createElement('div');
-    statusText.style.cssText = 'font-size:0.74rem;color:var(--green-bright);font-weight:600;';
-    statusText.textContent = '75% of daily goal \u2014 great momentum!';
-    progressCard.appendChild(statusText);
-    pane.appendChild(progressCard);
-
-    /* Team activity header */
-    var feedHdr = document.createElement('div');
-    feedHdr.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;';
-    feedHdr.textContent = 'TEAM ACTIVITY';
-    pane.appendChild(feedHdr);
-
-    /* Feed list */
-    var feedItems = [
-      { initials: 'LT', color: '#355A99', name: 'You',        type: 'Closing',   icon: '\uD83D\uDCDD', pts: '+4pt', time: '2m ago',  isYou: true  },
-      { initials: 'SL', color: '#0f7b5a', name: 'Sarah Lim',  type: 'Set',       icon: '\uD83D\uDCDE', pts: '+1pt', time: '14m ago', isYou: false },
-      { initials: 'JC', color: '#7c3aed', name: 'James Chen', type: 'Opening',   icon: '\uD83E\uDD1D', pts: '+3pt', time: '28m ago', isYou: false },
-      { initials: 'RN', color: '#b45309', name: 'Rachel Ng',  type: 'Referral',  icon: '\uD83D\uDD17', pts: '+1pt', time: '45m ago', isYou: false },
-      { initials: 'DT', color: '#0369a1', name: 'David Tan',  type: 'Servicing', icon: '\uD83D\uDD27', pts: '+2pt', time: '1h ago',  isYou: false },
-      { initials: 'MW', color: '#7f1d1d', name: 'May Wong',   type: 'Closed',    icon: '\u2705',       pts: '+5pt', time: '2h ago',  isYou: false },
-      { initials: 'LT', color: '#355A99', name: 'You',        type: 'Set',       icon: '\uD83D\uDCDE', pts: '+1pt', time: '3h ago',  isYou: true  },
-      { initials: 'JL', color: '#065f46', name: 'John Lee',   type: 'Opening',   icon: '\uD83E\uDD1D', pts: '+3pt', time: '4h ago',  isYou: false },
-    ];
-
-    var feedList = document.createElement('div');
-    feedList.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;';
-    feedItems.forEach(function(row, i) {
-      var item = document.createElement('div');
-      item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;' +
-        (i < feedItems.length - 1 ? 'border-bottom:1px solid var(--border);' : '') +
-        (row.isYou ? 'background:rgba(53,90,153,0.08);' : '');
-      item.appendChild(atAvatar(row.initials, row.color));
-      var info = document.createElement('div'); info.style.cssText = 'flex:1;min-width:0;';
-      var nm3 = document.createElement('div');
-      nm3.style.cssText = 'font-size:0.78rem;font-weight:' + (row.isYou ? '700' : '600') + ';color:var(--text);display:flex;align-items:center;gap:5px;';
-      nm3.textContent = row.name;
-      if (row.isYou) {
-        var yb = document.createElement('span'); yb.style.cssText = 'font-size:0.58rem;padding:1px 5px;border-radius:3px;background:rgba(53,90,153,0.3);color:var(--primary-light);font-weight:700;'; yb.textContent = 'YOU'; nm3.appendChild(yb);
-      }
-      var tl2 = document.createElement('div'); tl2.style.cssText = 'font-size:0.7rem;color:var(--text3);margin-top:2px;'; tl2.textContent = row.icon + ' ' + row.type;
-      info.appendChild(nm3); info.appendChild(tl2); item.appendChild(info);
-      var rght2 = document.createElement('div'); rght2.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:3px;';
-      var pts2 = document.createElement('div'); pts2.style.cssText = 'font-size:0.72rem;font-weight:700;color:var(--green-bright);background:rgba(52,211,153,0.12);padding:2px 8px;border-radius:99px;border:1px solid rgba(52,211,153,0.2);'; pts2.textContent = row.pts;
-      var tm2 = document.createElement('div'); tm2.style.cssText = 'font-size:0.66rem;color:var(--text3);'; tm2.textContent = row.time;
-      rght2.appendChild(pts2); rght2.appendChild(tm2); item.appendChild(rght2);
-      feedList.appendChild(item);
-    });
-    pane.appendChild(feedList);
-
-    /* Log Activity button */
-    var logBtn = document.createElement('button');
-    logBtn.style.cssText = 'width:100%;padding:12px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;letter-spacing:0.03em;transition:opacity 0.2s;';
-    logBtn.textContent = '+ Log Activity';
-    logBtn.onmouseenter = function() { logBtn.style.opacity = '0.85'; };
-    logBtn.onmouseleave = function() { logBtn.style.opacity = '1'; };
-    logBtn.onclick = function() {
-      var toast = document.createElement('div');
-      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--green-bright);color:var(--green-bright);padding:10px 20px;border-radius:8px;font-size:0.8rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
-      toast.textContent = '\u2705 Activity logged! +2 pts added';
-      document.body.appendChild(toast);
-      setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 2500);
-    };
-    pane.appendChild(logBtn);
-  })();
-
-  /* ================================================================
-     PANE 3: LEADERBOARD
-     ================================================================ */
-  (function() {
-    var pane = atPanes.leaderboard;
-
-    var hofHdr = document.createElement('div');
-    hofHdr.style.cssText = 'text-align:center;margin-bottom:16px;';
-    var hofTitle = document.createElement('div');
-    hofTitle.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;';
-    hofTitle.textContent = 'HALL OF FAME \u2014 THIS WEEK';
-    var hofSubt = document.createElement('div');
-    hofSubt.style.cssText = 'font-size:0.7rem;color:var(--text3);';
-    hofSubt.textContent = 'Week of Apr 1\u20137, 2026';
-    hofHdr.appendChild(hofTitle); hofHdr.appendChild(hofSubt);
-    pane.appendChild(hofHdr);
-
-    /* Podium */
-    var podWrap = document.createElement('div');
-    podWrap.style.cssText = 'display:flex;justify-content:center;align-items:flex-end;gap:16px;margin-bottom:20px;padding:0 8px;';
-    [
-      { rank: 2, initials: 'JC', name: 'James Chen', pts: 395, color: '#C0C0C0', medal: '\uD83E\uDD48', height: '70px' },
-      { rank: 1, initials: 'SL', name: 'Sarah Lim',  pts: 428, color: '#FFD700', medal: '\uD83E\uDD47', height: '90px' },
-      { rank: 3, initials: 'LT', name: 'You',        pts: 312, color: '#CD7F32', medal: '\uD83E\uDD49', height: '55px' },
-    ].forEach(function(p) {
-      var col3 = document.createElement('div'); col3.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;max-width:90px;';
-      var med3 = document.createElement('div'); med3.style.cssText = 'font-size:1.3rem;'; med3.textContent = p.medal;
-      var av3 = atAvatar(p.initials, p.color + '66'); av3.style.width = '38px'; av3.style.height = '38px'; av3.style.border = '2px solid ' + p.color; av3.style.fontSize = '0.75rem';
-      var pname = document.createElement('div'); pname.style.cssText = 'font-size:0.72rem;font-weight:700;color:var(--text);text-align:center;'; pname.textContent = p.name.split(' ')[0];
-      var ppts = document.createElement('div'); ppts.style.cssText = 'font-size:0.68rem;color:var(--text3);'; ppts.textContent = p.pts + ' pts';
-      var blk3 = document.createElement('div'); blk3.style.cssText = 'width:100%;height:' + p.height + ';background:' + p.color + '1a;border:2px solid ' + p.color + '44;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:' + p.color + ';'; blk3.textContent = '#' + p.rank;
-      col3.appendChild(med3); col3.appendChild(av3); col3.appendChild(pname); col3.appendChild(ppts); col3.appendChild(blk3);
-      podWrap.appendChild(col3);
-    });
-    pane.appendChild(podWrap);
-
-    /* Full table */
-    var tableCard = document.createElement('div');
-    tableCard.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;';
-    var rankColors3 = { 1: '#FFD700', 2: '#C0C0C0', 3: '#CD7F32' };
-    var tHead = document.createElement('div');
-    tHead.style.cssText = 'display:grid;grid-template-columns:28px 32px 1fr 60px 56px 28px;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg3);';
-    ['#', '', 'Name', 'Points', 'Streak', ''].forEach(function(h) {
-      var th = document.createElement('div'); th.style.cssText = 'font-size:0.64rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);'; th.textContent = h; tHead.appendChild(th);
-    });
-    tableCard.appendChild(tHead);
-    [
-      { rank: 1, initials: 'SL', color: '#FFD700', name: 'Sarah Lim',   pts: 428, streak: 14, trend: '\u2191', trendUp: true  },
-      { rank: 2, initials: 'JC', color: '#C0C0C0', name: 'James Chen',  pts: 395, streak: 9,  trend: '\u2192', trendUp: null  },
-      { rank: 3, initials: 'LT', color: '#355A99', name: 'You',         pts: 312, streak: 7,  trend: '\u2191', trendUp: true,  isYou: true },
-      { rank: 4, initials: 'RN', color: '#b45309', name: 'Rachel Ng',   pts: 290, streak: 5,  trend: '\u2193', trendUp: false },
-      { rank: 5, initials: 'DT', color: '#0369a1', name: 'David Tan',   pts: 265, streak: 11, trend: '\u2191', trendUp: true  },
-      { rank: 6, initials: 'MW', color: '#7f1d1d', name: 'May Wong',    pts: 244, streak: 3,  trend: '\u2193', trendUp: false },
-      { rank: 7, initials: 'JL', color: '#065f46', name: 'John Lee',    pts: 218, streak: 6,  trend: '\u2191', trendUp: true  },
-      { rank: 8, initials: 'BK', color: '#4c1d95', name: 'Ben Koh',     pts: 187, streak: 2,  trend: '\u2193', trendUp: false },
-    ].forEach(function(r, i) {
-      var row3 = document.createElement('div');
-      row3.style.cssText = 'display:grid;grid-template-columns:28px 32px 1fr 60px 56px 28px;gap:6px;padding:9px 12px;align-items:center;' +
-        (i < 7 ? 'border-bottom:1px solid var(--border);' : '') +
-        (r.isYou ? 'background:rgba(53,90,153,0.1);' : (rankColors3[r.rank] ? 'background:' + rankColors3[r.rank] + '08;' : ''));
-      var rnk = document.createElement('div'); rnk.style.cssText = 'font-size:0.72rem;font-weight:800;color:' + (rankColors3[r.rank] || 'var(--text3)') + ';'; rnk.textContent = r.rank;
-      var av4 = atAvatar(r.initials, r.color); av4.style.width = '24px'; av4.style.height = '24px'; av4.style.fontSize = '0.58rem';
-      var nm4 = document.createElement('div'); nm4.style.cssText = 'font-size:0.76rem;font-weight:' + (r.isYou ? '700' : '500') + ';color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'; nm4.textContent = r.name + (r.isYou ? ' (you)' : '');
-      var pts3 = document.createElement('div'); pts3.style.cssText = 'font-size:0.76rem;font-weight:700;color:' + (rankColors3[r.rank] || 'var(--text)') + ';'; pts3.textContent = r.pts + ' pts';
-      var strk = document.createElement('div'); strk.style.cssText = 'font-size:0.72rem;color:var(--text2);'; strk.textContent = '\uD83D\uDD25 ' + r.streak + 'd';
-      var trnd = document.createElement('div'); trnd.style.cssText = 'font-size:0.9rem;font-weight:700;color:' + (r.trendUp === true ? 'var(--green-bright)' : r.trendUp === false ? '#f87171' : 'var(--text3)') + ';text-align:center;'; trnd.textContent = r.trend;
-      row3.appendChild(rnk); row3.appendChild(av4); row3.appendChild(nm4); row3.appendChild(pts3); row3.appendChild(strk); row3.appendChild(trnd);
-      tableCard.appendChild(row3);
-    });
-    pane.appendChild(tableCard);
-  })();
-
-  /* ================================================================
-     PANE 4: PLEDGE SHEET
-     ================================================================ */
-  (function() {
-    var pane = atPanes.pledge;
-    var cols4 = document.createElement('div');
-    cols4.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;';
-
-    /* Left: Calculator */
-    var lc4 = document.createElement('div');
-    var ct4 = document.createElement('div'); ct4.style.cssText = 'font-size:0.7rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;'; ct4.textContent = 'FORWARD GOAL CALCULATOR'; lc4.appendChild(ct4);
-    var fycCard4 = document.createElement('div'); fycCard4.style.cssText = 'background:rgba(53,90,153,0.12);border:1px solid rgba(107,155,219,0.25);border-radius:8px;padding:12px;margin-bottom:12px;';
-    var fl4 = document.createElement('div'); fl4.style.cssText = 'font-size:0.64rem;color:var(--text3);margin-bottom:4px;'; fl4.textContent = 'FYC Target';
-    var fv4 = document.createElement('div'); fv4.style.cssText = 'font-size:1.5rem;font-weight:800;color:var(--primary-light);line-height:1;'; fv4.textContent = '$50,000';
-    var fs4 = document.createElement('div'); fs4.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-top:4px;'; fs4.textContent = '1 Closed = $2,500 avg FYC';
-    fycCard4.appendChild(fl4); fycCard4.appendChild(fv4); fycCard4.appendChild(fs4); lc4.appendChild(fycCard4);
-    var calcList4 = document.createElement('div'); calcList4.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;';
-    [
-      { label: 'Cases needed',    val: '20',          icon: '\uD83C\uDFAF' },
-      { label: 'Closings / week', val: '2',           icon: '\uD83D\uDCDD' },
-      { label: 'Openings / week', val: '6',           icon: '\uD83E\uDD1D' },
-      { label: 'Sets / week',     val: '18',          icon: '\uD83D\uDCDE' },
-      { label: 'Daily activity',  val: '~4 sets/day', icon: '\uD83D\uDCC5' },
-    ].forEach(function(item, i) {
-      var r4 = document.createElement('div'); r4.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 12px;' + (i < 4 ? 'border-bottom:1px solid var(--border);' : '');
-      var l4 = document.createElement('div'); l4.style.cssText = 'font-size:0.73rem;color:var(--text2);display:flex;align-items:center;gap:6px;'; l4.textContent = item.icon + ' ' + item.label;
-      var v4 = document.createElement('div'); v4.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--green-bright);'; v4.textContent = item.val;
-      r4.appendChild(l4); r4.appendChild(v4); calcList4.appendChild(r4);
-    });
-    lc4.appendChild(calcList4); cols4.appendChild(lc4);
-
-    /* Right: Pledge table */
-    var rc4 = document.createElement('div');
-    var pt4 = document.createElement('div'); pt4.style.cssText = 'font-size:0.7rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;'; pt4.textContent = "THIS WEEK'S PLEDGE"; rc4.appendChild(pt4);
-    var pledgeCard4 = document.createElement('div'); pledgeCard4.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;';
-    var pth = document.createElement('div'); pth.style.cssText = 'display:grid;grid-template-columns:1fr 38px 38px 24px;gap:4px;padding:7px 10px;border-bottom:1px solid var(--border);background:var(--bg3);';
-    ['Activity','Target','Actual',''].forEach(function(h) { var th4 = document.createElement('div'); th4.style.cssText = 'font-size:0.62rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);'; th4.textContent = h; pth.appendChild(th4); });
-    pledgeCard4.appendChild(pth);
-    [
-      { act: 'Sets',       target: 18, actual: 15, status: '\u26A0\uFE0F' },
-      { act: 'Openings',   target: 6,  actual: 5,  status: '\u26A0\uFE0F' },
-      { act: 'Closings',   target: 2,  actual: 2,  status: '\u2705'       },
-      { act: 'Follow-ups', target: 10, actual: 12, status: '\u2705'       },
-      { act: 'Referrals',  target: 3,  actual: 1,  status: '\u274C'       },
-    ].forEach(function(r, i) {
-      var pr = document.createElement('div'); pr.style.cssText = 'display:grid;grid-template-columns:1fr 38px 38px 24px;gap:4px;padding:8px 10px;align-items:center;' + (i < 4 ? 'border-bottom:1px solid var(--border);' : '');
-      var ae = document.createElement('div'); ae.style.cssText = 'font-size:0.74rem;color:var(--text2);'; ae.textContent = r.act;
-      var te4 = document.createElement('div'); te4.style.cssText = 'font-size:0.74rem;font-weight:600;color:var(--text3);text-align:center;'; te4.textContent = r.target;
-      var ac4 = document.createElement('div'); var met4 = r.actual >= r.target; ac4.style.cssText = 'font-size:0.74rem;font-weight:700;color:' + (met4 ? 'var(--green-bright)' : '#f87171') + ';text-align:center;'; ac4.textContent = r.actual;
-      var se4 = document.createElement('div'); se4.style.cssText = 'font-size:0.78rem;text-align:center;'; se4.textContent = r.status;
-      pr.appendChild(ae); pr.appendChild(te4); pr.appendChild(ac4); pr.appendChild(se4); pledgeCard4.appendChild(pr);
-    });
-    rc4.appendChild(pledgeCard4);
-    var psum = document.createElement('div'); psum.style.cssText = 'margin-top:10px;padding:8px 10px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.15);border-radius:7px;';
-    var ps1 = document.createElement('div'); ps1.style.cssText = 'font-size:0.7rem;color:var(--text3);margin-bottom:2px;'; ps1.textContent = 'Weekly completion';
-    var ps2 = document.createElement('div'); ps2.style.cssText = 'font-size:0.84rem;font-weight:700;color:var(--green-bright);'; ps2.textContent = '3 / 5 targets met \u2014 60%';
-    psum.appendChild(ps1); psum.appendChild(ps2); rc4.appendChild(psum);
-    cols4.appendChild(rc4);
-    pane.appendChild(cols4);
-  })();
-
-  /* ================================================================
-     PANE 5: GAMIFICATION
-     ================================================================ */
-  (function() {
-    var pane = atPanes.gamification;
-    var cols5 = document.createElement('div');
-    cols5.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;';
-
-    /* Left: Wheel of Fortune */
-    var lc5 = document.createElement('div');
-    var wt5 = document.createElement('div'); wt5.style.cssText = 'font-size:0.7rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;'; wt5.textContent = 'WHEEL OF FORTUNE'; lc5.appendChild(wt5);
-
-    var wheelWrap = document.createElement('div');
-    wheelWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;margin-bottom:10px;';
-
-    var ns5 = 'http://www.w3.org/2000/svg';
-    var svg5 = document.createElementNS(ns5, 'svg');
-    svg5.setAttribute('width', '130'); svg5.setAttribute('height', '130'); svg5.setAttribute('viewBox', '-65 -65 130 130');
-    svg5.style.cssText = 'display:block;';
-
-    var wheelSegs = [
-      { color: '#355A99', label: '+5 pts',    startDeg: 0   },
-      { color: '#34d399', label: 'Bonus Day', startDeg: 60  },
-      { color: '#fbbf24', label: '+10 pts',   startDeg: 120 },
-      { color: '#f87171', label: 'Try Again', startDeg: 180 },
-      { color: '#a78bfa', label: '+2 pts',    startDeg: 240 },
-      { color: '#38bdf8', label: 'Free Spin', startDeg: 300 },
-    ];
-
-    function p2c(angle, r) {
-      var rad = (angle - 90) * Math.PI / 180;
-      return { x: r * Math.cos(rad), y: r * Math.sin(rad) };
+    if (mod.isNew) {
+      var newBadge = document.createElement('span');
+      newBadge.style.cssText = 'padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3);';
+      newBadge.textContent = 'New';
+      badges.appendChild(newBadge);
     }
 
-    var wg5 = document.createElementNS(ns5, 'g');
-    wg5.id = 'atWheelGroup5';
-    var wAngle5 = 0;
+    topRow.appendChild(badges);
+    card.appendChild(topRow);
 
-    wheelSegs.forEach(function(seg) {
-      var s5 = p2c(seg.startDeg, 60), e5 = p2c(seg.startDeg + 60, 60);
-      var path5 = document.createElementNS(ns5, 'path');
-      path5.setAttribute('d', 'M 0 0 L ' + s5.x + ' ' + s5.y + ' A 60 60 0 0 1 ' + e5.x + ' ' + e5.y + ' Z');
-      path5.setAttribute('fill', seg.color); path5.setAttribute('stroke', '#0d1b2a'); path5.setAttribute('stroke-width', '1.5');
-      wg5.appendChild(path5);
-      var mid5 = p2c(seg.startDeg + 30, 38);
-      var txt5 = document.createElementNS(ns5, 'text');
-      txt5.setAttribute('x', mid5.x); txt5.setAttribute('y', mid5.y);
-      txt5.setAttribute('text-anchor', 'middle'); txt5.setAttribute('dominant-baseline', 'middle');
-      txt5.setAttribute('font-size', '7'); txt5.setAttribute('font-weight', '700'); txt5.setAttribute('fill', '#fff');
-      txt5.setAttribute('transform', 'rotate(' + (seg.startDeg + 30) + ',' + mid5.x + ',' + mid5.y + ')');
-      txt5.textContent = seg.label; wg5.appendChild(txt5);
+    /* Module name */
+    var mname = document.createElement('h3');
+    mname.style.cssText = 'font-size:0.9rem;font-weight:700;color:var(--text);margin:0;line-height:1.3;';
+    mname.textContent = mod.name;
+    card.appendChild(mname);
+
+    /* Description */
+    var mdesc = document.createElement('p');
+    mdesc.style.cssText = 'font-size:0.78rem;color:var(--text2);margin:0;line-height:1.6;flex:1;';
+    mdesc.textContent = mod.desc;
+    card.appendChild(mdesc);
+
+    /* CTA link */
+    var cta = document.createElement('a');
+    cta.style.cssText = 'font-size:0.76rem;font-weight:600;color:var(--primary-light,#6b9bdb);cursor:pointer;text-decoration:none;margin-top:4px;';
+    cta.textContent = 'Try Interactive Demo \u2192';
+    cta.addEventListener('click', function(e) {
+      e.preventDefault();
+      showToast('Full demo available in the live platform');
+    });
+    card.appendChild(cta);
+
+    grid.appendChild(card);
+  });
+
+  container.appendChild(grid);
+
+  /* ================================================================
+     SECTION 3: PRICING BUILDER (Interactive)
+     ================================================================ */
+  var pricingComponents = [
+    { emoji: '\u{1F4CA}', name: 'Activity Tracking',    setup: 2000, perUser: 19, preselected: true  },
+    { emoji: '\u{1F3C6}', name: 'Leaderboard',          setup: 1500, perUser: 15, preselected: true  },
+    { emoji: '\u2705',    name: 'Habit Tracker',        setup: 1500, perUser:  5, preselected: true  },
+    { emoji: '\u{1F4CB}', name: 'Pledge Sheet',         setup: 1000, perUser:  5, preselected: true  },
+    { emoji: '\u{1F4B0}', name: 'Commission Calc',      setup: 1500, perUser:  5, preselected: false },
+    { emoji: '\u{1F4C8}', name: 'Income Projection',    setup: 1500, perUser:  5, preselected: false },
+    { emoji: '\u{1F4CA}', name: 'Sales Dashboard',      setup: 2000, perUser:  5, preselected: false },
+    { emoji: '\u{1F3B0}', name: 'Gamification',         setup: 1500, perUser:  5, preselected: false },
+    { emoji: '\u{1F4C5}', name: 'Coaching & Booking',   setup: 2000, perUser:  5, preselected: false },
+    { emoji: '\u{1F4AD}', name: 'Team Reflections',     setup: 1500, perUser:  5, preselected: false },
+    { emoji: '\u2705',    name: 'Accountability Board', setup: 2500, perUser:  5, preselected: false },
+  ];
+
+  /* State */
+  var teamSize = 15;
+  var selected = pricingComponents.map(function(c) { return c.preselected; });
+
+  var pricingSection = document.createElement('div');
+  pricingSection.style.cssText = 'margin-bottom:28px;';
+
+  var ph2 = document.createElement('h3');
+  ph2.style.cssText = 'font-size:1rem;font-weight:700;color:var(--text);margin:0 0 6px;';
+  ph2.textContent = 'Interactive Pricing Builder';
+  pricingSection.appendChild(ph2);
+
+  var psub = document.createElement('p');
+  psub.style.cssText = 'font-size:0.78rem;color:var(--text2);margin:0 0 18px;';
+  psub.textContent = 'Select modules and team size to calculate your investment.';
+  pricingSection.appendChild(psub);
+
+  /* Team size slider */
+  var sliderWrap = document.createElement('div');
+  sliderWrap.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:16px;';
+
+  var sliderLabel = document.createElement('div');
+  sliderLabel.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;';
+
+  var sliderTitle = document.createElement('span');
+  sliderTitle.style.cssText = 'font-size:0.84rem;font-weight:600;color:var(--text);';
+  sliderTitle.textContent = 'Team Size';
+
+  var sliderVal = document.createElement('span');
+  sliderVal.style.cssText = 'font-size:0.9rem;font-weight:700;color:var(--accent,#3b82f6);';
+  sliderVal.textContent = '15 consultants';
+
+  sliderLabel.appendChild(sliderTitle);
+  sliderLabel.appendChild(sliderVal);
+  sliderWrap.appendChild(sliderLabel);
+
+  var slider = document.createElement('input');
+  slider.type = 'range';
+  slider.className = 'demo-slider';
+  slider.min = 5;
+  slider.max = 100;
+  slider.step = 1;
+  slider.value = 15;
+  slider.style.cssText = 'width:100%;';
+  sliderWrap.appendChild(slider);
+
+  var sliderHints = document.createElement('div');
+  sliderHints.style.cssText = 'display:flex;justify-content:space-between;margin-top:4px;';
+  var hMin = document.createElement('span');
+  hMin.style.cssText = 'font-size:0.68rem;color:var(--text3);';
+  hMin.textContent = '5';
+  var hMax = document.createElement('span');
+  hMax.style.cssText = 'font-size:0.68rem;color:var(--text3);';
+  hMax.textContent = '100';
+  sliderHints.appendChild(hMin);
+  sliderHints.appendChild(hMax);
+  sliderWrap.appendChild(sliderHints);
+  pricingSection.appendChild(sliderWrap);
+
+  /* Layout: component grid + summary panel */
+  var pricingLayout = document.createElement('div');
+  pricingLayout.style.cssText = 'display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;';
+
+  /* Component toggles grid */
+  var compGrid = document.createElement('div');
+  compGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;';
+
+  pricingComponents.forEach(function(comp, idx) {
+    var cc = document.createElement('div');
+    var selBorder = selected[idx] ? 'border-color:var(--green-bright,#34d399);box-shadow:0 0 0 1px rgba(52,211,153,.2);' : 'border-color:var(--border);';
+    cc.style.cssText = 'background:var(--bg2);border:1.5px solid;border-radius:8px;padding:12px 14px;cursor:pointer;position:relative;transition:border-color .15s,box-shadow .15s;' + selBorder;
+
+    /* Checkmark */
+    var check = document.createElement('div');
+    var checkStyle = selected[idx]
+      ? 'background:var(--green-bright,#34d399);color:#000;'
+      : 'background:var(--border);color:transparent;';
+    check.style.cssText = 'position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;' + checkStyle;
+    check.textContent = '\u2713';
+    cc.appendChild(check);
+
+    var topArea = document.createElement('div');
+    topArea.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-right:20px;';
+
+    var eIcon = document.createElement('span');
+    eIcon.style.cssText = 'font-size:1.1rem;';
+    eIcon.textContent = comp.emoji;
+    topArea.appendChild(eIcon);
+
+    var cname = document.createElement('span');
+    cname.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--text);line-height:1.3;';
+    cname.textContent = comp.name;
+    topArea.appendChild(cname);
+
+    cc.appendChild(topArea);
+
+    var priceRow = document.createElement('div');
+    priceRow.style.cssText = 'display:flex;flex-direction:column;gap:1px;';
+
+    var setupLine = document.createElement('div');
+    setupLine.style.cssText = 'font-size:0.68rem;color:var(--text3);';
+    setupLine.textContent = sgd(comp.setup) + ' setup';
+
+    var monthLine = document.createElement('div');
+    monthLine.style.cssText = 'font-size:0.72rem;color:var(--text2);font-weight:600;';
+    monthLine.textContent = sgd(comp.perUser) + '/user/mo';
+
+    priceRow.appendChild(setupLine);
+    priceRow.appendChild(monthLine);
+    cc.appendChild(priceRow);
+
+    cc.addEventListener('click', function() {
+      selected[idx] = !selected[idx];
+      if (selected[idx]) {
+        cc.style.borderColor = 'var(--green-bright,#34d399)';
+        cc.style.boxShadow = '0 0 0 1px rgba(52,211,153,.2)';
+        check.style.background = 'var(--green-bright,#34d399)';
+        check.style.color = '#000';
+      } else {
+        cc.style.borderColor = 'var(--border)';
+        cc.style.boxShadow = 'none';
+        check.style.background = 'var(--border)';
+        check.style.color = 'transparent';
+      }
+      updateSummary();
     });
 
-    var hub5 = document.createElementNS(ns5, 'circle');
-    hub5.setAttribute('cx', '0'); hub5.setAttribute('cy', '0'); hub5.setAttribute('r', '10');
-    hub5.setAttribute('fill', '#0d1b2a'); hub5.setAttribute('stroke', '#4b5563'); hub5.setAttribute('stroke-width', '2');
-    wg5.appendChild(hub5);
-    svg5.appendChild(wg5);
-    var ptr5 = document.createElementNS(ns5, 'polygon');
-    ptr5.setAttribute('points', '0,-58 -6,-48 6,-48'); ptr5.setAttribute('fill', '#fbbf24');
-    svg5.appendChild(ptr5);
-    wheelWrap.appendChild(svg5);
+    compGrid.appendChild(cc);
+  });
 
-    var spinBtn5 = document.createElement('button');
-    spinBtn5.style.cssText = 'padding:8px 24px;border-radius:99px;border:none;background:var(--primary);color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;margin-top:6px;transition:opacity 0.2s;';
-    spinBtn5.textContent = 'Spin!';
-    var spinning5 = false;
-    spinBtn5.onclick = function() {
-      if (spinning5) return;
-      spinning5 = true; spinBtn5.disabled = true;
-      wAngle5 += 720 + Math.floor(Math.random() * 360);
-      wg5.style.transition = 'transform 2s cubic-bezier(0.17,0.67,0.35,1)';
-      wg5.style.transform = 'rotate(' + wAngle5 + 'deg)';
-      wg5.style.transformOrigin = '0 0';
-      setTimeout(function() {
-        spinning5 = false; spinBtn5.disabled = false;
-        var norm = ((wAngle5 % 360) + 360) % 360;
-        var seg5idx = Math.floor(((360 - norm + 270) % 360) / 60) % 6;
-        var toast5 = document.createElement('div');
-        toast5.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--primary-light);color:var(--primary-light);padding:10px 20px;border-radius:8px;font-size:0.8rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
-        toast5.textContent = '\uD83C\uDF89 You landed: ' + wheelSegs[seg5idx].label + '!';
-        document.body.appendChild(toast5);
-        setTimeout(function() { if (toast5.parentNode) toast5.parentNode.removeChild(toast5); }, 2800);
-      }, 2100);
-    };
-    wheelWrap.appendChild(spinBtn5);
-    lc5.appendChild(wheelWrap);
+  pricingLayout.appendChild(compGrid);
 
-    var rwt = document.createElement('div'); rwt.style.cssText = 'font-size:0.66rem;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;'; rwt.textContent = 'Recent Rewards'; lc5.appendChild(rwt);
-    var rwl = document.createElement('div'); rwl.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:7px;overflow:hidden;';
-    [
-      { label: '+10 pts',   time: 'Yesterday',  color: '#fbbf24' },
-      { label: 'Bonus Day', time: '3 days ago', color: '#34d399' },
-      { label: '+5 pts',    time: '5 days ago', color: '#355A99' },
-    ].forEach(function(rw, i) {
-      var rwr = document.createElement('div'); rwr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:7px 10px;' + (i < 2 ? 'border-bottom:1px solid var(--border);' : '');
-      var rl = document.createElement('div'); rl.style.cssText = 'font-size:0.72rem;font-weight:700;color:' + rw.color + ';'; rl.textContent = rw.label;
-      var rt = document.createElement('div'); rt.style.cssText = 'font-size:0.66rem;color:var(--text3);'; rt.textContent = rw.time;
-      rwr.appendChild(rl); rwr.appendChild(rt); rwl.appendChild(rwr);
+  /* Summary panel */
+  var summaryPanel = document.createElement('div');
+  summaryPanel.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px;position:sticky;top:16px;';
+
+  var sumTitle = document.createElement('div');
+  sumTitle.style.cssText = 'font-size:0.84rem;font-weight:700;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);';
+  sumTitle.textContent = 'Your Plan';
+  summaryPanel.appendChild(sumTitle);
+
+  var sumModuleList = document.createElement('div');
+  sumModuleList.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;min-height:60px;';
+  summaryPanel.appendChild(sumModuleList);
+
+  var sumDivider = document.createElement('div');
+  sumDivider.style.cssText = 'border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px;';
+  summaryPanel.appendChild(sumDivider);
+
+  var sumSetupRow = document.createElement('div');
+  sumSetupRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
+  var sumSetupLabel = document.createElement('span');
+  sumSetupLabel.style.cssText = 'font-size:0.76rem;color:var(--text2);';
+  sumSetupLabel.textContent = 'One-time setup';
+  var sumSetupVal = document.createElement('span');
+  sumSetupVal.style.cssText = 'font-size:0.8rem;font-weight:600;color:var(--text);';
+  sumSetupRow.appendChild(sumSetupLabel);
+  sumSetupRow.appendChild(sumSetupVal);
+  sumDivider.appendChild(sumSetupRow);
+
+  var sumMonthlyRow = document.createElement('div');
+  sumMonthlyRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:rgba(52,211,153,.07);border-radius:6px;padding:8px 10px;margin-top:2px;';
+  var sumMonthlyLabel = document.createElement('span');
+  sumMonthlyLabel.style.cssText = 'font-size:0.8rem;font-weight:600;color:var(--text2);';
+  sumMonthlyLabel.textContent = 'Monthly total';
+  var sumMonthlyVal = document.createElement('span');
+  sumMonthlyVal.style.cssText = 'font-size:1.1rem;font-weight:800;color:var(--green-bright,#34d399);';
+  sumMonthlyRow.appendChild(sumMonthlyLabel);
+  sumMonthlyRow.appendChild(sumMonthlyVal);
+  sumDivider.appendChild(sumMonthlyRow);
+
+  var sumPerDay = document.createElement('div');
+  sumPerDay.style.cssText = 'font-size:0.7rem;color:var(--text3);text-align:center;margin-top:2px;';
+  sumDivider.appendChild(sumPerDay);
+
+  var sumNote = document.createElement('div');
+  sumNote.style.cssText = 'font-size:0.68rem;color:var(--text3);text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.6;';
+  sumNote.textContent = '14-day free trial \u00B7 No long-term contract';
+  summaryPanel.appendChild(sumNote);
+
+  pricingLayout.appendChild(summaryPanel);
+  pricingSection.appendChild(pricingLayout);
+  container.appendChild(pricingSection);
+
+  /* Update summary function */
+  function updateSummary() {
+    var totalSetup   = 0;
+    var totalPerUser = 0;
+    var activeModules = [];
+
+    pricingComponents.forEach(function(comp, idx) {
+      if (selected[idx]) {
+        totalSetup   += comp.setup;
+        totalPerUser += comp.perUser;
+        activeModules.push(comp);
+      }
     });
-    lc5.appendChild(rwl);
-    cols5.appendChild(lc5);
 
-    /* Right: Forest */
-    var rc5 = document.createElement('div');
-    var rft = document.createElement('div'); rft.style.cssText = 'font-size:0.7rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;'; rft.textContent = 'YOUR FOREST \u2014 12 Trees Planted'; rc5.appendChild(rft);
-    var fs5 = document.createElement('div'); fs5.style.cssText = 'background:linear-gradient(180deg,#0a2e1a 0%,#0f4d2a 60%,#1a6b3c 100%);min-height:130px;position:relative;border-radius:8px;overflow:hidden;margin-bottom:8px;';
-    [
-      { species: 'cherry_blossom', left: '4%',  bottom: '8%',  width: 44, name: 'Cherry Blossom' },
-      { species: 'mighty_oak',     left: '18%', bottom: '5%',  width: 54, name: 'Mighty Oak'     },
-      { species: 'coconut_palm',   left: '33%', bottom: '7%',  width: 40, name: 'Coconut Palm'   },
-      { species: 'apple_tree',     left: '49%', bottom: '4%',  width: 50, name: 'Apple Tree'     },
-      { species: 'lucky_bamboo',   left: '63%', bottom: '10%', width: 36, name: 'Lucky Bamboo'   },
-      { species: 'blue_spruce',    left: '76%', bottom: '6%',  width: 50, name: 'Blue Spruce'    },
-    ].forEach(function(t) {
-      var td5 = document.createElement('div'); td5.style.cssText = 'position:absolute;left:' + t.left + ';bottom:' + t.bottom + ';width:' + t.width + 'px;cursor:pointer;'; td5.title = t.name;
-      var im5 = document.createElement('img'); im5.src = 'https://tree-showcase-omega.vercel.app/trees/stages/' + t.species + '_full.png'; im5.alt = t.name;
-      im5.style.cssText = 'width:100%;height:auto;display:block;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));transition:filter 0.2s;';
-      im5.onmouseenter = function() { im5.style.filter = 'drop-shadow(0 3px 12px rgba(255,255,255,0.3))'; };
-      im5.onmouseleave = function() { im5.style.filter = 'drop-shadow(0 3px 6px rgba(0,0,0,0.5))'; };
-      im5.onerror = function() { td5.textContent = '\uD83C\uDF33'; td5.style.fontSize = '1.6rem'; };
-      td5.appendChild(im5); fs5.appendChild(td5);
+    var monthly = totalPerUser * teamSize;
+
+    /* Clear and rebuild module list using DOM methods */
+    clearChildren(sumModuleList);
+    if (activeModules.length === 0) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'font-size:0.74rem;color:var(--text3);font-style:italic;';
+      empty.textContent = 'No modules selected';
+      sumModuleList.appendChild(empty);
+    } else {
+      activeModules.forEach(function(m) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
+        var ml = document.createElement('span');
+        ml.style.cssText = 'font-size:0.72rem;color:var(--text2);';
+        ml.textContent = m.emoji + ' ' + m.name;
+        var mr = document.createElement('span');
+        mr.style.cssText = 'font-size:0.72rem;color:var(--text);font-weight:600;';
+        mr.textContent = sgd(m.perUser * teamSize) + '/mo';
+        row.appendChild(ml);
+        row.appendChild(mr);
+        sumModuleList.appendChild(row);
+      });
+    }
+
+    sumSetupVal.textContent   = sgd(totalSetup);
+    sumMonthlyVal.textContent = sgd(monthly);
+
+    var perConPerDay = monthly > 0 ? (monthly / teamSize / 30).toFixed(2) : '0.00';
+    sumPerDay.textContent = '$' + perConPerDay + ' per consultant per day';
+  }
+
+  /* Wire slider */
+  slider.addEventListener('input', function() {
+    teamSize = parseInt(this.value, 10);
+    sliderVal.textContent = teamSize + ' consultant' + (teamSize === 1 ? '' : 's');
+    updateSummary();
+  });
+
+  /* Initial render */
+  updateSummary();
+
+  /* ================================================================
+     SECTION 4: PLATFORM COMPARISON
+     ================================================================ */
+  var compSection = document.createElement('div');
+  compSection.style.cssText = 'margin-bottom:12px;';
+
+  var ch3 = document.createElement('h3');
+  ch3.style.cssText = 'font-size:1rem;font-weight:700;color:var(--text);margin:0 0 12px;';
+  ch3.textContent = 'Platform Comparison';
+  compSection.appendChild(ch3);
+
+  var tableWrap = document.createElement('div');
+  tableWrap.style.cssText = 'overflow-x:auto;border-radius:10px;border:1px solid var(--border);';
+
+  var table = document.createElement('table');
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.78rem;';
+
+  var thead = document.createElement('thead');
+  var hrow = document.createElement('tr');
+  var headers = ['Feature', 'ActivityTracker', 'Spreadsheets', 'Generic CRM'];
+  headers.forEach(function(h, i) {
+    var th = document.createElement('th');
+    th.style.cssText = [
+      'padding:10px 14px',
+      'text-align:' + (i === 0 ? 'left' : 'center'),
+      'font-size:0.74rem',
+      'font-weight:700',
+      'color:' + (i === 1 ? 'var(--green-bright,#34d399)' : 'var(--text2)'),
+      'background:var(--bg2)',
+      'border-bottom:1px solid var(--border)',
+      i > 0 ? 'border-left:1px solid var(--border)' : '',
+    ].join(';');
+    th.textContent = h;
+    hrow.appendChild(th);
+  });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  var tbody = document.createElement('tbody');
+  var compRows = [
+    ['Real-time activity feed',        '\u2713', '\u2717', '\u2717'],
+    ['Gamification & leaderboards',    '\u2713', '\u2717', '\u2717'],
+    ['Built for financial advisory',   '\u2713', '\u2717', '\u2717'],
+    ['AI coaching feedback',           '\u2713', '\u2717', '\u2717'],
+    ['GPS activity verification',      '\u2713', '\u2717', '\u2717'],
+    ['FYC goal reverse-engineering',   '\u2713', '\u2717', '\u2717'],
+  ];
+
+  compRows.forEach(function(row, ri) {
+    var tr = document.createElement('tr');
+    if (ri % 2 !== 0) { tr.style.background = 'rgba(255,255,255,.02)'; }
+    row.forEach(function(cell, ci) {
+      var td = document.createElement('td');
+      var isCheck = cell === '\u2713';
+      td.style.cssText = [
+        'padding:9px 14px',
+        'color:' + (ci === 0 ? 'var(--text2)' : (isCheck ? 'var(--green-bright,#34d399)' : '#ef4444')),
+        'text-align:' + (ci === 0 ? 'left' : 'center'),
+        'font-weight:' + (ci === 0 ? '400' : '700'),
+        'font-size:' + (ci === 0 ? '0.78rem' : '1rem'),
+        ci > 0 ? 'border-left:1px solid var(--border)' : '',
+        ri < compRows.length - 1 ? 'border-bottom:1px solid var(--border)' : '',
+      ].join(';');
+      td.textContent = cell;
+      tr.appendChild(td);
     });
-    rc5.appendChild(fs5);
-    var fst5 = document.createElement('div'); fst5.style.cssText = 'font-size:0.7rem;color:var(--text3);text-align:center;margin-bottom:10px;'; fst5.textContent = '6 species \u00B7 3 rare+'; rc5.appendChild(fst5);
-    cols5.appendChild(rc5);
-    pane.appendChild(cols5);
+    tbody.appendChild(tr);
+  });
 
-    /* Badges grid */
-    var bgt = document.createElement('div'); bgt.style.cssText = 'font-size:0.7rem;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;'; bgt.textContent = 'ACHIEVEMENT BADGES'; pane.appendChild(bgt);
-    var bgd = document.createElement('div'); bgd.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;';
-    [
-      { icon: '\uD83C\uDF1F', name: 'First Close',   desc: 'Closed your first case',     unlocked: true  },
-      { icon: '\u2694\uFE0F', name: 'Week Warrior',  desc: '7-day activity streak',       unlocked: true  },
-      { icon: '\uD83D\uDD25', name: '10-Day Streak', desc: 'Ten consecutive active days', unlocked: true  },
-      { icon: '\uD83C\uDFC6', name: 'Top 3 Weekly',  desc: 'Reached weekly podium',       unlocked: true  },
-      { icon: '\uD83D\uDCCA', name: '50 Activities', desc: 'Log 50 total activities',     unlocked: false },
-      { icon: '\uD83D\uDC51', name: 'Legend Status', desc: 'Reach 1,000 total points',    unlocked: false },
-    ].forEach(function(b) {
-      var bc = document.createElement('div'); bc.style.cssText = 'background:var(--bg2);border:1px solid ' + (b.unlocked ? 'rgba(52,211,153,0.25)' : 'var(--border)') + ';border-radius:8px;padding:10px 8px;text-align:center;' + (b.unlocked ? '' : 'opacity:0.5;');
-      var bi = document.createElement('div'); bi.style.cssText = 'font-size:1.4rem;margin-bottom:4px;' + (b.unlocked ? '' : 'filter:grayscale(1);'); bi.textContent = b.icon;
-      var bn = document.createElement('div'); bn.style.cssText = 'font-size:0.7rem;font-weight:700;color:var(--text);margin-bottom:2px;'; bn.textContent = b.name;
-      var bd = document.createElement('div'); bd.style.cssText = 'font-size:0.62rem;color:var(--text3);line-height:1.4;'; bd.textContent = b.desc;
-      var bs = document.createElement('div'); bs.style.cssText = 'margin-top:5px;font-size:0.65rem;font-weight:700;color:' + (b.unlocked ? 'var(--green-bright)' : 'var(--text3)') + ';'; bs.textContent = b.unlocked ? '\u2705 Unlocked' : '\uD83D\uDD12 Locked';
-      bc.appendChild(bi); bc.appendChild(bn); bc.appendChild(bd); bc.appendChild(bs); bgd.appendChild(bc);
-    });
-    pane.appendChild(bgd);
-  })();
-
-  /* Activate overview tab by default */
-  atSwitchTab('overview');
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  compSection.appendChild(tableWrap);
+  container.appendChild(compSection);
 };
-
 
 /* ============================================================
    PRODUCT COMPASS DEMO
