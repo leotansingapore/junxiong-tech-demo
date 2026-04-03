@@ -1210,6 +1210,54 @@ DEMO_RENDERERS.tracker = function(container) {
   }
 
   /* ================================================================
+     TAB BAR
+     ================================================================ */
+  var tabDefs = [
+    { id: 'platform', label: 'Platform & Pricing' },
+    { id: 'dashboard', label: 'Live Dashboard Preview' },
+  ];
+
+  var tabBar = document.createElement('div');
+  tabBar.style.cssText = 'display:flex;gap:4px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:24px;';
+
+  var tab1Pane = document.createElement('div');
+  var tab2Pane = document.createElement('div');
+  var panes = [tab1Pane, tab2Pane];
+  var activeTab = 0;
+
+  function switchTrackerTab(idx) {
+    activeTab = idx;
+    panes.forEach(function(p, i) {
+      p.style.display = i === idx ? 'block' : 'none';
+    });
+    tabBar.querySelectorAll('.tracker-tab-btn').forEach(function(btn, i) {
+      if (i === idx) {
+        btn.style.cssText = 'flex:1;padding:8px 16px;border-radius:7px;font-size:0.82rem;font-weight:700;cursor:pointer;border:none;background:var(--primary,#3b82f6);color:#fff;transition:background .15s;';
+      } else {
+        btn.style.cssText = 'flex:1;padding:8px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;';
+      }
+    });
+  }
+
+  tabDefs.forEach(function(td, idx) {
+    var btn = document.createElement('button');
+    btn.className = 'tracker-tab-btn';
+    btn.textContent = td.label;
+    btn.style.cssText = 'flex:1;padding:8px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;';
+    btn.addEventListener('click', function() { switchTrackerTab(idx); });
+    tabBar.appendChild(btn);
+  });
+  container.appendChild(tabBar);
+
+  container.appendChild(tab1Pane);
+  container.appendChild(tab2Pane);
+
+  /* ================================================================
+     TAB 1: PLATFORM & PRICING
+     ================================================================ */
+  var tab1Container = tab1Pane;
+
+  /* ================================================================
      SECTION 1: PLATFORM OVERVIEW
      ================================================================ */
   var s1 = document.createElement('div');
@@ -1235,7 +1283,7 @@ DEMO_RENDERERS.tracker = function(container) {
     statsRow.appendChild(pill);
   });
   s1.appendChild(statsRow);
-  container.appendChild(s1);
+  tab1Container.appendChild(s1);
 
   /* ================================================================
      SECTION 2: MODULE CARDS GRID
@@ -1250,7 +1298,7 @@ DEMO_RENDERERS.tracker = function(container) {
   s2sub.textContent = 'Click any card to explore';
   s2head.appendChild(s2title);
   s2head.appendChild(s2sub);
-  container.appendChild(s2head);
+  tab1Container.appendChild(s2head);
 
   var moduleData = [
     { emoji: '\u{1F4CA}', name: 'Activity Tracking & Feed',    type: 'core',   desc: 'Real-time activity logging, team feed, reactions, GPS verification, daily progress tracking' },
@@ -1349,7 +1397,7 @@ DEMO_RENDERERS.tracker = function(container) {
     grid.appendChild(card);
   });
 
-  container.appendChild(grid);
+  tab1Container.appendChild(grid);
 
   /* ================================================================
      SECTION 3: PRICING BUILDER (Interactive)
@@ -1550,7 +1598,7 @@ DEMO_RENDERERS.tracker = function(container) {
 
   pricingLayout.appendChild(summaryPanel);
   pricingSection.appendChild(pricingLayout);
-  container.appendChild(pricingSection);
+  tab1Container.appendChild(pricingSection);
 
   /* Update summary function */
   function updateSummary() {
@@ -1680,7 +1728,314 @@ DEMO_RENDERERS.tracker = function(container) {
   table.appendChild(tbody);
   tableWrap.appendChild(table);
   compSection.appendChild(tableWrap);
-  container.appendChild(compSection);
+  tab1Container.appendChild(compSection);
+
+  /* ================================================================
+     TAB 2: LIVE DASHBOARD PREVIEW
+     ================================================================ */
+  var tab2Container = tab2Pane;
+  tab2Container.style.cssText = 'font-family:inherit;';
+
+  /* -- 4 Top Stat Cards -- */
+  var statsData = [
+    { icon: '\uD83D\uDD25', label: '14 Day Streak',     value: '14',     unit: 'days',   color: '#f97316', bg: 'rgba(249,115,22,.1)',  border: 'rgba(249,115,22,.3)'  },
+    { icon: '\uD83E\uDE99', label: 'Credits',            value: '1,250',  unit: 'credits', color: '#a78bfa', bg: 'rgba(167,139,250,.1)', border: 'rgba(167,139,250,.3)' },
+    { icon: '\uD83C\uDFAF', label: 'Weekly Goal',        value: '45/60',  unit: 'acts',   color: '#3b82f6', bg: 'rgba(59,130,246,.1)',  border: 'rgba(59,130,246,.3)',  progress: 75 },
+    { icon: '\u2B50',       label: 'Level 8',            value: 'Lv.8',   unit: 'rank',   color: '#6b9bdb', bg: 'rgba(107,155,219,.1)', border: 'rgba(107,155,219,.3)' },
+  ];
+
+  var statsGrid = document.createElement('div');
+  statsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;';
+
+  statsData.forEach(function(s) {
+    var card = document.createElement('div');
+    card.style.cssText = [
+      'background:' + s.bg,
+      'border:1px solid ' + s.border,
+      'border-radius:10px',
+      'padding:14px 16px',
+      'display:flex',
+      'flex-direction:column',
+      'gap:4px',
+    ].join(';');
+
+    var iconLabel = document.createElement('div');
+    iconLabel.style.cssText = 'font-size:0.7rem;color:var(--text3);display:flex;align-items:center;gap:5px;margin-bottom:2px;';
+    var iconSpan = document.createElement('span');
+    iconSpan.textContent = s.icon;
+    iconSpan.style.fontSize = '0.9rem';
+    var labelSpan = document.createElement('span');
+    labelSpan.textContent = s.label;
+    iconLabel.appendChild(iconSpan);
+    iconLabel.appendChild(labelSpan);
+    card.appendChild(iconLabel);
+
+    var valEl = document.createElement('div');
+    valEl.style.cssText = 'font-size:1.35rem;font-weight:800;color:' + s.color + ';line-height:1;';
+    valEl.textContent = s.value;
+    card.appendChild(valEl);
+
+    if (s.progress !== undefined) {
+      var progWrap = document.createElement('div');
+      progWrap.style.cssText = 'height:4px;background:rgba(59,130,246,.2);border-radius:99px;margin-top:4px;overflow:hidden;';
+      var progFill = document.createElement('div');
+      progFill.style.cssText = 'height:100%;width:' + s.progress + '%;background:#3b82f6;border-radius:99px;';
+      progWrap.appendChild(progFill);
+      card.appendChild(progWrap);
+    }
+
+    statsGrid.appendChild(card);
+  });
+  tab2Container.appendChild(statsGrid);
+
+  /* -- Activity Feed Section -- */
+  var feedSection = document.createElement('div');
+  feedSection.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;';
+
+  var feedHeader = document.createElement('div');
+  feedHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;';
+  var feedTitle = document.createElement('span');
+  feedTitle.style.cssText = 'font-size:0.7rem;font-weight:800;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;';
+  feedTitle.textContent = 'Team Activity';
+  var todayBadge = document.createElement('span');
+  todayBadge.style.cssText = 'font-size:0.68rem;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.25);';
+  todayBadge.textContent = 'Today';
+  feedHeader.appendChild(feedTitle);
+  feedHeader.appendChild(todayBadge);
+  feedSection.appendChild(feedHeader);
+
+  /* Activity types */
+  var activityTypes = {
+    'Set':       { icon: '\uD83D\uDCDE', color: '#9ca3af', bg: 'rgba(156,163,175,.15)' },
+    'Opening':   { icon: '\uD83E\uDD1D', color: '#60a5fa', bg: 'rgba(96,165,250,.15)'  },
+    'Closing':   { icon: '\uD83D\uDCDD', color: '#fbbf24', bg: 'rgba(251,191,36,.15)'  },
+    'Closed':    { icon: '\u2705',       color: '#34d399', bg: 'rgba(52,211,153,.15)'  },
+    'Referral':  { icon: '\uD83D\uDD17', color: '#c084fc', bg: 'rgba(192,132,252,.15)' },
+    'Servicing': { icon: '\uD83D\uDD27', color: '#2dd4bf', bg: 'rgba(45,212,191,.15)'  },
+  };
+
+  /* Avatar colors by person */
+  var avatarColors = [
+    '#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16',
+  ];
+
+  function getInitials(name) {
+    var parts = name.split(' ');
+    return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0].slice(0,2).toUpperCase();
+  }
+
+  var feedItems = [
+    { name: 'Sarah Lim',    type: 'Closed',    pts: 25, time: '8m ago',  policy: 'AIA Pro Achiever II',  premium: '$4,200' },
+    { name: 'Marcus Tan',   type: 'Set',       pts: 3,  time: '12m ago' },
+    { name: 'Priya Nair',   type: 'Opening',   pts: 8,  time: '24m ago' },
+    { name: 'Jason Yeo',    type: 'Closed',    pts: 25, time: '41m ago', policy: 'AIA Health Shield',    premium: '$1,800' },
+    { name: 'Wei Ling',     type: 'Referral',  pts: 10, time: '1h ago'  },
+    { name: 'Darren Koh',   type: 'Closing',   pts: 12, time: '1h ago'  },
+    { name: 'Aisha Binte',  type: 'Servicing', pts: 5,  time: '2h ago'  },
+    { name: 'Tom Huang',    type: 'Set',       pts: 3,  time: '2h ago'  },
+  ];
+
+  feedItems.forEach(function(item, idx) {
+    var at = activityTypes[item.type];
+    var isClosed = item.type === 'Closed';
+
+    var row = document.createElement('div');
+    var rowStyle = [
+      'display:flex',
+      'align-items:flex-start',
+      'gap:10px',
+      'padding:10px',
+      'border-radius:8px',
+      'margin-bottom:' + (idx < feedItems.length - 1 ? '6px' : '0'),
+    ];
+    if (isClosed) {
+      rowStyle.push('background:linear-gradient(90deg,rgba(52,211,153,.06),rgba(251,191,36,.04))');
+      rowStyle.push('border:1px solid rgba(52,211,153,.2)');
+      rowStyle.push('box-shadow:inset 3px 0 0 rgba(52,211,153,.4)');
+    } else {
+      rowStyle.push('background:rgba(255,255,255,.02)');
+      rowStyle.push('border:1px solid transparent');
+    }
+    row.style.cssText = rowStyle.join(';');
+
+    /* Avatar */
+    var avatar = document.createElement('div');
+    var aColor = avatarColors[idx % avatarColors.length];
+    avatar.style.cssText = [
+      'width:32px', 'height:32px', 'border-radius:50%', 'flex-shrink:0',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'font-size:0.65rem', 'font-weight:800', 'color:#fff',
+      'background:' + aColor,
+    ].join(';');
+    avatar.textContent = getInitials(item.name);
+    row.appendChild(avatar);
+
+    /* Main content */
+    var main = document.createElement('div');
+    main.style.cssText = 'flex:1;min-width:0;';
+
+    var topLine = document.createElement('div');
+    topLine.style.cssText = 'display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:' + (isClosed && item.policy ? '4px' : '0') + ';';
+
+    var nameEl = document.createElement('span');
+    nameEl.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--text);';
+    nameEl.textContent = item.name;
+    topLine.appendChild(nameEl);
+
+    var typeBadge = document.createElement('span');
+    typeBadge.style.cssText = [
+      'font-size:0.65rem', 'font-weight:700', 'padding:1px 7px',
+      'border-radius:99px', 'color:' + at.color,
+      'background:' + at.bg, 'white-space:nowrap',
+    ].join(';');
+    typeBadge.textContent = at.icon + ' ' + item.type;
+    topLine.appendChild(typeBadge);
+
+    main.appendChild(topLine);
+
+    /* Closed deal detail row */
+    if (isClosed && item.policy) {
+      var policyRow = document.createElement('div');
+      policyRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:2px;';
+      var policyName = document.createElement('span');
+      policyName.style.cssText = 'font-size:0.73rem;color:#fbbf24;font-weight:600;';
+      policyName.textContent = item.policy;
+      var premiumEl = document.createElement('span');
+      premiumEl.style.cssText = 'font-size:0.68rem;color:var(--text3);';
+      premiumEl.textContent = '\u00B7 AP ' + item.premium;
+      policyRow.appendChild(policyName);
+      policyRow.appendChild(premiumEl);
+      main.appendChild(policyRow);
+    }
+
+    row.appendChild(main);
+
+    /* Right side: pts + time */
+    var rightCol = document.createElement('div');
+    rightCol.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;';
+
+    var ptsEl = document.createElement('span');
+    ptsEl.style.cssText = 'font-size:0.72rem;font-weight:800;color:' + at.color + ';white-space:nowrap;';
+    ptsEl.textContent = '+' + item.pts + 'pt';
+    rightCol.appendChild(ptsEl);
+
+    var timeEl = document.createElement('span');
+    timeEl.style.cssText = 'font-size:0.65rem;color:var(--text3);white-space:nowrap;';
+    timeEl.textContent = item.time;
+    rightCol.appendChild(timeEl);
+
+    row.appendChild(rightCol);
+    feedSection.appendChild(row);
+  });
+
+  tab2Container.appendChild(feedSection);
+
+  /* -- Isometric Forest Section -- */
+  var forestSection = document.createElement('div');
+  forestSection.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;';
+
+  /* Forest header */
+  var forestHeader = document.createElement('div');
+  forestHeader.style.cssText = 'padding:14px 16px 0;display:flex;align-items:center;justify-content:space-between;';
+  var forestTitle = document.createElement('span');
+  forestTitle.style.cssText = 'font-size:0.7rem;font-weight:800;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;';
+  forestTitle.textContent = 'Your Forest \u2014 12 Trees Planted';
+  var forestStats = document.createElement('span');
+  forestStats.style.cssText = 'font-size:0.68rem;color:var(--text3);';
+  forestStats.textContent = '12 trees \u00B7 6 species \u00B7 3 rare+';
+  forestHeader.appendChild(forestTitle);
+  forestHeader.appendChild(forestStats);
+  forestSection.appendChild(forestHeader);
+
+  /* Forest scene */
+  var forestScene = document.createElement('div');
+  forestScene.style.cssText = [
+    'background:linear-gradient(180deg,#0f2d1a 0%,#1a4a2e 40%,#1e5c38 70%,#2a7a4a 100%)',
+    'padding:20px 16px',
+    'display:flex',
+    'flex-wrap:wrap',
+    'gap:8px',
+    'align-items:flex-end',
+    'justify-content:center',
+    'min-height:140px',
+    'position:relative',
+  ].join(';');
+
+  var treeSpecies = [
+    'cherry_blossom','mighty_oak','coconut_palm','apple_tree',
+    'lucky_bamboo','blue_spruce','banana_plant','plumeria',
+  ];
+
+  var treeBaseUrl = 'https://tree-showcase-omega.vercel.app/trees/stages/';
+
+  treeSpecies.forEach(function(species, idx) {
+    var treeWrap = document.createElement('div');
+    treeWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;';
+
+    var img = document.createElement('img');
+    img.src = treeBaseUrl + species + '_full.png';
+    img.alt = species.replace(/_/g, ' ');
+    img.style.cssText = 'width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));';
+    img.loading = 'lazy';
+    treeWrap.appendChild(img);
+
+    forestScene.appendChild(treeWrap);
+  });
+
+  forestSection.appendChild(forestScene);
+
+  /* Collection preview */
+  var collectionWrap = document.createElement('div');
+  collectionWrap.style.cssText = 'padding:12px 16px;border-top:1px solid var(--border);';
+
+  var collLabel = document.createElement('div');
+  collLabel.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;';
+  collLabel.textContent = 'Collection';
+  collectionWrap.appendChild(collLabel);
+
+  var rarities = [
+    { label: 'Common',    color: '#9ca3af', species: 'lucky_bamboo'  },
+    { label: 'Uncommon',  color: '#34d399', species: 'banana_plant'  },
+    { label: 'Rare',      color: '#60a5fa', species: 'apple_tree'    },
+    { label: 'Epic',      color: '#a78bfa', species: 'cherry_blossom' },
+    { label: 'Legendary', color: '#fbbf24', species: 'mighty_oak'    },
+    { label: 'Mythic',    color: '#f472b6', species: 'plumeria'       },
+  ];
+
+  var collRow = document.createElement('div');
+  collRow.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;';
+
+  rarities.forEach(function(r) {
+    var item = document.createElement('div');
+    item.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;';
+
+    var thumb = document.createElement('img');
+    thumb.src = treeBaseUrl + r.species + '_full.png';
+    thumb.alt = r.species.replace(/_/g,' ');
+    thumb.style.cssText = 'width:32px;height:32px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:2px;';
+    thumb.loading = 'lazy';
+    item.appendChild(thumb);
+
+    var rarityDot = document.createElement('div');
+    rarityDot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:' + r.color + ';';
+    item.appendChild(rarityDot);
+
+    var rarityLabel = document.createElement('span');
+    rarityLabel.style.cssText = 'font-size:0.58rem;color:var(--text3);white-space:nowrap;';
+    rarityLabel.textContent = r.label;
+    item.appendChild(rarityLabel);
+
+    collRow.appendChild(item);
+  });
+
+  collectionWrap.appendChild(collRow);
+  forestSection.appendChild(collectionWrap);
+  tab2Container.appendChild(forestSection);
+
+  /* ================================================================
+     ACTIVATE DEFAULT TAB
+     ================================================================ */
+  switchTrackerTab(0);
 };
 
 /* ============================================================
