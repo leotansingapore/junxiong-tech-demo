@@ -6,13 +6,17 @@ Interactive demo site showcasing a suite of tools built for financial advisors. 
 
 ## Platforms
 
-| # | Platform | What it demos |
-|---|----------|---------------|
-| 1 | **Investment Plan Simulator** | 10-year projections, fee impact, premium holidays, dividend modes |
-| 2 | **Activity Tracker** | Gamified 11-module performance platform — activity feed, leaderboard, pricing builder, AI coaching |
-| 3 | **Product Compass** | AI training platform — CMFAS exam prep, roleplay scoring, product knowledge base |
-| 4 | **Ad Launchpad** | Self-service Meta ad campaigns in 5 steps — templates, copy editor, audience targeting, lead tracking |
-| 5 | **Finance Hub** | Client financial planning — cash flow, net worth, insurance gaps, CPF projections |
+Each demo is a simplified product tour based on a real production app:
+
+| # | Platform | Source Repo | What it demos |
+|---|----------|-------------|---------------|
+| 1 | **Investment Plan Simulator** | [growing-age-calculator](https://github.com/leotansingapore/growing-age-calculator) | 10-year projections, fee impact, premium holidays, dividend modes |
+| 2 | **Activity Tracker** | [engage-point-play](https://github.com/leotansingapore/engage-point-play) | Gamified 11-module performance platform — activity feed, leaderboard, pricing builder, AI coaching |
+| 3 | **Product Compass** | [aia-product-compass-hub](https://github.com/leotansingapore/aia-product-compass-hub) | AI training platform — CMFAS exam prep, roleplay scoring, product knowledge base |
+| 4 | **Ad Launchpad** | [catalyst-opus](https://github.com/leotansingapore/catalyst-opus) | Self-service Meta ad campaigns in 5 steps — templates, copy editor, audience targeting, lead tracking |
+| 5 | **Finance Hub** | [catalyst-refresh-glow](https://github.com/leotansingapore/catalyst-refresh-glow) | Client financial planning — cash flow, net worth, insurance gaps, CPF projections |
+
+> The Activity Tracker demo also pulls tree assets from [tree-showcase](https://github.com/leotansingapore/tree-showcase) (`tree-showcase-omega.vercel.app`).
 
 ## Tech Stack
 
