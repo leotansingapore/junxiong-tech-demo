@@ -79,267 +79,61 @@ const PLATFORMS = [
 const DEMO_RENDERERS = {};
 
 /* ============================================================
-   CALCULATOR DEMO — Long-Term Investment Plan Simulator
-   Single-view professional investment illustrator
+   CALCULATOR DEMO — Investment Plan Simulator (2-tab rebuild)
+   Tab 1: Investment Illustrator (conversational form + chart + table)
+   Tab 2: Retirement Step-by-Step (narrative 5-step walkthrough)
    ============================================================ */
 
-/* --- Shared slider helper (used by Investment Plan Simulator) --- */
-function calcSlider(id, label, min, max, step, defaultVal, fmt) {
-  var wrap  = document.createElement('div');
-  wrap.className = 'demo-slider-wrap';
-
-  var labelRow = document.createElement('div');
-  labelRow.className = 'demo-slider-label';
-
-  var lSpan = document.createElement('span');
-  lSpan.textContent = label;
-
-  var vSpan = document.createElement('span');
-  vSpan.className = 'demo-slider-value';
-  vSpan.id = id + 'Val';
-  vSpan.textContent = fmt(defaultVal);
-
-  labelRow.appendChild(lSpan);
-  labelRow.appendChild(vSpan);
-
-  var input = document.createElement('input');
-  input.type = 'range';
-  input.className = 'demo-slider';
-  input.id = id;
-  input.min = min;
-  input.max = max;
-  input.step = step;
-  input.value = defaultVal;
-
-  wrap.appendChild(labelRow);
-  wrap.appendChild(input);
-  return wrap;
-}
-
-/* --- Result card helper --- */
-function calcCard(labelText, valueId, colorClass) {
-  var card = document.createElement('div');
-  card.className = 'result-card';
-
-  var lbl = document.createElement('div');
-  lbl.className = 'result-card-label';
-  lbl.textContent = labelText;
-
-  var val = document.createElement('div');
-  val.className = 'result-card-value' + (colorClass ? ' ' + colorClass : '');
-  val.id = valueId;
-  val.textContent = '—';
-
-  card.appendChild(lbl);
-  card.appendChild(val);
-  return card;
-}
-
-/* --- Wire slider helper (fires updateFn on change) --- */
-function wireCalcSlider(slider, valId, fmt, updateFn) {
-  var input = slider.querySelector('input');
-  input.addEventListener('input', function() {
-    document.getElementById(valId).textContent = fmt(this.value);
-    updateFn();
-  });
-}
-
-/* ============================================================
-   INVESTMENT PLAN SIMULATOR — helpers & renderer
-   ============================================================ */
-
-/* --- Plan duration segmented control --- */
-function buildDurationControl(durations, defaultDuration, onChange) {
-  var wrap = document.createElement('div');
-  wrap.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
-
-  durations.forEach(function(d) {
-    var btn = document.createElement('button');
-    btn.textContent = d + ' yr' + (d === 1 ? '' : 's');
-    btn.dataset.duration = d;
-    btn.style.cssText = [
-      'padding:6px 14px',
-      'font-size:0.82rem',
-      'font-weight:600',
-      'border-radius:6px',
-      'border:1px solid var(--border)',
-      'background:' + (d === defaultDuration ? 'var(--accent)' : 'var(--surface2)'),
-      'color:' + (d === defaultDuration ? '#fff' : 'var(--text2)'),
-      'cursor:pointer',
-      'transition:background .15s,color .15s,border-color .15s',
-    ].join(';');
-    btn.addEventListener('click', function() {
-      wrap.querySelectorAll('button').forEach(function(b) {
-        var isActive = b === btn;
-        b.style.background = isActive ? 'var(--accent)' : 'var(--surface2)';
-        b.style.color = isActive ? '#fff' : 'var(--text2)';
-        b.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
-      });
-      onChange(d);
-    });
-    wrap.appendChild(btn);
-  });
-
-  return wrap;
-}
-
-/* --- Pill toggle switch --- */
-function buildToggle(id, labelText, defaultOn, onChange) {
-  var wrap = document.createElement('div');
-  wrap.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);';
-
-  var lbl = document.createElement('span');
-  lbl.style.cssText = 'font-size:0.85rem;color:var(--text2);';
-  lbl.textContent = labelText;
-
-  var track = document.createElement('div');
-  track.style.cssText = [
-    'position:relative',
-    'width:40px',
-    'height:22px',
-    'border-radius:11px',
-    'background:' + (defaultOn ? 'var(--accent)' : 'var(--surface3,#374151)'),
-    'cursor:pointer',
-    'transition:background .2s',
-    'flex-shrink:0',
-  ].join(';');
-
-  var knob = document.createElement('div');
-  knob.style.cssText = [
-    'position:absolute',
-    'top:3px',
-    'left:' + (defaultOn ? '21px' : '3px'),
-    'width:16px',
-    'height:16px',
-    'border-radius:50%',
-    'background:#fff',
-    'transition:left .2s',
-    'box-shadow:0 1px 3px rgba(0,0,0,.3)',
-  ].join(';');
-
-  track.appendChild(knob);
-  wrap.appendChild(lbl);
-  wrap.appendChild(track);
-
-  var isOn = defaultOn;
-  track.addEventListener('click', function() {
-    isOn = !isOn;
-    track.style.background = isOn ? 'var(--accent)' : 'var(--surface3,#374151)';
-    knob.style.left = isOn ? '21px' : '3px';
-    onChange(isOn);
-  });
-
-  return { el: wrap, getId: function() { return isOn; } };
-}
-
-/* ============================================================
-   INVESTMENT PLAN SIMULATOR — calculator / computation engine
-   ============================================================ */
-
-function invSimCompute(cfg) {
-  /* cfg: { duration, monthlyPremium, returnRate, feeRate, premiumHoliday, dividendMode } */
-  var rows = [];
-  var balance = 0;
-  for (var yr = 1; yr <= cfg.duration; yr++) {
-    var contribution = (cfg.premiumHoliday && yr === 6) ? 0 : cfg.monthlyPremium * 12;
-    var growth       = balance * (cfg.returnRate / 100);
-    var fees         = (balance + contribution) * (cfg.feeRate / 100);
-    var dividend     = (cfg.dividendMode && yr >= 5) ? balance * 0.04 : 0;
-    balance          = balance + contribution + growth - fees - dividend;
-    rows.push({
-      year:          yr,
-      contribution:  contribution,
-      growth:        growth,
-      fees:          fees,
-      dividend:      dividend,
-      balance:       Math.max(balance, 0),
-    });
-  }
-  return rows;
-}
-
-function invSimTotals(cfg) {
-  var rows          = invSimCompute(cfg);
-  var last          = rows[rows.length - 1];
-  var totalPaid     = rows.reduce(function(s, r) { return s + r.contribution; }, 0);
-  var projectedVal  = last.balance;
-  var netReturn     = projectedVal - totalPaid;
-  /* Annualized return (CAGR) after fees */
-  var cagr = totalPaid > 0 ? (Math.pow(projectedVal / totalPaid, 1 / cfg.duration) - 1) * 100 : 0;
-  return { rows: rows, totalPaid: totalPaid, projectedVal: projectedVal, netReturn: netReturn, cagr: cagr };
-}
-
-/* ============================================================
-   INVESTMENT PLAN SIMULATOR — DOM renderer
-   ============================================================ */
 DEMO_RENDERERS.calculator = function(container) {
   container.id = 'invSimDemo';
 
   var fmtDollar = function(v) { return '$' + Math.round(Number(v)).toLocaleString(); };
-  var fmtPct    = function(v) { return parseFloat(v).toFixed(1) + '%'; };
-
-  /* ---- SECTION HEADER helper ---- */
-  function sectionHeader(text) {
-    var h = document.createElement('div');
-    h.style.cssText = [
-      'font-size:0.72rem',
-      'font-weight:700',
-      'letter-spacing:.08em',
-      'text-transform:uppercase',
-      'color:var(--text3)',
-      'margin-bottom:12px',
-      'padding-bottom:6px',
-      'border-bottom:1px solid var(--border)',
-    ].join(';');
-    h.textContent = text;
-    return h;
-  }
+  var fmtDollarK = function(v) {
+    var n = Math.round(Number(v));
+    if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000)    return '$' + (n / 1000).toFixed(0) + 'K';
+    return '$' + n.toLocaleString();
+  };
 
   /* ======================================================
      TAB BAR
      ====================================================== */
   var TAB_DEFS = [
-    { id: 'plan',       label: 'Plan Simulator' },
-    { id: 'retirement', label: 'Retirement Planner' },
-    { id: 'insurance',  label: 'Insurance Needs' },
-    { id: 'tools',      label: 'All 50+ Tools' },
+    { id: 'illustrator', label: 'Investment Illustrator' },
+    { id: 'retirement',  label: 'Retirement Step-by-Step' },
   ];
 
   var tabBar = document.createElement('div');
   tabBar.style.cssText = [
     'display:flex',
     'gap:4px',
-    'margin-bottom:20px',
+    'margin-bottom:24px',
     'background:var(--surface2)',
     'border:1px solid var(--border)',
     'border-radius:10px',
     'padding:4px',
-    'flex-wrap:wrap',
   ].join(';');
 
   var panels = {};
   var tabBtns = {};
-  var activeTab = 'plan';
 
   function switchTab(id) {
-    activeTab = id;
     TAB_DEFS.forEach(function(t) {
       var isActive = t.id === id;
       tabBtns[t.id].style.background = isActive ? 'var(--accent)' : 'transparent';
       tabBtns[t.id].style.color      = isActive ? '#fff' : 'var(--text3)';
       panels[t.id].style.display     = isActive ? 'block' : 'none';
     });
-    /* Trigger chart re-renders when switching to a tab that has a canvas */
-    if (id === 'plan')       { setTimeout(updateSim, 0); }
-    if (id === 'retirement') { setTimeout(updateRetirement, 0); }
+    if (id === 'illustrator') { setTimeout(renderIllChart, 0); }
   }
 
   TAB_DEFS.forEach(function(t) {
     var btn = document.createElement('button');
     btn.textContent = t.label;
     btn.style.cssText = [
-      'padding:7px 14px',
-      'font-size:0.82rem',
+      'flex:1',
+      'padding:8px 16px',
+      'font-size:0.84rem',
       'font-weight:600',
       'border-radius:7px',
       'border:none',
@@ -357,674 +151,786 @@ DEMO_RENDERERS.calculator = function(container) {
   container.appendChild(tabBar);
 
   /* ======================================================
-     PANEL 1 — PLAN SIMULATOR (existing content)
+     PANEL 1 — INVESTMENT ILLUSTRATOR
      ====================================================== */
-  var panelPlan = document.createElement('div');
-  panels['plan'] = panelPlan;
+  var panelIll = document.createElement('div');
+  panels['illustrator'] = panelIll;
 
   /* --- State --- */
-  var cfg = {
-    duration:       10,
-    monthlyPremium: 500,
-    returnRate:     7,
-    feeRate:        1.5,
-    premiumHoliday: false,
-    dividendMode:   false,
+  var illCfg = {
+    age:      30,
+    duration: 10,
+    monthly:  500,
+    retRate:  7,
+    feeRate:  1.5,
   };
 
-  /* ---- TWO-COLUMN LAYOUT ---- */
-  var layout = document.createElement('div');
-  layout.style.cssText = 'display:grid;grid-template-columns:1fr 1.3fr;gap:24px;align-items:start;';
-  var mq = window.matchMedia('(max-width:620px)');
-  function applyMQ(e) { layout.style.gridTemplateColumns = e.matches ? '1fr' : '1fr 1.3fr'; }
-  mq.addEventListener('change', applyMQ);
-  applyMQ(mq);
+  /* ---- Inline select helper ---- */
+  function inlineSelect(id, options, defaultVal, onChange) {
+    var sel = document.createElement('select');
+    sel.id = id;
+    sel.style.cssText = [
+      'display:inline-block',
+      'background:var(--surface3,#1f2937)',
+      'color:var(--text1,#f9fafb)',
+      'border:1px solid var(--accent)',
+      'border-radius:6px',
+      'padding:3px 8px',
+      'font-size:0.9rem',
+      'font-weight:600',
+      'cursor:pointer',
+      'outline:none',
+      'margin:0 2px',
+      '-webkit-appearance:auto',
+    ].join(';');
+    options.forEach(function(opt) {
+      var o = document.createElement('option');
+      o.value = opt.value !== undefined ? opt.value : opt;
+      o.textContent = opt.label !== undefined ? opt.label : opt;
+      if (String(o.value) === String(defaultVal)) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', function() { onChange(sel.value); });
+    return sel;
+  }
 
-  /* ======================================================
-     LEFT COLUMN — PLAN CONFIGURATION
-     ====================================================== */
-  var leftCol = document.createElement('div');
+  /* ---- Inline number input helper ---- */
+  function inlineInput(id, defaultVal, min, max, onChange) {
+    var inp = document.createElement('input');
+    inp.type = 'number';
+    inp.id = id;
+    inp.value = defaultVal;
+    inp.min = min;
+    inp.max = max;
+    inp.style.cssText = [
+      'display:inline-block',
+      'width:80px',
+      'background:var(--surface3,#1f2937)',
+      'color:var(--text1,#f9fafb)',
+      'border:1px solid var(--accent)',
+      'border-radius:6px',
+      'padding:3px 8px',
+      'font-size:0.9rem',
+      'font-weight:600',
+      'outline:none',
+      'margin:0 2px',
+      'text-align:center',
+    ].join(';');
+    inp.addEventListener('input', function() { onChange(inp.value); });
+    return inp;
+  }
 
-  leftCol.appendChild(sectionHeader('Plan Configuration'));
+  /* ---- Conversational form ---- */
+  var formCard = document.createElement('div');
+  formCard.style.cssText = [
+    'background:var(--surface2)',
+    'border:1px solid var(--border)',
+    'border-radius:14px',
+    'padding:24px 28px',
+    'margin-bottom:20px',
+    'max-width:680px',
+    'margin-left:auto',
+    'margin-right:auto',
+  ].join(';');
 
-  /* Duration segmented control */
-  var durWrap = document.createElement('div');
-  durWrap.className = 'demo-slider-wrap';
-  var durLabel = document.createElement('div');
-  durLabel.className = 'demo-slider-label';
-  var durLabelTxt = document.createElement('span');
-  durLabelTxt.textContent = 'Plan Duration';
-  durLabel.appendChild(durLabelTxt);
-  durWrap.appendChild(durLabel);
-  var durControl = buildDurationControl([5, 8, 10, 15, 20], cfg.duration, function(d) {
-    cfg.duration = d;
-    updateSim();
+  var formTitle = document.createElement('div');
+  formTitle.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:18px;';
+  formTitle.textContent = 'Smart Wealth Builder';
+  formCard.appendChild(formTitle);
+
+  /* Build sentence line helper */
+  function sentenceLine() {
+    var p = document.createElement('p');
+    p.style.cssText = [
+      'font-size:0.95rem',
+      'color:var(--text2)',
+      'line-height:2.2',
+      'margin:0 0 4px',
+    ].join(';');
+    return p;
+  }
+
+  /* Line 1: age */
+  var line1 = sentenceLine();
+  var t1a = document.createTextNode('I am ');
+  var selAge = inlineSelect('illAge',
+    [25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,50,55,60,65].map(function(a){ return {value:a, label:a}; }),
+    illCfg.age,
+    function(v) { illCfg.age = parseInt(v,10); }
+  );
+  var t1b = document.createTextNode(' years old.');
+  line1.appendChild(t1a);
+  line1.appendChild(selAge);
+  line1.appendChild(t1b);
+  formCard.appendChild(line1);
+
+  /* Line 2: duration */
+  var line2 = sentenceLine();
+  var t2a = document.createTextNode('I choose to pay for ');
+  var selDur = inlineSelect('illDur',
+    [{value:5,label:'5 years'},{value:8,label:'8 years'},{value:10,label:'10 years'},{value:15,label:'15 years'},{value:20,label:'20 years'}],
+    illCfg.duration,
+    function(v) { illCfg.duration = parseInt(v,10); }
+  );
+  var t2b = document.createTextNode('.');
+  line2.appendChild(t2a);
+  line2.appendChild(selDur);
+  line2.appendChild(t2b);
+  formCard.appendChild(line2);
+
+  /* Line 3: monthly */
+  var line3 = sentenceLine();
+  var t3a = document.createTextNode('I will invest $');
+  var inpMonthly = inlineInput('illMonthly', illCfg.monthly, 100, 10000, function(v) { illCfg.monthly = parseFloat(v) || 100; });
+  var t3b = document.createTextNode(' per month');
+  line3.appendChild(t3a);
+  line3.appendChild(inpMonthly);
+  line3.appendChild(t3b);
+  formCard.appendChild(line3);
+
+  /* Line 4: return + fee */
+  var line4 = sentenceLine();
+  var t4a = document.createTextNode('and assume a return rate of ');
+  var selRet = inlineSelect('illRet',
+    [{value:4.25,label:'4.25%'},{value:5,label:'5%'},{value:6,label:'6%'},{value:7,label:'7%'},{value:8,label:'8%'}],
+    illCfg.retRate,
+    function(v) { illCfg.retRate = parseFloat(v); }
+  );
+  var t4b = document.createTextNode(' per year with an annual fee of ');
+  var selFee = inlineSelect('illFee',
+    [{value:0.5,label:'0.5%'},{value:1,label:'1%'},{value:1.5,label:'1.5%'},{value:2,label:'2%'}],
+    illCfg.feeRate,
+    function(v) { illCfg.feeRate = parseFloat(v); }
+  );
+  var t4c = document.createTextNode('.');
+  line4.appendChild(t4a);
+  line4.appendChild(selRet);
+  line4.appendChild(t4b);
+  line4.appendChild(selFee);
+  line4.appendChild(t4c);
+  formCard.appendChild(line4);
+
+  /* Calculate button */
+  var calcBtn = document.createElement('button');
+  calcBtn.textContent = 'Calculate';
+  calcBtn.style.cssText = [
+    'margin-top:20px',
+    'padding:11px 32px',
+    'font-size:0.92rem',
+    'font-weight:700',
+    'border-radius:8px',
+    'border:none',
+    'cursor:pointer',
+    'background:linear-gradient(135deg,var(--accent),#a78bfa)',
+    'color:#fff',
+    'letter-spacing:.03em',
+    'box-shadow:0 2px 12px rgba(107,155,219,.35)',
+    'transition:opacity .15s',
+    'display:block',
+  ].join(';');
+  calcBtn.addEventListener('mouseenter', function() { calcBtn.style.opacity = '0.88'; });
+  calcBtn.addEventListener('mouseleave', function() { calcBtn.style.opacity = '1'; });
+  calcBtn.addEventListener('click', function() { runIllCalc(); });
+  formCard.appendChild(calcBtn);
+
+  panelIll.appendChild(formCard);
+
+  /* ---- Results area ---- */
+  var illResults = document.createElement('div');
+  illResults.style.cssText = 'max-width:840px;margin:0 auto;';
+  panelIll.appendChild(illResults);
+
+  /* Summary cards */
+  var illCardsRow = document.createElement('div');
+  illCardsRow.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;';
+  var illCardsMq = window.matchMedia('(max-width:600px)');
+  illCardsMq.addEventListener('change', function(e) {
+    illCardsRow.style.gridTemplateColumns = e.matches ? 'repeat(2,1fr)' : 'repeat(4,1fr)';
   });
-  durControl.style.marginTop = '6px';
-  durWrap.appendChild(durControl);
-  leftCol.appendChild(durWrap);
+  if (illCardsMq.matches) illCardsRow.style.gridTemplateColumns = 'repeat(2,1fr)';
 
-  /* Monthly Premium slider */
-  var sPremium = calcSlider('invSimPremium', 'Monthly Premium', 100, 5000, 50, cfg.monthlyPremium, fmtDollar);
-  wireCalcSlider(sPremium, 'invSimPremiumVal', fmtDollar, function() {
-    cfg.monthlyPremium = parseFloat(document.getElementById('invSimPremium').value);
-    updateSim();
-  });
-  leftCol.appendChild(sPremium);
+  function illCard(label, id, color) {
+    var c = document.createElement('div');
+    c.style.cssText = [
+      'background:var(--surface2)',
+      'border:1px solid var(--border)',
+      'border-radius:10px',
+      'padding:14px 16px',
+      'text-align:center',
+    ].join(';');
+    var lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:0.70rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:600;';
+    lbl.textContent = label;
+    var val = document.createElement('div');
+    val.id = id;
+    val.style.cssText = 'font-size:1.15rem;font-weight:700;color:' + color + ';';
+    val.textContent = '—';
+    c.appendChild(lbl);
+    c.appendChild(val);
+    return c;
+  }
 
-  /* Return Rate slider */
-  var sReturn = calcSlider('invSimReturn', 'Expected Return (IIRR)', 4, 12, 0.5, cfg.returnRate, fmtPct);
-  wireCalcSlider(sReturn, 'invSimReturnVal', fmtPct, function() {
-    cfg.returnRate = parseFloat(document.getElementById('invSimReturn').value);
-    updateSim();
-  });
-  leftCol.appendChild(sReturn);
+  illCardsRow.appendChild(illCard('Total Premiums Paid', 'illCardPaid',    '#34d399'));
+  illCardsRow.appendChild(illCard('Projected Value',     'illCardProj',    'var(--accent,#6b9bdb)'));
+  illCardsRow.appendChild(illCard('Net Return',          'illCardNet',     '#C4A24D'));
+  illCardsRow.appendChild(illCard('Effective Yield p.a.','illCardYield',   '#a78bfa'));
+  illResults.appendChild(illCardsRow);
 
-  /* Fee Rate slider */
-  var sFee = calcSlider('invSimFee', 'Annual Fee', 0.5, 3, 0.25, cfg.feeRate, fmtPct);
-  wireCalcSlider(sFee, 'invSimFeeVal', fmtPct, function() {
-    cfg.feeRate = parseFloat(document.getElementById('invSimFee').value);
-    updateSim();
-  });
-  leftCol.appendChild(sFee);
+  /* Chart */
+  var illChartSection = document.createElement('div');
+  illChartSection.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px 16px 10px;margin-bottom:20px;';
 
-  /* Toggles */
-  var togglesWrap = document.createElement('div');
-  togglesWrap.style.cssText = 'margin-top:16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px 14px;';
-  var toggleHeader = document.createElement('div');
-  toggleHeader.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);padding:10px 0 4px;';
-  toggleHeader.textContent = 'Plan Options';
-  togglesWrap.appendChild(toggleHeader);
-
-  var holidayToggle = buildToggle('invSimHoliday', 'Premium Holiday (skip Year 6)', false, function(on) {
-    cfg.premiumHoliday = on;
-    updateSim();
-  });
-  togglesWrap.appendChild(holidayToggle.el);
-
-  var dividendToggle = buildToggle('invSimDividend', 'Dividend Withdrawal Mode (4%/yr from Yr 5)', false, function(on) {
-    cfg.dividendMode = on;
-    updateSim();
-  });
-  togglesWrap.appendChild(dividendToggle.el);
-  leftCol.appendChild(togglesWrap);
-
-  /* Result cards */
-  var cards = document.createElement('div');
-  cards.className = 'result-cards';
-  cards.style.marginTop = '20px';
-  cards.appendChild(calcCard('Total Premiums Paid', 'invSimTotalPaid', ''));
-  cards.appendChild(calcCard('Projected Value',     'invSimProjected', 'green'));
-  cards.appendChild(calcCard('Net Return',          'invSimNetReturn', 'accent'));
-  cards.appendChild(calcCard('Annualized Return',   'invSimCAGR',      'blue'));
-  leftCol.appendChild(cards);
-
-  /* ======================================================
-     RIGHT COLUMN — PROJECTED GROWTH + TABLE
-     ====================================================== */
-  var rightCol = document.createElement('div');
-
-  rightCol.appendChild(sectionHeader('Projected Growth'));
-
-  /* Chart container */
-  var chartWrap = document.createElement('div');
-  chartWrap.className = 'chart-container';
-  chartWrap.style.marginBottom = '0';
-
-  /* Chart legend */
-  var legend = document.createElement('div');
-  legend.style.cssText = 'display:flex;gap:16px;margin-bottom:8px;font-size:0.76rem;';
-  [['#6b9bdb','Portfolio Value'],['#94a3b8','Total Premiums Paid','dashed']].forEach(function(item) {
+  var illChartLegend = document.createElement('div');
+  illChartLegend.style.cssText = 'display:flex;gap:20px;margin-bottom:10px;font-size:0.76rem;';
+  [{color:'#6b9bdb',label:'Projected Value',dashed:false},{color:'#94a3b8',label:'Total Premiums',dashed:true}].forEach(function(item) {
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:5px;color:var(--text3);';
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;color:var(--text3);';
     var line = document.createElement('div');
-    line.style.cssText = 'width:20px;height:2px;background:' + item[0] + ';' + (item[2] === 'dashed' ? 'background:repeating-linear-gradient(90deg,' + item[0] + ' 0,'+item[0]+' 4px,transparent 4px,transparent 8px);' : '');
+    if (item.dashed) {
+      line.style.cssText = 'width:22px;height:2px;background:repeating-linear-gradient(90deg,'+item.color+' 0,'+item.color+' 4px,transparent 4px,transparent 8px);';
+    } else {
+      line.style.cssText = 'width:22px;height:2px;background:'+item.color+';';
+    }
     var lbl = document.createElement('span');
-    lbl.textContent = item[1];
+    lbl.textContent = item.label;
     row.appendChild(line);
     row.appendChild(lbl);
-    legend.appendChild(row);
+    illChartLegend.appendChild(row);
   });
-  chartWrap.appendChild(legend);
+  illChartSection.appendChild(illChartLegend);
 
-  var canvas = document.createElement('canvas');
-  canvas.id = 'invSimChart';
-  chartWrap.appendChild(canvas);
-  rightCol.appendChild(chartWrap);
+  var illCanvas = document.createElement('canvas');
+  illCanvas.id = 'illChart';
+  illChartSection.appendChild(illCanvas);
+  illResults.appendChild(illChartSection);
 
-  /* Breakdown table */
-  var tableSection = document.createElement('div');
-  tableSection.style.cssText = 'margin-top:20px;';
+  /* Table */
+  var illTableSection = document.createElement('div');
+  illTableSection.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;';
 
-  var tableHeader = document.createElement('div');
-  tableHeader.style.cssText = [
-    'font-size:0.72rem',
-    'font-weight:700',
-    'letter-spacing:.08em',
-    'text-transform:uppercase',
-    'color:var(--text3)',
-    'margin-bottom:8px',
-    'padding-bottom:6px',
-    'border-bottom:1px solid var(--border)',
-  ].join(';');
-  tableHeader.textContent = 'Year-by-Year Breakdown';
-  tableSection.appendChild(tableHeader);
+  var illTableHead = document.createElement('div');
+  illTableHead.style.cssText = 'padding:12px 16px 8px;font-size:0.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);';
+  illTableHead.textContent = 'Year-by-Year Breakdown';
+  illTableSection.appendChild(illTableHead);
 
-  var tableWrap = document.createElement('div');
-  tableWrap.style.cssText = 'overflow-x:auto;border-radius:8px;border:1px solid var(--border);';
+  var illTableWrap = document.createElement('div');
+  illTableWrap.style.cssText = 'overflow-x:auto;max-height:320px;overflow-y:auto;';
 
-  var table = document.createElement('table');
-  table.id = 'invSimTable';
-  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.78rem;';
+  var illTable = document.createElement('table');
+  illTable.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.76rem;min-width:580px;';
 
-  /* Table head */
-  var thead = document.createElement('thead');
-  var headRow = document.createElement('tr');
-  headRow.style.cssText = 'background:var(--surface2);';
-  ['Year','Premiums Paid','Growth','Fees','Portfolio Value'].forEach(function(h) {
+  var illThead = document.createElement('thead');
+  var illHeadRow = document.createElement('tr');
+  illHeadRow.style.cssText = 'background:var(--surface3,#1f2937);position:sticky;top:0;z-index:1;';
+  ['Year','Age','Premiums Paid','Growth','Fees','Portfolio Value','Total Yield','Effective Yield p.a.'].forEach(function(h) {
     var th = document.createElement('th');
-    th.style.cssText = 'padding:7px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap;';
-    if (h === 'Year') th.style.textAlign = 'center';
+    th.style.cssText = 'padding:8px 10px;text-align:right;color:var(--text3);font-weight:600;white-space:nowrap;font-size:0.72rem;letter-spacing:.04em;';
+    if (h === 'Year' || h === 'Age') th.style.textAlign = 'center';
     th.textContent = h;
-    headRow.appendChild(th);
+    illHeadRow.appendChild(th);
   });
-  thead.appendChild(headRow);
-  table.appendChild(thead);
+  illThead.appendChild(illHeadRow);
+  illTable.appendChild(illThead);
 
-  var tbody = document.createElement('tbody');
-  tbody.id = 'invSimTbody';
-  table.appendChild(tbody);
-  tableWrap.appendChild(table);
-  tableSection.appendChild(tableWrap);
-  rightCol.appendChild(tableSection);
+  var illTbody = document.createElement('tbody');
+  illTbody.id = 'illTbody';
+  illTable.appendChild(illTbody);
+  illTableWrap.appendChild(illTable);
+  illTableSection.appendChild(illTableWrap);
+  illResults.appendChild(illTableSection);
 
-  /* ---- Assemble layout ---- */
-  layout.appendChild(leftCol);
-  layout.appendChild(rightCol);
-  panelPlan.appendChild(layout);
-  container.appendChild(panelPlan);
-
-  /* ======================================================
-     UPDATE FUNCTION — PLAN SIMULATOR
-     ====================================================== */
-  function updateSim() {
-    var totals = invSimTotals(cfg);
-
-    /* Update result cards */
-    function setEl(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
-    setEl('invSimTotalPaid', fmtDollar(totals.totalPaid));
-    setEl('invSimProjected', fmtDollar(totals.projectedVal));
-    setEl('invSimNetReturn', (totals.netReturn >= 0 ? '+' : '') + fmtDollar(totals.netReturn));
-    setEl('invSimCAGR',      totals.cagr.toFixed(1) + '%');
-
-    /* Update chart */
-    var growthSeries  = [{ value: 0, label: 'Start' }];
-    var premiumSeries = [{ value: 0, label: 'Start' }];
-    var cumulPaid = 0;
-    totals.rows.forEach(function(r) {
-      cumulPaid += r.contribution;
-      growthSeries.push({ value: r.balance, label: 'Yr ' + r.year });
-      premiumSeries.push({ value: cumulPaid, label: 'Yr ' + r.year });
-    });
-
-    var chartEl = document.getElementById('invSimChart');
-    if (chartEl) {
-      Charts.multiLine(chartEl, [
-        { data: growthSeries,  color: '#6b9bdb', label: 'Portfolio Value' },
-        { data: premiumSeries, color: '#94a3b8', label: 'Premiums Paid' },
-      ], { height: 200 });
+  /* ---- Computation ---- */
+  function illCompute(cfg) {
+    var rows = [];
+    var balance = 0;
+    var totalPaid = 0;
+    for (var yr = 1; yr <= cfg.duration; yr++) {
+      var contrib = cfg.monthly * 12;
+      totalPaid += contrib;
+      var growth  = balance * (cfg.retRate / 100);
+      var fees    = (balance + contrib) * (cfg.feeRate / 100);
+      balance     = balance + contrib + growth - fees;
+      balance     = Math.max(balance, 0);
+      var totalYield = totalPaid > 0 ? ((balance - totalPaid) / totalPaid) * 100 : 0;
+      var effYield   = totalPaid > 0 ? (Math.pow(balance / totalPaid, 1 / yr) - 1) * 100 : 0;
+      rows.push({
+        year:       yr,
+        age:        cfg.age + yr,
+        contrib:    contrib,
+        totalPaid:  totalPaid,
+        growth:     growth,
+        fees:       fees,
+        balance:    balance,
+        totalYield: totalYield,
+        effYield:   effYield,
+      });
     }
+    return rows;
+  }
 
-    /* Update breakdown table */
-    var tbodyEl = document.getElementById('invSimTbody');
-    if (tbodyEl) {
-      while (tbodyEl.firstChild) tbodyEl.removeChild(tbodyEl.firstChild);
-      var cumulContrib = 0;
-      totals.rows.forEach(function(r, i) {
-        cumulContrib += r.contribution;
+  function renderIllChart() {
+    var rows = illCompute(illCfg);
+    var projSeries = [{value:0,label:'Start'}];
+    var paidSeries = [{value:0,label:'Start'}];
+    rows.forEach(function(r) {
+      projSeries.push({value:r.balance, label:'Yr '+r.year});
+      paidSeries.push({value:r.totalPaid, label:'Yr '+r.year});
+    });
+    var el = document.getElementById('illChart');
+    if (el && typeof Charts !== 'undefined') {
+      Charts.multiLine(el, [
+        {data: projSeries,  color: '#6b9bdb', label: 'Projected Value'},
+        {data: paidSeries,  color: '#94a3b8', label: 'Total Premiums'},
+      ], {height: 200});
+    }
+  }
+
+  function runIllCalc() {
+    var rows = illCompute(illCfg);
+    var last = rows[rows.length - 1];
+
+    function setEl(id, txt) { var e = document.getElementById(id); if(e) e.textContent = txt; }
+    setEl('illCardPaid',  fmtDollar(last.totalPaid));
+    setEl('illCardProj',  fmtDollar(last.balance));
+    var net = last.balance - last.totalPaid;
+    setEl('illCardNet',   (net >= 0 ? '+' : '') + fmtDollar(net));
+    setEl('illCardYield', last.effYield.toFixed(2) + '%');
+
+    renderIllChart();
+
+    /* Table */
+    var tbody = document.getElementById('illTbody');
+    if (tbody) {
+      while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+      rows.forEach(function(r, i) {
         var tr = document.createElement('tr');
         tr.style.background = i % 2 === 0 ? 'var(--surface1,#111827)' : 'var(--surface2)';
         var cells = [
-          { text: r.year,                    center: true,  color: 'var(--text3)' },
-          { text: fmtDollar(cumulContrib),   center: false, color: 'var(--text2)' },
-          { text: '+' + fmtDollar(r.growth), center: false, color: '#34d399' },
-          { text: '-' + fmtDollar(r.fees),   center: false, color: '#ef4444' },
-          { text: fmtDollar(r.balance),      center: false, color: '#6b9bdb', bold: true },
+          {text: r.year,                        align:'center', color:'var(--text3)'},
+          {text: r.age,                          align:'center', color:'var(--text3)'},
+          {text: fmtDollar(r.totalPaid),         align:'right',  color:'var(--text2)'},
+          {text: '+'+fmtDollar(r.growth),        align:'right',  color:'#34d399'},
+          {text: '-'+fmtDollar(r.fees),          align:'right',  color:'#ef4444'},
+          {text: fmtDollar(r.balance),           align:'right',  color:'#6b9bdb', bold:true},
+          {text: r.totalYield.toFixed(1)+'%',    align:'right',  color:'#C4A24D'},
+          {text: r.effYield.toFixed(2)+'%',      align:'right',  color:'#a78bfa'},
         ];
         cells.forEach(function(c) {
           var td = document.createElement('td');
-          td.style.cssText = 'padding:6px 10px;' +
-            'text-align:' + (c.center ? 'center' : 'right') + ';' +
-            'color:' + c.color + ';' +
-            (c.bold ? 'font-weight:600;' : '');
+          td.style.cssText = 'padding:7px 10px;text-align:'+c.align+';color:'+c.color+';'+(c.bold?'font-weight:600;':'');
           td.textContent = c.text;
           tr.appendChild(td);
         });
-        tbodyEl.appendChild(tr);
+        tbody.appendChild(tr);
       });
     }
   }
 
+  container.appendChild(panelIll);
+
   /* ======================================================
-     PANEL 2 — RETIREMENT PLANNER
+     PANEL 2 — RETIREMENT STEP-BY-STEP
      ====================================================== */
-  var panelRetirement = document.createElement('div');
-  panelRetirement.style.display = 'none';
-  panels['retirement'] = panelRetirement;
+  var panelRet = document.createElement('div');
+  panelRet.style.display = 'none';
+  panels['retirement'] = panelRet;
 
-  var retCfg = { curAge: 30, retAge: 62, expenses: 4000, savings: 50000 };
+  /* Input row */
+  var retInputRow = document.createElement('div');
+  retInputRow.style.cssText = [
+    'display:flex',
+    'flex-wrap:wrap',
+    'gap:16px',
+    'align-items:center',
+    'background:var(--surface2)',
+    'border:1px solid var(--border)',
+    'border-radius:10px',
+    'padding:14px 18px',
+    'margin-bottom:24px',
+    'font-size:0.85rem',
+    'color:var(--text2)',
+  ].join(';');
 
-  var retLayout = document.createElement('div');
-  retLayout.style.cssText = 'display:grid;grid-template-columns:1fr 1.3fr;gap:24px;align-items:start;';
-  var retMq = window.matchMedia('(max-width:620px)');
-  retMq.addEventListener('change', function(e) {
-    retLayout.style.gridTemplateColumns = e.matches ? '1fr' : '1fr 1.3fr';
-  });
-  retLayout.style.gridTemplateColumns = retMq.matches ? '1fr' : '1fr 1.3fr';
-
-  /* Left col */
-  var retLeft = document.createElement('div');
-  retLeft.appendChild(sectionHeader('Retirement Parameters'));
-
-  var sRetCurAge = calcSlider('retCurAge', 'Current Age', 25, 60, 1, retCfg.curAge, function(v) { return v + ' yrs'; });
-  wireCalcSlider(sRetCurAge, 'retCurAgeVal', function(v) { return v + ' yrs'; }, function() {
-    retCfg.curAge = parseInt(document.getElementById('retCurAge').value, 10);
-    updateRetirement();
-  });
-  retLeft.appendChild(sRetCurAge);
-
-  var sRetRetAge = calcSlider('retRetAge', 'Retirement Age', 55, 70, 1, retCfg.retAge, function(v) { return v + ' yrs'; });
-  wireCalcSlider(sRetRetAge, 'retRetAgeVal', function(v) { return v + ' yrs'; }, function() {
-    retCfg.retAge = parseInt(document.getElementById('retRetAge').value, 10);
-    updateRetirement();
-  });
-  retLeft.appendChild(sRetRetAge);
-
-  var sRetExp = calcSlider('retExpenses', 'Monthly Expenses', 2000, 15000, 200, retCfg.expenses, fmtDollar);
-  wireCalcSlider(sRetExp, 'retExpensesVal', fmtDollar, function() {
-    retCfg.expenses = parseFloat(document.getElementById('retExpenses').value);
-    updateRetirement();
-  });
-  retLeft.appendChild(sRetExp);
-
-  var sRetSav = calcSlider('retSavings', 'Current Savings', 0, 500000, 5000, retCfg.savings, fmtDollar);
-  wireCalcSlider(sRetSav, 'retSavingsVal', fmtDollar, function() {
-    retCfg.savings = parseFloat(document.getElementById('retSavings').value);
-    updateRetirement();
-  });
-  retLeft.appendChild(sRetSav);
-
-  var retCards = document.createElement('div');
-  retCards.className = 'result-cards';
-  retCards.style.marginTop = '20px';
-  retCards.appendChild(calcCard('Total Needed', 'retTotalNeeded', ''));
-  retCards.appendChild(calcCard('Future Savings', 'retFutureSavings', 'green'));
-  retCards.appendChild(calcCard('Funding Gap', 'retGap', 'accent'));
-  retCards.appendChild(calcCard('Monthly Savings Needed', 'retMonthly', 'blue'));
-  retLeft.appendChild(retCards);
-
-  /* Right col */
-  var retRight = document.createElement('div');
-  retRight.appendChild(sectionHeader('Savings Projection'));
-
-  var retChartWrap = document.createElement('div');
-  retChartWrap.className = 'chart-container';
-  retChartWrap.style.marginBottom = '0';
-
-  var retCanvas = document.createElement('canvas');
-  retCanvas.id = 'retChart';
-  retChartWrap.appendChild(retCanvas);
-  retRight.appendChild(retChartWrap);
-
-  retLayout.appendChild(retLeft);
-  retLayout.appendChild(retRight);
-  panelRetirement.appendChild(retLayout);
-  container.appendChild(panelRetirement);
-
-  function updateRetirement() {
-    var cur = retCfg.curAge;
-    var ret = retCfg.retAge;
-    var exp = retCfg.expenses;
-    var sav = retCfg.savings;
-    var years = Math.max(ret - cur, 1);
-
-    var totalNeeded    = exp * 12 * (90 - ret);
-    var futureSavings  = sav * Math.pow(1.06, years);
-    var gap            = Math.max(totalNeeded - futureSavings, 0);
-    /* Monthly needed: annuity formula — FV = PMT * ((1+r)^n - 1) / r */
-    var r = 0.06 / 12;
-    var n = years * 12;
-    var monthlyNeeded  = gap > 0 ? gap * r / (Math.pow(1 + r, n) - 1) : 0;
-
-    function setEl(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
-    setEl('retTotalNeeded',   fmtDollar(totalNeeded));
-    setEl('retFutureSavings', fmtDollar(futureSavings));
-    setEl('retGap',           gap > 0 ? fmtDollar(gap) : 'Funded');
-    setEl('retMonthly',       gap > 0 ? fmtDollar(monthlyNeeded) + '/mo' : 'On Track');
-
-    /* Build projection series */
-    var series = [];
-    var bal = sav;
-    series.push({ value: bal, label: 'Now' });
-    for (var i = 1; i <= years; i++) {
-      bal = bal * 1.06 + monthlyNeeded * 12;
-      series.push({ value: bal, label: 'Yr ' + i });
-    }
-
-    var retChartEl = document.getElementById('retChart');
-    if (retChartEl) {
-      Charts.area(retChartEl, series, { color: '#34d399', height: 200, currency: true });
-    }
+  function retInputField(label, id, defaultVal, min, max) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+    var lbl = document.createElement('span');
+    lbl.style.cssText = 'color:var(--text3);font-size:0.80rem;white-space:nowrap;';
+    lbl.textContent = label;
+    var inp = document.createElement('input');
+    inp.type = 'number';
+    inp.id = id;
+    inp.value = defaultVal;
+    inp.min = min;
+    inp.max = max;
+    inp.style.cssText = [
+      'width:72px',
+      'background:var(--surface3,#1f2937)',
+      'color:var(--text1,#f9fafb)',
+      'border:1px solid var(--border)',
+      'border-radius:6px',
+      'padding:4px 8px',
+      'font-size:0.84rem',
+      'font-weight:600',
+      'outline:none',
+      'text-align:center',
+    ].join(';');
+    wrap.appendChild(lbl);
+    wrap.appendChild(inp);
+    return wrap;
   }
 
-  /* ======================================================
-     PANEL 3 — INSURANCE NEEDS
-     ====================================================== */
-  var panelInsurance = document.createElement('div');
-  panelInsurance.style.display = 'none';
-  panels['insurance'] = panelInsurance;
+  var retCfg = { curAge: 30, retAge: 62, monthly: 4000, inflation: 3 };
 
-  var insCfg = { income: 80000, dependents: 2, existing: 200000 };
+  retInputRow.appendChild(retInputField('Current Age:', 'retCurAge', retCfg.curAge, 20, 55));
+  retInputRow.appendChild(retInputField('Retirement Age:', 'retRetAge', retCfg.retAge, 55, 75));
+  retInputRow.appendChild(retInputField('Monthly Lifestyle ($):', 'retMonthly', retCfg.monthly, 500, 20000));
+  retInputRow.appendChild(retInputField('Inflation (%):', 'retInflation', retCfg.inflation, 1, 6));
 
-  var insLayout = document.createElement('div');
-  insLayout.style.cssText = 'display:grid;grid-template-columns:1fr 1.3fr;gap:24px;align-items:start;';
-  var insMq = window.matchMedia('(max-width:620px)');
-  insMq.addEventListener('change', function(e) {
-    insLayout.style.gridTemplateColumns = e.matches ? '1fr' : '1fr 1.3fr';
+  /* Recalculate on any input change */
+  ['retCurAge','retRetAge','retMonthly','retInflation'].forEach(function(id) {
+    setTimeout(function() {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', function() {
+        retCfg.curAge    = parseInt(document.getElementById('retCurAge').value,10)    || 30;
+        retCfg.retAge    = parseInt(document.getElementById('retRetAge').value,10)    || 62;
+        retCfg.monthly   = parseFloat(document.getElementById('retMonthly').value)    || 4000;
+        retCfg.inflation = parseFloat(document.getElementById('retInflation').value)  || 3;
+        renderRetStep(retCurrentStep);
+      });
+    }, 0);
   });
-  insLayout.style.gridTemplateColumns = insMq.matches ? '1fr' : '1fr 1.3fr';
 
-  var insLeft = document.createElement('div');
-  insLeft.appendChild(sectionHeader('Your Profile'));
+  panelRet.appendChild(retInputRow);
 
-  var sInsIncome = calcSlider('insIncome', 'Annual Income', 30000, 300000, 5000, insCfg.income, fmtDollar);
-  wireCalcSlider(sInsIncome, 'insIncomeVal', fmtDollar, function() {
-    insCfg.income = parseFloat(document.getElementById('insIncome').value);
-    updateInsurance();
-  });
-  insLeft.appendChild(sInsIncome);
+  /* Steps area */
+  var retStepsWrap = document.createElement('div');
+  panelRet.appendChild(retStepsWrap);
 
-  var sInsDeps = calcSlider('insDeps', 'Dependents', 0, 5, 1, insCfg.dependents, function(v) {
-    return v == 1 ? '1 person' : v + ' people';
-  });
-  wireCalcSlider(sInsDeps, 'insDepsVal', function(v) {
-    return v == 1 ? '1 person' : v + ' people';
-  }, function() {
-    insCfg.dependents = parseInt(document.getElementById('insDeps').value, 10);
-    updateInsurance();
-  });
-  insLeft.appendChild(sInsDeps);
+  var retCurrentStep = 0; /* 0-indexed */
 
-  var sInsExist = calcSlider('insExisting', 'Existing Coverage', 0, 1000000, 10000, insCfg.existing, fmtDollar);
-  wireCalcSlider(sInsExist, 'insExistingVal', fmtDollar, function() {
-    insCfg.existing = parseFloat(document.getElementById('insExisting').value);
-    updateInsurance();
-  });
-  insLeft.appendChild(sInsExist);
+  function retCalc() {
+    var yearsToRet = Math.max(retCfg.retAge - retCfg.curAge, 1);
+    var yearsInRet = Math.max(90 - retCfg.retAge, 1);
+    var inflatedMonthly = retCfg.monthly * Math.pow(1 + retCfg.inflation / 100, yearsToRet);
+    var totalNeeded = inflatedMonthly * 12 * yearsInRet;
+    /* Without investing: straight monthly savings needed */
+    var monthsToRet = yearsToRet * 12;
+    var saveWithoutInvest = totalNeeded / monthsToRet;
+    /* With 7% returns: PMT needed to accumulate totalNeeded */
+    var r = 0.07 / 12;
+    var n = monthsToRet;
+    var pmt = totalNeeded * r / (Math.pow(1 + r, n) - 1);
+    return {
+      yearsToRet:       yearsToRet,
+      yearsInRet:       yearsInRet,
+      inflatedMonthly:  inflatedMonthly,
+      totalNeeded:      totalNeeded,
+      saveWithout:      saveWithoutInvest,
+      smartMonthly:     pmt,
+      pctOfLifestyle:   (saveWithoutInvest / retCfg.monthly) * 100,
+    };
+  }
 
-  var insSummaryCards = document.createElement('div');
-  insSummaryCards.className = 'result-cards';
-  insSummaryCards.style.marginTop = '20px';
-  insSummaryCards.appendChild(calcCard('Total Needed', 'insTotalNeeded', ''));
-  insSummaryCards.appendChild(calcCard('Current Coverage', 'insCurrentCov', 'green'));
-  insSummaryCards.appendChild(calcCard('Coverage Gap', 'insGap', 'accent'));
-  insLeft.appendChild(insSummaryCards);
+  function renderRetStep(stepIdx) {
+    retCurrentStep = stepIdx;
+    var d = retCalc();
 
-  /* Right col — coverage bars */
-  var insRight = document.createElement('div');
-  insRight.appendChild(sectionHeader('Coverage Analysis'));
+    while (retStepsWrap.firstChild) retStepsWrap.removeChild(retStepsWrap.firstChild);
 
-  var insBarsWrap = document.createElement('div');
-  insBarsWrap.id = 'insBars';
-  insBarsWrap.style.cssText = 'display:flex;flex-direction:column;gap:16px;';
-  insRight.appendChild(insBarsWrap);
-
-  insLayout.appendChild(insLeft);
-  insLayout.appendChild(insRight);
-  panelInsurance.appendChild(insLayout);
-  container.appendChild(panelInsurance);
-
-  function updateInsurance() {
-    var inc  = insCfg.income;
-    var deps = insCfg.dependents;
-    var exist = insCfg.existing;
-
-    var coverages = [
-      { label: 'Death / TPD',           recommended: inc * (10 + deps * 2), color: '#6b9bdb' },
-      { label: 'Total Permanent Disability', recommended: inc * 8,          color: '#a78bfa' },
-      { label: 'Critical Illness',       recommended: inc * 4,               color: '#f59e0b' },
-      { label: 'Hospitalisation',        recommended: 200000,                color: '#34d399' },
+    /* Steps definition (dynamic values from d) */
+    var STEPS = [
+      {
+        num: 1,
+        color: '#6b9bdb',
+        heading: 'Your Current Lifestyle',
+        bigNum: fmtDollar(retCfg.monthly) + '/month',
+        body: 'This is your target monthly lifestyle in today\'s dollars — the income you want to maintain throughout retirement.',
+        visual: function(wrap) {
+          var bar = document.createElement('div');
+          bar.style.cssText = 'display:flex;align-items:flex-end;gap:10px;margin-top:14px;';
+          var b = document.createElement('div');
+          b.style.cssText = 'width:60px;height:80px;background:#6b9bdb;border-radius:6px 6px 0 0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;';
+          var bl = document.createElement('span');
+          bl.style.cssText = 'font-size:0.68rem;color:#fff;font-weight:700;';
+          bl.textContent = 'TODAY';
+          b.appendChild(bl);
+          var lbl = document.createElement('div');
+          lbl.style.cssText = 'font-size:0.78rem;color:var(--text3);';
+          lbl.textContent = fmtDollar(retCfg.monthly)+'/mo';
+          bar.appendChild(b);
+          bar.appendChild(lbl);
+          wrap.appendChild(bar);
+        },
+      },
+      {
+        num: 2,
+        color: '#f59e0b',
+        heading: 'Inflation\'s Impact',
+        bigNum: fmtDollar(Math.round(d.inflatedMonthly)) + '/month',
+        body: 'At retirement (age ' + retCfg.retAge + '), your $' + retCfg.monthly.toLocaleString() + '/month lifestyle will cost ' + fmtDollar(Math.round(d.inflatedMonthly)) + '/month due to ' + retCfg.inflation + '% inflation over ' + d.yearsToRet + ' years.',
+        visual: function(wrap) {
+          var bar = document.createElement('div');
+          bar.style.cssText = 'display:flex;align-items:flex-end;gap:10px;margin-top:14px;';
+          var bNow = document.createElement('div');
+          bNow.style.cssText = 'width:50px;height:60px;background:#6b9bdb88;border-radius:6px 6px 0 0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;';
+          var blNow = document.createElement('span');
+          blNow.style.cssText = 'font-size:0.64rem;color:#fff;font-weight:700;';
+          blNow.textContent = 'NOW';
+          bNow.appendChild(blNow);
+          var heightPct = Math.min((d.inflatedMonthly / (retCfg.monthly * 4)) * 100, 160);
+          var bRet = document.createElement('div');
+          bRet.style.cssText = 'width:50px;height:'+Math.max(heightPct,70)+'px;background:#f59e0b;border-radius:6px 6px 0 0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;';
+          var blRet = document.createElement('span');
+          blRet.style.cssText = 'font-size:0.64rem;color:#fff;font-weight:700;';
+          blRet.textContent = 'RET.';
+          bRet.appendChild(blRet);
+          var arrow = document.createElement('div');
+          arrow.style.cssText = 'font-size:1.4rem;color:#f59e0b;padding-bottom:8px;';
+          arrow.textContent = '\u2191';
+          bar.appendChild(bNow);
+          bar.appendChild(arrow);
+          bar.appendChild(bRet);
+          var note = document.createElement('div');
+          note.style.cssText = 'font-size:0.76rem;color:var(--text3);margin-left:8px;padding-bottom:8px;';
+          note.textContent = '+' + Math.round((d.inflatedMonthly / retCfg.monthly - 1) * 100) + '% increase';
+          bar.appendChild(note);
+          wrap.appendChild(bar);
+        },
+      },
+      {
+        num: 3,
+        color: '#ef4444',
+        heading: 'The Retirement Gap',
+        bigNum: fmtDollarK(d.totalNeeded) + ' total',
+        body: 'You need ' + fmtDollar(Math.round(d.inflatedMonthly)) + '/month for ' + d.yearsInRet + ' years (to age 90). That\'s ' + fmtDollarK(d.totalNeeded) + ' total. Without a plan, your current savings trajectory won\'t cover this gap.',
+        visual: function(wrap) {
+          var gap = document.createElement('div');
+          gap.style.cssText = 'margin-top:14px;display:flex;flex-direction:column;gap:8px;';
+          var needed = document.createElement('div');
+          needed.style.cssText = 'display:flex;align-items:center;gap:8px;';
+          var nBar = document.createElement('div');
+          nBar.style.cssText = 'height:18px;width:150px;background:#ef444488;border-radius:4px;border:1px solid #ef4444;';
+          var nLbl = document.createElement('span');
+          nLbl.style.cssText = 'font-size:0.76rem;color:#ef4444;font-weight:600;';
+          nLbl.textContent = 'Need: ' + fmtDollarK(d.totalNeeded);
+          needed.appendChild(nBar);
+          needed.appendChild(nLbl);
+          var have = document.createElement('div');
+          have.style.cssText = 'display:flex;align-items:center;gap:8px;';
+          var hBar = document.createElement('div');
+          hBar.style.cssText = 'height:18px;width:40px;background:#34d39966;border-radius:4px;border:1px solid #34d399;';
+          var hLbl = document.createElement('span');
+          hLbl.style.cssText = 'font-size:0.76rem;color:#34d399;font-weight:600;';
+          hLbl.textContent = 'Typical savings trajectory';
+          have.appendChild(hBar);
+          have.appendChild(hLbl);
+          gap.appendChild(needed);
+          gap.appendChild(have);
+          wrap.appendChild(gap);
+        },
+      },
+      {
+        num: 4,
+        color: '#ef4444',
+        heading: 'The Reality Check',
+        bigNum: fmtDollar(Math.round(d.saveWithout)) + '/month',
+        body: 'Without investing, you\'d need to save ' + fmtDollar(Math.round(d.saveWithout)) + '/month from today — that\'s ' + Math.round(d.pctOfLifestyle) + '% of your current lifestyle target. Hardly practical!',
+        visual: function(wrap) {
+          var comp = document.createElement('div');
+          comp.style.cssText = 'margin-top:14px;display:flex;flex-direction:column;gap:8px;';
+          var row1 = document.createElement('div');
+          row1.style.cssText = 'display:flex;align-items:center;gap:8px;';
+          var r1bar = document.createElement('div');
+          var r1w = Math.min((retCfg.monthly / (d.saveWithout * 1.2)) * 140, 140);
+          r1bar.style.cssText = 'height:22px;width:'+Math.max(r1w,20)+'px;background:#6b9bdb88;border-radius:4px;border:1px solid #6b9bdb;flex-shrink:0;';
+          var r1lbl = document.createElement('span');
+          r1lbl.style.cssText = 'font-size:0.76rem;color:var(--text2);';
+          r1lbl.textContent = 'Lifestyle: ' + fmtDollar(retCfg.monthly) + '/mo';
+          row1.appendChild(r1bar);
+          row1.appendChild(r1lbl);
+          var row2 = document.createElement('div');
+          row2.style.cssText = 'display:flex;align-items:center;gap:8px;';
+          var r2bar = document.createElement('div');
+          r2bar.style.cssText = 'height:22px;width:140px;background:#ef444488;border-radius:4px;border:1px solid #ef4444;flex-shrink:0;';
+          var r2lbl = document.createElement('span');
+          r2lbl.style.cssText = 'font-size:0.76rem;color:#ef4444;font-weight:600;';
+          r2lbl.textContent = 'Without investing: ' + fmtDollar(Math.round(d.saveWithout)) + '/mo';
+          row2.appendChild(r2bar);
+          row2.appendChild(r2lbl);
+          comp.appendChild(row1);
+          comp.appendChild(row2);
+          wrap.appendChild(comp);
+        },
+      },
+      {
+        num: 5,
+        color: '#34d399',
+        heading: 'The Smarter Approach',
+        bigNum: fmtDollar(Math.round(d.smartMonthly)) + '/month',
+        body: 'With 7% average returns, you only need to invest ' + fmtDollar(Math.round(d.smartMonthly)) + '/month. Compound growth does the heavy lifting — that\'s ' + Math.round((1 - d.smartMonthly / d.saveWithout) * 100) + '% less than saving without returns!',
+        visual: function(wrap) {
+          var comp = document.createElement('div');
+          comp.style.cssText = 'margin-top:14px;display:flex;flex-direction:column;gap:8px;';
+          var row1 = document.createElement('div');
+          row1.style.cssText = 'display:flex;align-items:center;gap:8px;';
+          var r1w = Math.min((d.saveWithout / (d.saveWithout * 1.1)) * 140, 140);
+          var r1bar = document.createElement('div');
+          r1bar.style.cssText = 'height:22px;width:'+r1w+'px;background:#ef444444;border-radius:4px;border:1px solid #ef444488;flex-shrink:0;';
+          var r1lbl = document.createElement('span');
+          r1lbl.style.cssText = 'font-size:0.76rem;color:var(--text3);';
+          r1lbl.textContent = 'Without returns: ' + fmtDollar(Math.round(d.saveWithout)) + '/mo';
+          row1.appendChild(r1bar);
+          row1.appendChild(r1lbl);
+          var row2 = document.createElement('div');
+          row2.style.cssText = 'display:flex;align-items:center;gap:8px;';
+          var r2w = Math.max((d.smartMonthly / d.saveWithout) * 140, 20);
+          var r2bar = document.createElement('div');
+          r2bar.style.cssText = 'height:22px;width:'+r2w+'px;background:#34d39966;border-radius:4px;border:1px solid #34d399;flex-shrink:0;';
+          var r2lbl = document.createElement('span');
+          r2lbl.style.cssText = 'font-size:0.76rem;color:#34d399;font-weight:700;';
+          r2lbl.textContent = 'With 7% returns: ' + fmtDollar(Math.round(d.smartMonthly)) + '/mo';
+          row2.appendChild(r2bar);
+          row2.appendChild(r2lbl);
+          comp.appendChild(row1);
+          comp.appendChild(row2);
+          wrap.appendChild(comp);
+        },
+      },
     ];
 
-    /* Distribute existing coverage proportionally to death bucket */
-    coverages[0].actual = Math.min(exist, coverages[0].recommended);
-    coverages[1].actual = Math.min(Math.max(exist - coverages[0].recommended, 0) * 0.5, coverages[1].recommended);
-    coverages[2].actual = Math.min(Math.max(exist - coverages[0].recommended, 0) * 0.3, coverages[2].recommended);
-    coverages[3].actual = Math.min(Math.max(exist - coverages[0].recommended, 0) * 0.2, coverages[3].recommended);
+    var step = STEPS[stepIdx];
 
-    var totalNeeded = coverages.reduce(function(s, c) { return s + c.recommended; }, 0);
-    var totalActual = coverages.reduce(function(s, c) { return s + c.actual; }, 0);
-    var totalGap    = Math.max(totalNeeded - totalActual, 0);
+    /* Step card */
+    var card = document.createElement('div');
+    card.style.cssText = [
+      'background:var(--surface2)',
+      'border:1px solid var(--border)',
+      'border-radius:14px',
+      'padding:28px 32px',
+      'max-width:640px',
+      'margin:0 auto 20px',
+      'position:relative',
+    ].join(';');
 
-    function setEl(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
-    setEl('insTotalNeeded',  fmtDollar(totalNeeded));
-    setEl('insCurrentCov',   fmtDollar(totalActual));
-    setEl('insGap',          totalGap > 0 ? fmtDollar(totalGap) : 'Fully Covered');
+    /* Step badge */
+    var badge = document.createElement('div');
+    badge.style.cssText = [
+      'display:inline-flex',
+      'align-items:center',
+      'justify-content:center',
+      'width:34px',
+      'height:34px',
+      'border-radius:50%',
+      'background:' + step.color,
+      'color:#fff',
+      'font-size:0.9rem',
+      'font-weight:800',
+      'margin-bottom:14px',
+      'box-shadow:0 0 0 4px ' + step.color + '28',
+    ].join(';');
+    badge.textContent = step.num;
+    card.appendChild(badge);
 
-    var barsEl = document.getElementById('insBars');
-    if (!barsEl) return;
-    while (barsEl.firstChild) barsEl.removeChild(barsEl.firstChild);
+    /* Heading */
+    var heading = document.createElement('div');
+    heading.style.cssText = 'font-size:1.05rem;font-weight:700;color:var(--text1,#f9fafb);margin-bottom:10px;';
+    heading.textContent = step.heading;
+    card.appendChild(heading);
 
-    coverages.forEach(function(cov) {
-      var pct     = Math.min(cov.actual / cov.recommended, 1);
-      var status  = pct >= 1 ? 'Adequate' : pct >= 0.5 ? 'Partial' : 'Gap';
-      var statusColor = pct >= 1 ? '#34d399' : pct >= 0.5 ? '#f59e0b' : '#ef4444';
+    /* Big number */
+    var bigNum = document.createElement('div');
+    bigNum.style.cssText = 'font-size:2rem;font-weight:800;color:' + step.color + ';margin-bottom:10px;letter-spacing:-.02em;';
+    bigNum.textContent = step.bigNum;
+    card.appendChild(bigNum);
 
-      var row = document.createElement('div');
+    /* Body text */
+    var body = document.createElement('p');
+    body.style.cssText = 'font-size:0.88rem;color:var(--text2);line-height:1.6;margin:0 0 4px;';
+    body.textContent = step.body;
+    card.appendChild(body);
 
-      var rowTop = document.createElement('div');
-      rowTop.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;';
+    /* Visual */
+    var visualWrap = document.createElement('div');
+    step.visual(visualWrap);
+    card.appendChild(visualWrap);
 
-      var lbl = document.createElement('span');
-      lbl.style.cssText = 'font-size:0.82rem;color:var(--text2);font-weight:500;';
-      lbl.textContent = cov.label;
+    retStepsWrap.appendChild(card);
 
-      var badge = document.createElement('span');
-      badge.style.cssText = [
-        'font-size:0.72rem',
-        'font-weight:700',
-        'padding:2px 8px',
-        'border-radius:20px',
-        'background:' + statusColor + '22',
-        'color:' + statusColor,
-        'border:1px solid ' + statusColor + '55',
-      ].join(';');
-      badge.textContent = status;
+    /* Step dots + navigation */
+    var navWrap = document.createElement('div');
+    navWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:16px;max-width:640px;margin:0 auto;';
 
-      rowTop.appendChild(lbl);
-      rowTop.appendChild(badge);
-      row.appendChild(rowTop);
-
-      /* Bar track */
-      var track = document.createElement('div');
-      track.style.cssText = 'height:8px;background:var(--surface3,#374151);border-radius:4px;overflow:hidden;';
-      var fill = document.createElement('div');
-      fill.style.cssText = 'height:100%;border-radius:4px;background:' + cov.color + ';transition:width .4s;width:' + (pct * 100).toFixed(1) + '%;';
-      track.appendChild(fill);
-      row.appendChild(track);
-
-      /* Sub-label */
-      var sub = document.createElement('div');
-      sub.style.cssText = 'display:flex;justify-content:space-between;margin-top:4px;font-size:0.72rem;color:var(--text3);';
-      var subLeft = document.createElement('span');
-      subLeft.textContent = 'Actual: ' + fmtDollar(cov.actual);
-      var subRight = document.createElement('span');
-      subRight.textContent = 'Recommended: ' + fmtDollar(cov.recommended);
-      sub.appendChild(subLeft);
-      sub.appendChild(subRight);
-      row.appendChild(sub);
-
-      barsEl.appendChild(row);
+    var prevBtn = document.createElement('button');
+    prevBtn.textContent = '\u2190 Previous';
+    prevBtn.style.cssText = [
+      'padding:9px 18px',
+      'font-size:0.84rem',
+      'font-weight:600',
+      'border-radius:8px',
+      'border:1px solid var(--border)',
+      'background:var(--surface2)',
+      'color:var(--text2)',
+      'cursor:pointer',
+      'transition:background .15s',
+      'opacity:' + (stepIdx === 0 ? '0.3' : '1'),
+    ].join(';');
+    prevBtn.disabled = stepIdx === 0;
+    prevBtn.addEventListener('click', function() {
+      if (retCurrentStep > 0) renderRetStep(retCurrentStep - 1);
     });
+
+    /* Dots */
+    var dotsWrap = document.createElement('div');
+    dotsWrap.style.cssText = 'display:flex;gap:8px;align-items:center;';
+    STEPS.forEach(function(s, i) {
+      var dot = document.createElement('div');
+      var isActive = i === stepIdx;
+      dot.style.cssText = [
+        'width:' + (isActive ? '22px' : '8px'),
+        'height:8px',
+        'border-radius:4px',
+        'background:' + (isActive ? step.color : 'var(--border)'),
+        'cursor:pointer',
+        'transition:all .2s',
+      ].join(';');
+      dot.addEventListener('click', function() { renderRetStep(i); });
+      dotsWrap.appendChild(dot);
+    });
+
+    var nextBtn = document.createElement('button');
+    nextBtn.textContent = 'Next \u2192';
+    nextBtn.style.cssText = [
+      'padding:9px 18px',
+      'font-size:0.84rem',
+      'font-weight:600',
+      'border-radius:8px',
+      'border:none',
+      'background:linear-gradient(135deg,var(--accent),#a78bfa)',
+      'color:#fff',
+      'cursor:pointer',
+      'transition:opacity .15s',
+      'opacity:' + (stepIdx === STEPS.length - 1 ? '0.3' : '1'),
+    ].join(';');
+    nextBtn.disabled = stepIdx === STEPS.length - 1;
+    nextBtn.addEventListener('click', function() {
+      if (retCurrentStep < STEPS.length - 1) renderRetStep(retCurrentStep + 1);
+    });
+
+    navWrap.appendChild(prevBtn);
+    navWrap.appendChild(dotsWrap);
+    navWrap.appendChild(nextBtn);
+    retStepsWrap.appendChild(navWrap);
   }
 
-  /* ======================================================
-     PANEL 4 — ALL 50+ TOOLS
-     ====================================================== */
-  var panelTools = document.createElement('div');
-  panelTools.style.display = 'none';
-  panels['tools'] = panelTools;
-
-  /* Header */
-  var toolsHeader = document.createElement('div');
-  toolsHeader.style.cssText = 'margin-bottom:20px;';
-  var toolsTitle = document.createElement('div');
-  toolsTitle.style.cssText = [
-    'font-size:0.72rem',
-    'font-weight:700',
-    'letter-spacing:.10em',
-    'text-transform:uppercase',
-    'color:var(--text3)',
-    'margin-bottom:4px',
-  ].join(';');
-  toolsTitle.textContent = '50+ FINANCIAL CALCULATORS \u00B7 ALL CATEGORIES';
-  var toolsSub = document.createElement('div');
-  toolsSub.style.cssText = 'font-size:0.82rem;color:var(--text3);';
-  toolsSub.textContent = 'Full-featured calculators with data models, interactive charts, and PDF export.';
-  toolsHeader.appendChild(toolsTitle);
-  toolsHeader.appendChild(toolsSub);
-  panelTools.appendChild(toolsHeader);
-
-  var TOOL_CATEGORIES = [
-    {
-      label: 'INVESTMENT PLANNING',
-      color: '#6b9bdb',
-      tools: [
-        'Long-Term Investment Illustrator',
-        '5-Year Investing Plan',
-        '8-Year Investing Plan',
-        'Hybrid Investment Plan',
-        'Smart Wealth Builder',
-        'Lump Sum Plan',
-        'Universal Illustrator',
-        'Flexi-Term Plan',
-      ],
-    },
-    {
-      label: 'RETIREMENT',
-      color: '#34d399',
-      tools: [
-        'CPF Life Estimator',
-        'Retirement Funding',
-        'Income Tax Calculator',
-        'Retirement Saver',
-        'Retirement Lifestyle',
-      ],
-    },
-    {
-      label: 'INSURANCE',
-      color: '#f59e0b',
-      tools: [
-        'Insurance Needs Assessment',
-        'Total Wealth Concept',
-        'Healthshield Gold Max',
-        'Critical Illness Stats',
-        'Accident Plan',
-        'Hospital Income',
-      ],
-    },
-    {
-      label: 'PORTFOLIO',
-      color: '#a78bfa',
-      tools: [
-        'Interactive Portfolio Builder',
-        'All-Weather Portfolio',
-        'Fear & Greed Index',
-        'Morningstar Funds',
-      ],
-    },
-    {
-      label: 'PROPERTY',
-      color: '#fb7185',
-      tools: [
-        'HDB Mortgage Calculator',
-        'Premium Rates',
-        'Yield Calculator',
-      ],
-    },
-    {
-      label: 'BUSINESS',
-      color: '#38bdf8',
-      tools: [
-        'Financial Advisor Differentiation',
-        'Personal Branding Hub',
-      ],
-    },
-  ];
-
-  TOOL_CATEGORIES.forEach(function(cat) {
-    var section = document.createElement('div');
-    section.style.cssText = 'margin-bottom:24px;';
-
-    var catLabel = document.createElement('div');
-    catLabel.style.cssText = [
-      'font-size:0.70rem',
-      'font-weight:700',
-      'letter-spacing:.10em',
-      'text-transform:uppercase',
-      'color:' + cat.color,
-      'margin-bottom:10px',
-      'padding-bottom:6px',
-      'border-bottom:1px solid var(--border)',
-    ].join(';');
-    catLabel.textContent = cat.label;
-    section.appendChild(catLabel);
-
-    var grid = document.createElement('div');
-    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;';
-
-    cat.tools.forEach(function(toolName) {
-      var card = document.createElement('div');
-      card.style.cssText = [
-        'display:flex',
-        'align-items:center',
-        'gap:8px',
-        'padding:9px 12px',
-        'background:var(--surface2)',
-        'border:1px solid var(--border)',
-        'border-radius:8px',
-        'cursor:default',
-        'transition:border-color .15s',
-      ].join(';');
-      card.addEventListener('mouseenter', function() { card.style.borderColor = cat.color + '88'; });
-      card.addEventListener('mouseleave', function() { card.style.borderColor = 'var(--border)'; });
-
-      var dot = document.createElement('div');
-      dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:' + cat.color + ';flex-shrink:0;';
-
-      var name = document.createElement('span');
-      name.style.cssText = 'font-size:0.78rem;color:var(--text2);line-height:1.3;';
-      name.textContent = toolName;
-
-      card.appendChild(dot);
-      card.appendChild(name);
-      grid.appendChild(card);
-    });
-
-    section.appendChild(grid);
-    panelTools.appendChild(section);
-  });
-
-  container.appendChild(panelTools);
+  container.appendChild(panelRet);
 
   /* ======================================================
      ACTIVATE DEFAULT TAB + INITIAL RENDERS
      ====================================================== */
-  switchTab('plan');
-  setTimeout(updateSim, 0);
-  /* Pre-compute retirement & insurance so first switch is instant */
-  setTimeout(updateRetirement, 50);
-  setTimeout(updateInsurance, 50);
+  switchTab('illustrator');
+  setTimeout(function() { runIllCalc(); }, 0);
+  renderRetStep(0);
 };
 
 /* ============================================================
