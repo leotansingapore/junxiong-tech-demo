@@ -1151,7 +1151,10 @@ function renderPlatformGrid() {
     arrow.className = 'btn-arrow';
     arrow.textContent = '→';
     btn.appendChild(arrow);
-    btn.addEventListener('click', () => openDemo(p.id));
+    btn.addEventListener('click', () => {
+      history.pushState(null, '', '/' + p.id);
+      route();
+    });
 
     card.appendChild(iconBox);
     card.appendChild(title);
@@ -1166,24 +1169,53 @@ function renderPlatformGrid() {
 }
 
 /* ============================================================
-   MODAL SYSTEM
+   DEMO PAGE RENDERER
    ============================================================ */
-function openDemo(id) {
-  const platform = PLATFORMS.find(p => p.id === id);
-  if (!platform) return;
+function renderDemoPage(demoId, platform) {
+  const container = document.getElementById('demoPageContainer');
+  if (!container) return;
 
-  const overlay = document.getElementById('modalOverlay');
-  const titleEl = document.getElementById('modalTitle');
-  // Use querySelector since demo renderers may overwrite the container ID
-  const bodyEl  = document.querySelector('.modal-body');
+  // Clear previous content
+  while (container.firstChild) container.removeChild(container.firstChild);
 
-  titleEl.textContent = platform.icon + '  ' + platform.title + ' — Interactive Demo';
-  // Reset: clear all children and restore ID
-  while (bodyEl.firstChild) bodyEl.removeChild(bodyEl.firstChild);
-  bodyEl.id = 'modalBody';
+  const main = document.createElement('main');
+  main.className = 'demo-page';
 
-  if (DEMO_RENDERERS[id]) {
-    DEMO_RENDERERS[id](bodyEl);
+  // Header
+  const header = document.createElement('div');
+  header.className = 'demo-page-header';
+
+  const backLink = document.createElement('a');
+  backLink.className = 'back-link';
+  backLink.href = '/';
+  backLink.textContent = '← Back to Platform Suite';
+  backLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    history.pushState(null, '', '/');
+    route();
+  });
+
+  const h1 = document.createElement('h1');
+  h1.textContent = platform.icon + '  ' + platform.title;
+
+  const desc = document.createElement('p');
+  desc.textContent = platform.desc;
+
+  header.appendChild(backLink);
+  header.appendChild(h1);
+  header.appendChild(desc);
+  main.appendChild(header);
+
+  // Content container — DEMO_RENDERERS write into this
+  const content = document.createElement('div');
+  content.className = 'demo-page-content';
+  content.id = 'modalBody'; // keep ID so existing renderers work unchanged
+  main.appendChild(content);
+
+  container.appendChild(main);
+
+  if (DEMO_RENDERERS[demoId]) {
+    DEMO_RENDERERS[demoId](content);
   } else {
     const placeholder = document.createElement('div');
     placeholder.style.cssText = 'text-align:center;padding:60px 20px;color:var(--text3);';
@@ -1203,33 +1235,9 @@ function openDemo(id) {
     placeholder.appendChild(iconEl);
     placeholder.appendChild(nameEl);
     placeholder.appendChild(msgEl);
-    bodyEl.appendChild(placeholder);
+    content.appendChild(placeholder);
   }
-
-  overlay.classList.add('open');
-  document.body.style.overflow = 'hidden';
 }
-
-function closeModal() {
-  const overlay = document.getElementById('modalOverlay');
-  overlay.classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-// ESC key closes modal
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeModal();
-});
-
-// Click outside modal closes it
-document.addEventListener('DOMContentLoaded', function() {
-  const overlay = document.getElementById('modalOverlay');
-  if (overlay) {
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) closeModal();
-    });
-  }
-});
 
 /* ============================================================
    SCROLL REVEAL — IntersectionObserver with staggered reveals
@@ -5360,10 +5368,76 @@ function toggleMobileMenu() {
 }
 
 /* ============================================================
+   ROUTER
+   ============================================================ */
+function route() {
+  const path = window.location.pathname.replace(/\/$/, '') || '/';
+  const heroEl = document.getElementById('hero');
+  const platformsEl = document.getElementById('platforms');
+  const footer = document.getElementById('siteFooter');
+  const demoContainer = document.getElementById('demoPageContainer');
+  const navPlatformsLink = document.getElementById('navPlatformsLink');
+  const navDemoTitle = document.getElementById('navDemoTitle');
+
+  if (path === '' || path === '/') {
+    // Landing page
+    heroEl.style.display = '';
+    platformsEl.style.display = '';
+    if (footer) footer.style.display = '';
+    demoContainer.style.display = 'none';
+
+    // Nav: show Platforms link, hide demo title
+    if (navPlatformsLink) navPlatformsLink.style.display = '';
+    if (navDemoTitle) navDemoTitle.style.display = 'none';
+
+    renderHero();
+    renderPlatformGrid();
+    initScrollReveal();
+  } else {
+    // Demo page
+    heroEl.style.display = 'none';
+    platformsEl.style.display = 'none';
+    if (footer) footer.style.display = 'none';
+    demoContainer.style.display = '';
+
+    // Nav: hide Platforms link, show demo title
+    const demoId = path.slice(1);
+    const platform = PLATFORMS.find(p => p.id === demoId);
+    if (navPlatformsLink) navPlatformsLink.style.display = 'none';
+    if (navDemoTitle && platform) {
+      navDemoTitle.textContent = platform.icon + '  ' + platform.title;
+      navDemoTitle.style.display = '';
+    }
+
+    if (platform && DEMO_RENDERERS[demoId]) {
+      renderDemoPage(demoId, platform);
+    } else if (platform) {
+      renderDemoPage(demoId, platform);
+    }
+  }
+
+  // Scroll to top on route change
+  window.scrollTo(0, 0);
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function() {
-  renderHero();
-  renderPlatformGrid();
-  initScrollReveal();
+  // Nav brand navigates home
+  const navBrand = document.getElementById('navBrand');
+  if (navBrand) {
+    navBrand.addEventListener('click', function() {
+      history.pushState(null, '', '/');
+      route();
+    });
+  }
+
+  // Handle browser back/forward
+  window.addEventListener('popstate', function() {
+    route();
+  });
+
+  // Initial route
+  route();
 });

@@ -1852,3 +1852,59 @@ button {
     grid-template-columns: 60px 1fr 60px;
   }
 }
+
+/* ============================================================
+   DEMO PAGE (multi-page routing)
+   ============================================================ */
+.demo-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 80px 24px 60px;
+}
+
+.demo-page-header {
+  margin-bottom: 32px;
+}
+
+.demo-page-header .back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text3);
+  text-decoration: none;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  transition: color 0.2s;
+}
+
+.demo-page-header .back-link:hover {
+  color: var(--text);
+}
+
+.demo-page-header h1 {
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.demo-page-header p {
+  color: var(--text2);
+  font-size: 1rem;
+}
+
+.demo-page-content {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  overflow: hidden;
+}
+
+.nav-demo-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text2);
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
