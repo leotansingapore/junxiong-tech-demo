@@ -2947,31 +2947,30 @@ DEMO_RENDERERS.compass = function(container) {
 
 
 /* ============================================================
-   AD LAUNCHPAD DEMO — Agency Launchpad 90 full platform
+   AD LAUNCHPAD DEMO — rebuilt with 5-step wizard + lead management
    ============================================================ */
 
 /* ---------- shared state ---------- */
-window._lpTab = window._lpTab || 'wizard';
-window._wizardStep = window._wizardStep || 0;
-window._wizardData = window._wizardData || {
+window._lpTab2 = window._lpTab2 || 'wizard';
+window._wizStep = window._wizStep !== undefined ? window._wizStep : 0;
+window._wizData = window._wizData || {
   template: null,
   headline: "Protect Your Family's Future Today",
   text: "As a parent, your family's financial security matters most. Get a free consultation with a certified financial advisor.",
   cta: "Learn More",
-  pageName: "Financial Advisory",
-  ageMin: 25, ageMax: 54,
+  ageMin: 25, ageMax: 45,
   gender: 'all',
   locations: ['Singapore'],
-  interests: ['Insurance', 'Retirement'],
-  advantagePlus: true,
+  interests: ['Insurance', 'Financial Planning', 'Retirement'],
+  advantagePlus: false,
   budget: 30,
-  startDate: '2026-04-07',
-  endDate: '2026-04-21',
   bidStrategy: 'Lowest Cost'
 };
-window._leadStatuses = window._leadStatuses || [
+window._lpLeadStatuses = window._lpLeadStatuses || [
   'New','New','Contacted','Qualified','Converted','New','Contacted','Lost'
 ];
+window._lpLeadFilter = window._lpLeadFilter || 'All';
+window._lpExpandedLead = window._lpExpandedLead !== undefined ? window._lpExpandedLead : null;
 
 /* ---------- helper: make element ---------- */
 function _lp_el(tag, style, text) {
@@ -2990,1067 +2989,722 @@ function _lp_toast(msg) {
     'box-shadow:0 4px 20px rgba(0,0,0,0.5);transition:opacity .3s;',
     msg);
   document.body.appendChild(t);
-  setTimeout(function() { t.style.opacity = '0'; setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 300); }, 2400);
+  setTimeout(function() { t.style.opacity='0'; setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); },300); },2400);
 }
 
-/* ---------- tab switcher (global so onclick can call it) ---------- */
-window.launchpadTab = function(id) {
-  window._lpTab = id;
-  var tabs = document.querySelectorAll('.lp-tab-btn');
-  tabs.forEach(function(btn) {
+/* ---------- tab switcher ---------- */
+window.lpTab2 = function(id) {
+  window._lpTab2 = id;
+  document.querySelectorAll('.lp2-tab-btn').forEach(function(btn) {
     var active = btn.getAttribute('data-tab') === id;
-    btn.style.cssText = _lpTabBtnStyle(active);
+    btn.style.cssText = 'padding:8px 20px;border-radius:8px;border:1px solid;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;' +
+      (active ? 'background:rgba(59,130,246,0.2);border-color:#3b82f6;color:#fff;' : 'background:transparent;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);');
   });
-  var panels = document.querySelectorAll('.lp-tab-panel');
-  panels.forEach(function(p) {
+  document.querySelectorAll('.lp2-tab-panel').forEach(function(p) {
     p.style.display = p.getAttribute('data-panel') === id ? 'block' : 'none';
   });
 };
 
-function _lpTabBtnStyle(active) {
-  return 'padding:8px 18px;border-radius:8px;border:1px solid;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;' +
-    (active
-      ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#fff;'
-      : 'background:transparent;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);');
+/* ---------- wizard step navigation ---------- */
+window.wizardNext = function() {
+  var step = window._wizStep;
+  var d = window._wizData;
+  if (step === 0 && !d.template) { _lp_toast('Please select a template to continue'); return; }
+  if (step < 4) { window._wizStep = step + 1; DEMO_RENDERERS.launchpad(document.querySelector('#launchpadRoot').parentNode.__lpContainer || document.querySelector('#launchpadRoot').closest('[data-demo]') || document.querySelector('#launchpadRoot').parentNode); }
+  else { _lp_toast('Campaign queued for launch (paused for review)'); }
+};
+window.wizardBack = function() {
+  if (window._wizStep > 0) { window._wizStep--; DEMO_RENDERERS.launchpad(document.querySelector('#launchpadRoot').parentNode.__lpContainer || document.querySelector('#launchpadRoot').parentNode); }
+};
+
+/* ---------- Facebook ad preview builder ---------- */
+function _lp_fbPreview(d) {
+  var card = _lp_el('div',
+    'background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.18);max-width:320px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;');
+  // Header
+  var hdr = _lp_el('div','display:flex;align-items:center;gap:10px;padding:10px 12px;');
+  var avatar = _lp_el('div','width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1877f2,#42b883);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;','FA');
+  var meta = _lp_el('div','display:flex;flex-direction:column;gap:1px;');
+  meta.appendChild(_lp_el('div','font-size:13px;font-weight:700;color:#1c1e21;line-height:1.2;','Financial Advisory'));
+  var spRow = _lp_el('div','display:flex;align-items:center;gap:4px;');
+  spRow.appendChild(_lp_el('span','font-size:11px;color:#606770;','Sponsored'));
+  spRow.appendChild(_lp_el('span','font-size:11px;color:#606770;','·'));
+  spRow.appendChild(_lp_el('span','font-size:11px;color:#1877f2;font-weight:600;','🌐'));
+  meta.appendChild(spRow);
+  hdr.appendChild(avatar); hdr.appendChild(meta);
+  card.appendChild(hdr);
+  // Body text
+  var body = _lp_el('div','padding:0 12px 10px;font-size:13px;color:#1c1e21;line-height:1.5;', d.text);
+  card.appendChild(body);
+  // Image area
+  var img = _lp_el('div','height:160px;background:linear-gradient(135deg,#1877f2 0%,#4f46e5 50%,#7c3aed 100%);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;');
+  img.appendChild(_lp_el('div','font-size:18px;font-weight:800;color:#fff;text-align:center;line-height:1.3;text-shadow:0 2px 6px rgba(0,0,0,0.3);',d.headline));
+  card.appendChild(img);
+  // CTA bar
+  var bar = _lp_el('div','padding:10px 12px;background:#f0f2f5;display:flex;align-items:center;justify-content:space-between;');
+  bar.appendChild(_lp_el('div','font-size:11px;color:#606770;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;','financialadvisory.com'));
+  var ctaBtn = _lp_el('button','background:#1877f2;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;border:none;cursor:default;white-space:nowrap;',d.cta);
+  bar.appendChild(ctaBtn);
+  card.appendChild(bar);
+  return card;
 }
 
+/* ============================================================
+   MAIN RENDERER
+   ============================================================ */
 DEMO_RENDERERS.launchpad = function(container) {
   container.innerHTML = '';
 
-  var wrap = _lp_el('div', 'max-width:900px;margin:0 auto;padding:20px 16px;font-family:inherit;');
+  var root = _lp_el('div','max-width:920px;margin:0 auto;padding:20px 16px;font-family:inherit;');
+  root.id = 'launchpadRoot';
+  root.parentNode; // reference trick — store container ref
+  // store container ref for nav buttons
+  container.__lpContainer = container;
 
   /* ---- Tab bar ---- */
-  var tabBar = _lp_el('div', 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;');
-  var tabDefs = [
-    { id: 'wizard',    label: 'Campaign Wizard' },
-    { id: 'dashboard', label: 'Agency Dashboard' },
-    { id: 'blueprints',label: 'Blueprint Library' },
-    { id: 'leads',     label: 'Lead Management' },
-    { id: 'preview',   label: 'Ad Preview Studio' },
+  var tabBar = _lp_el('div','display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;');
+  var tabs = [
+    { id: 'wizard', label: 'Campaign Wizard' },
+    { id: 'leads',  label: 'Lead Management' }
   ];
-  tabDefs.forEach(function(td) {
-    var btn = _lp_el('button', _lpTabBtnStyle(window._lpTab === td.id), td.label);
+  tabs.forEach(function(td) {
+    var active = window._lpTab2 === td.id;
+    var btn = _lp_el('button',
+      'padding:8px 20px;border-radius:8px;border:1px solid;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;' +
+      (active ? 'background:rgba(59,130,246,0.2);border-color:#3b82f6;color:#fff;' : 'background:transparent;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);'),
+      td.label);
+    btn.className = 'lp2-tab-btn';
     btn.setAttribute('data-tab', td.id);
-    btn.className = 'lp-tab-btn';
-    btn.onclick = function() { launchpadTab(td.id); };
+    btn.onclick = function() { lpTab2(td.id); };
     tabBar.appendChild(btn);
   });
-  wrap.appendChild(tabBar);
+  root.appendChild(tabBar);
 
   /* ============================================================
-     TAB 1: CAMPAIGN WIZARD
+     TAB 1 — CAMPAIGN WIZARD
   ============================================================ */
   var wizPanel = _lp_el('div');
-  wizPanel.setAttribute('data-panel', 'wizard');
-  wizPanel.className = 'lp-tab-panel';
-  wizPanel.style.display = window._lpTab === 'wizard' ? 'block' : 'none';
+  wizPanel.className = 'lp2-tab-panel';
+  wizPanel.setAttribute('data-panel','wizard');
+  wizPanel.style.display = window._lpTab2 === 'wizard' ? 'block' : 'none';
 
-  var stepLabels = ['Template', 'Ad Copy', 'Audience', 'Budget', 'Review'];
+  var stepNames = ['Template', 'Ad Creative', 'Audience', 'Budget', 'Review'];
+  var step = window._wizStep;
+  var d = window._wizData;
 
-  // Wrapper
-  var wrap = document.createElement('div');
-  wrap.id = 'launchpadWizard';
-  wrap.style.cssText = 'max-width:780px;margin:0 auto;padding:24px 16px;font-family:inherit;';
-
-  // ---- Progress bar ----
-  var progressBar = document.createElement('div');
-  progressBar.style.cssText = 'display:flex;flex-direction:column;align-items:center;margin-bottom:28px;';
-
-  var dotsRow = document.createElement('div');
-  dotsRow.style.cssText = 'display:flex;align-items:center;width:100%;max-width:520px;';
-
-  var labelsRow = document.createElement('div');
-  labelsRow.style.cssText = 'display:flex;justify-content:space-between;width:100%;max-width:520px;margin-top:8px;';
-
-  stepLabels.forEach(function(label, i) {
+  /* -- Progress indicator -- */
+  var progressWrap = _lp_el('div','display:flex;flex-direction:column;align-items:center;margin-bottom:32px;gap:10px;');
+  var dotsRow = _lp_el('div','display:flex;align-items:center;width:100%;max-width:560px;');
+  var labelsRow = _lp_el('div','display:flex;justify-content:space-between;width:100%;max-width:560px;');
+  stepNames.forEach(function(name, i) {
+    var done = i < step, active = i === step;
     var dot = _lp_el('div');
-    dot.style.cssText = 'width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;transition:all .2s;' +
-      (i < window._wizardStep
-        ? 'background:var(--green-bright,#34d399);color:#0a0f1a;border:2px solid var(--green-bright,#34d399);'
-        : i === window._wizardStep
-          ? 'background:var(--blue-bright,#3b82f6);color:#fff;border:2px solid var(--blue-bright,#3b82f6);box-shadow:0 0 0 4px rgba(59,130,246,0.2);'
-          : 'background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:2px solid rgba(255,255,255,0.12);');
-    dot.textContent = i < window._wizardStep ? '\u2713' : (i + 1);
+    dot.style.cssText = 'width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;transition:all .2s;' +
+      (done   ? 'background:#34d399;color:#0a0f1a;border:2px solid #34d399;' :
+       active ? 'background:#3b82f6;color:#fff;border:2px solid #3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,0.2);' :
+                'background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.35);border:2px solid rgba(255,255,255,0.12);');
+    dot.textContent = done ? '\u2713' : String(i + 1);
     dotsRow.appendChild(dot);
-    if (i < stepLabels.length - 1) {
-      var line = _lp_el('div', 'flex:1;height:2px;' + (i < window._wizardStep ? 'background:var(--green-bright,#34d399);' : 'background:rgba(255,255,255,0.1);'));
-      dotsRow.appendChild(line);
+    if (i < stepNames.length - 1) {
+      dotsRow.appendChild(_lp_el('div','flex:1;height:2px;' + (done ? 'background:#34d399;' : 'background:rgba(255,255,255,0.1);')));
     }
-    var lbl = _lp_el('div', 'font-size:11px;text-align:center;' +
-      (i === window._wizardStep ? 'color:var(--blue-bright,#3b82f6);font-weight:600;' : i < window._wizardStep ? 'color:var(--green-bright,#34d399);' : 'color:rgba(255,255,255,0.35);'), label);
-    labelsRow.appendChild(lbl);
+    labelsRow.appendChild(_lp_el('div',
+      'font-size:11px;text-align:center;width:68px;' +
+      (active ? 'color:#3b82f6;font-weight:700;' : done ? 'color:#34d399;' : 'color:rgba(255,255,255,0.35);'),
+      name));
   });
+  progressWrap.appendChild(dotsRow);
+  progressWrap.appendChild(labelsRow);
+  progressWrap.appendChild(_lp_el('div',
+    'font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:.04em;',
+    'Step ' + (step + 1) + ' of 5 \u2014 ' + stepNames[step]));
+  wizPanel.appendChild(progressWrap);
 
-  progressBar.appendChild(dotsRow);
-  progressBar.appendChild(labelsRow);
+  /* -- Step card -- */
+  var card = _lp_el('div',
+    'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;min-height:340px;');
 
-  // Step counter "Step X of 5"
-  var stepCounter = _lp_el('div',
-    'font-size:12px;color:rgba(255,255,255,0.35);margin-top:10px;letter-spacing:0.04em;',
-    'Step ' + (window._wizardStep + 1) + ' of 5 \u2014 ' + stepLabels[window._wizardStep]);
-  progressBar.appendChild(stepCounter);
+  /* ---- STEP 0: Select Template ---- */
+  if (step === 0) {
+    card.appendChild(_lp_el('h3','font-size:16px;font-weight:700;color:#fff;margin:0 0 6px 0;','Select a Template'));
+    card.appendChild(_lp_el('p','font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 20px 0;','Choose the campaign type that best matches your goal.'));
 
-  wizPanel.appendChild(progressBar);
+    // Campaign type selector
+    var typeRow = _lp_el('div','display:flex;align-items:center;gap:10px;margin-bottom:24px;padding:12px 16px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);border-radius:10px;');
+    typeRow.appendChild(_lp_el('span','font-size:20px;','📋'));
+    var typeInfo = _lp_el('div');
+    typeInfo.appendChild(_lp_el('div','font-size:14px;font-weight:700;color:#fff;','Lead Generation'));
+    typeInfo.appendChild(_lp_el('div','font-size:12px;color:rgba(255,255,255,0.5);','(Most common for insurance advisors)'));
+    typeRow.appendChild(typeInfo);
+    card.appendChild(typeRow);
 
-  // ---- Step content ----
-  var stepContent = _lp_el('div', 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;min-height:320px;');
-  stepContent.id = 'launchpadStepContent';
-  wizPanel.appendChild(stepContent);
+    // Template grid
+    var templates = [
+      { id: 'ins', name: 'Insurance Lead Gen', clients: 47, badge: 'Most Popular', gradient: 'linear-gradient(135deg,#1877f2,#4f46e5)' },
+      { id: 'sem', name: 'Seminar Registration', clients: 23, badge: null, gradient: 'linear-gradient(135deg,#f59e0b,#ef4444)' },
+      { id: 'brd', name: 'Brand Story', clients: 15, badge: null, gradient: 'linear-gradient(135deg,#34d399,#059669)' }
+    ];
+    var grid = _lp_el('div','display:grid;grid-template-columns:repeat(3,1fr);gap:14px;');
+    templates.forEach(function(tmpl) {
+      var selected = d.template === tmpl.id;
+      var tCard = _lp_el('div',
+        'border-radius:12px;border:2px solid;cursor:pointer;overflow:hidden;transition:all .15s;' +
+        (selected ? 'border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,0.2);' : 'border-color:rgba(255,255,255,0.1);'));
+      // Thumbnail
+      var thumb = _lp_el('div','height:80px;position:relative;', '');
+      thumb.style.background = tmpl.gradient;
+      if (tmpl.badge) {
+        var badge = _lp_el('div',
+          'position:absolute;top:8px;left:8px;background:#f59e0b;color:#0a0f1a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;',
+          tmpl.badge);
+        thumb.appendChild(badge);
+      }
+      if (selected) {
+        var ck = _lp_el('div','position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#3b82f6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;','\u2713');
+        thumb.appendChild(ck);
+      }
+      tCard.appendChild(thumb);
+      var tBody = _lp_el('div','padding:10px 12px;background:rgba(255,255,255,0.04);');
+      tBody.appendChild(_lp_el('div','font-size:13px;font-weight:600;color:#fff;margin-bottom:4px;',tmpl.name));
+      tBody.appendChild(_lp_el('div','font-size:11px;color:rgba(255,255,255,0.4);','Used by '+tmpl.clients+' clients'));
+      tCard.appendChild(tBody);
+      tCard.onclick = function() { window._wizData.template = tmpl.id; DEMO_RENDERERS.launchpad(container); };
+      grid.appendChild(tCard);
+    });
+    card.appendChild(grid);
+  }
 
-  // ---- Nav row ----
-  var navRow = _lp_el('div', 'display:flex;justify-content:space-between;align-items:center;margin-top:20px;');
-  var backBtn = _lp_el('button', 'padding:10px 24px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.7);cursor:pointer;font-size:14px;display:' + (window._wizardStep === 0 ? 'none' : 'block') + ';', '\u2190 Back');
-  backBtn.id = 'wizardBackBtn';
-  backBtn.onclick = function() { wizardBack(); };
+  /* ---- STEP 1: Ad Creative ---- */
+  else if (step === 1) {
+    card.appendChild(_lp_el('h3','font-size:16px;font-weight:700;color:#fff;margin:0 0 6px 0;','Ad Creative'));
+    card.appendChild(_lp_el('p','font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 20px 0;','Write your ad copy and preview how it looks on Facebook.'));
+    var cols = _lp_el('div','display:grid;grid-template-columns:1fr 1fr;gap:24px;');
+
+    // Left: form
+    var left = _lp_el('div');
+
+    // Headline
+    var hlLabel = _lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:6px;','Headline');
+    left.appendChild(hlLabel);
+    var hlWrap = _lp_el('div','position:relative;margin-bottom:16px;');
+    var hlInput = _lp_el('input','width:100%;padding:10px 42px 10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;outline:none;');
+    hlInput.value = d.headline;
+    hlInput.maxLength = 40;
+    var hlCount = _lp_el('div','position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:rgba(255,255,255,0.35);',d.headline.length+'/40');
+    hlInput.oninput = function() { window._wizData.headline = this.value; hlCount.textContent = this.value.length+'/40'; _lp_refreshPreview(); };
+    hlWrap.appendChild(hlInput); hlWrap.appendChild(hlCount);
+    left.appendChild(hlWrap);
+
+    // Primary text
+    left.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:6px;','Primary Text'));
+    var txWrap = _lp_el('div','position:relative;margin-bottom:16px;');
+    var txArea = document.createElement('textarea');
+    txArea.style.cssText = 'width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;resize:vertical;min-height:80px;outline:none;font-family:inherit;';
+    txArea.value = d.text;
+    txArea.maxLength = 125;
+    var txCount = _lp_el('div','font-size:11px;color:rgba(255,255,255,0.35);margin-top:4px;text-align:right;',d.text.length+'/125');
+    txArea.oninput = function() { window._wizData.text = this.value; txCount.textContent = this.value.length+'/125'; _lp_refreshPreview(); };
+    txWrap.appendChild(txArea);
+    left.appendChild(txWrap);
+    left.appendChild(txCount);
+
+    // CTA
+    left.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:6px;margin-top:4px;','Call to Action'));
+    var ctaSel = document.createElement('select');
+    ctaSel.style.cssText = 'width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;outline:none;cursor:pointer;';
+    ['Learn More','Sign Up','Book Now','Get Quote','Contact Us'].forEach(function(opt) {
+      var o = document.createElement('option');
+      o.value = opt; o.textContent = opt;
+      if (opt === d.cta) o.selected = true;
+      ctaSel.appendChild(o);
+    });
+    ctaSel.onchange = function() { window._wizData.cta = this.value; _lp_refreshPreview(); };
+    left.appendChild(ctaSel);
+
+    cols.appendChild(left);
+
+    // Right: preview
+    var right = _lp_el('div');
+    right.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:10px;','Live Preview'));
+    var previewWrap = _lp_el('div');
+    previewWrap.id = 'lpAdPreview';
+    previewWrap.appendChild(_lp_fbPreview(d));
+    right.appendChild(previewWrap);
+    cols.appendChild(right);
+    card.appendChild(cols);
+
+    // refresh preview helper
+    window._lp_refreshPreview = function() {
+      var pw = document.getElementById('lpAdPreview');
+      if (pw) { pw.innerHTML = ''; pw.appendChild(_lp_fbPreview(window._wizData)); }
+    };
+  }
+
+  /* ---- STEP 2: Audience ---- */
+  else if (step === 2) {
+    card.appendChild(_lp_el('h3','font-size:16px;font-weight:700;color:#fff;margin:0 0 6px 0;','Audience Targeting'));
+    card.appendChild(_lp_el('p','font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 20px 0;','Define who should see your ads.'));
+
+    var audienceGrid = _lp_el('div','display:grid;grid-template-columns:1fr 1fr;gap:20px;');
+    var leftA = _lp_el('div'), rightA = _lp_el('div');
+
+    // Age range
+    leftA.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Age Range'));
+    var ageRow = _lp_el('div','display:flex;align-items:center;gap:10px;margin-bottom:18px;');
+    var ageMin = document.createElement('input');
+    ageMin.type='number'; ageMin.value=d.ageMin; ageMin.min=18; ageMin.max=65;
+    ageMin.style.cssText='width:64px;padding:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;text-align:center;outline:none;';
+    ageMin.oninput=function(){ window._wizData.ageMin=parseInt(this.value)||25; };
+    var ageMax = document.createElement('input');
+    ageMax.type='number'; ageMax.value=d.ageMax; ageMax.min=18; ageMax.max=65;
+    ageMax.style.cssText='width:64px;padding:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;text-align:center;outline:none;';
+    ageMax.oninput=function(){ window._wizData.ageMax=parseInt(this.value)||45; };
+    ageRow.appendChild(ageMin);
+    ageRow.appendChild(_lp_el('span','font-size:13px;color:rgba(255,255,255,0.4);','to'));
+    ageRow.appendChild(ageMax);
+    leftA.appendChild(ageRow);
+
+    // Gender
+    leftA.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Gender'));
+    var genderRow = _lp_el('div','display:flex;gap:8px;margin-bottom:18px;');
+    ['All','Male','Female'].forEach(function(g) {
+      var active = d.gender === g.toLowerCase() || (g==='All' && d.gender==='all');
+      var gb = _lp_el('button',
+        'padding:7px 16px;border-radius:20px;border:1px solid;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;' +
+        (active ? 'background:rgba(59,130,246,0.2);border-color:#3b82f6;color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
+        g);
+      gb.onclick=function(){ window._wizData.gender=g.toLowerCase()==='all'?'all':g.toLowerCase(); DEMO_RENDERERS.launchpad(container); };
+      genderRow.appendChild(gb);
+    });
+    leftA.appendChild(genderRow);
+
+    // Locations
+    leftA.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Locations'));
+    var locRow = _lp_el('div','display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;');
+    ['Singapore','Malaysia'].forEach(function(loc) {
+      var sel = d.locations.indexOf(loc) > -1;
+      var lb = _lp_el('div',
+        'padding:5px 14px;border-radius:20px;border:1px solid;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;' +
+        (sel ? 'background:rgba(52,211,153,0.15);border-color:#34d399;color:#34d399;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
+        loc);
+      lb.onclick=function(){ var locs=window._wizData.locations; var idx=locs.indexOf(loc); if(idx>-1&&locs.length>1){locs.splice(idx,1);}else if(idx===-1){locs.push(loc);} DEMO_RENDERERS.launchpad(container); };
+      locRow.appendChild(lb);
+    });
+    leftA.appendChild(locRow);
+    audienceGrid.appendChild(leftA);
+
+    // Interests
+    rightA.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Interests'));
+    var interestRow = _lp_el('div','display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;');
+    ['Insurance','Financial Planning','Retirement','Investing','Property'].forEach(function(int) {
+      var sel = d.interests.indexOf(int) > -1;
+      var ib = _lp_el('div',
+        'padding:5px 14px;border-radius:20px;border:1px solid;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;' +
+        (sel ? 'background:rgba(59,130,246,0.15);border-color:#3b82f6;color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
+        int);
+      ib.onclick=function(){ var ints=window._wizData.interests; var idx=ints.indexOf(int); if(idx>-1&&ints.length>1){ints.splice(idx,1);}else if(idx===-1){ints.push(int);} DEMO_RENDERERS.launchpad(container); };
+      interestRow.appendChild(ib);
+    });
+    rightA.appendChild(interestRow);
+
+    // Advantage+ toggle
+    rightA.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Advantage+ Audience'));
+    var advRow = _lp_el('div','display:flex;align-items:flex-start;gap:12px;padding:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:18px;');
+    var advToggle = _lp_el('div',
+      'width:40px;height:22px;border-radius:11px;cursor:pointer;flex-shrink:0;transition:background .2s;position:relative;' +
+      (d.advantagePlus ? 'background:#3b82f6;' : 'background:rgba(255,255,255,0.15);'));
+    var advKnob = _lp_el('div',
+      'position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;' +
+      (d.advantagePlus ? 'left:21px;' : 'left:3px;'));
+    advToggle.appendChild(advKnob);
+    advToggle.onclick=function(){ window._wizData.advantagePlus=!window._wizData.advantagePlus; DEMO_RENDERERS.launchpad(container); };
+    var advText = _lp_el('div');
+    advText.appendChild(_lp_el('div','font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;','Let Meta expand your audience'));
+    advText.appendChild(_lp_el('div','font-size:11px;color:rgba(255,255,255,0.4);line-height:1.4;','Meta will broaden targeting beyond your defined audience to find people likely to convert.'));
+    advRow.appendChild(advToggle); advRow.appendChild(advText);
+    rightA.appendChild(advRow);
+
+    // Estimated reach
+    var reach = _lp_el('div','padding:12px 16px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;');
+    reach.appendChild(_lp_el('div','font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px;','Estimated Reach'));
+    reach.appendChild(_lp_el('div','font-size:18px;font-weight:700;color:#34d399;','~85,000 \u2014 245,000 people'));
+    rightA.appendChild(reach);
+
+    audienceGrid.appendChild(rightA);
+    card.appendChild(audienceGrid);
+  }
+
+  /* ---- STEP 3: Budget & Schedule ---- */
+  else if (step === 3) {
+    card.appendChild(_lp_el('h3','font-size:16px;font-weight:700;color:#fff;margin:0 0 6px 0;','Budget & Schedule'));
+    card.appendChild(_lp_el('p','font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 20px 0;','Set your spend limits and campaign duration.'));
+
+    var budgetGrid = _lp_el('div','display:grid;grid-template-columns:1fr 1fr;gap:24px;');
+    var leftB = _lp_el('div'), rightB = _lp_el('div');
+
+    // Daily budget
+    leftB.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Daily Budget (SGD)'));
+    var budWrap = _lp_el('div','display:flex;align-items:center;gap:8px;margin-bottom:20px;');
+    budWrap.appendChild(_lp_el('span','font-size:18px;font-weight:700;color:#f59e0b;','$'));
+    var budInput = document.createElement('input');
+    budInput.type='number'; budInput.value=d.budget; budInput.min=5;
+    budInput.style.cssText='width:80px;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:18px;font-weight:700;text-align:center;outline:none;';
+    budInput.oninput=function(){ window._wizData.budget=parseInt(this.value)||30; };
+    budWrap.appendChild(budInput);
+    leftB.appendChild(budWrap);
+
+    // Duration
+    leftB.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Duration'));
+    var durRow = _lp_el('div','display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;');
+    ['7 days','14 days','30 days'].forEach(function(dur) {
+      var active = dur === '14 days';
+      var db = _lp_el('button',
+        'padding:7px 16px;border-radius:20px;border:1px solid;cursor:pointer;font-size:12px;font-weight:600;' +
+        (active ? 'background:rgba(59,130,246,0.2);border-color:#3b82f6;color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
+        dur);
+      durRow.appendChild(db);
+    });
+    leftB.appendChild(durRow);
+
+    // Start immediately
+    leftB.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Start Date'));
+    var startRow = _lp_el('div','display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;');
+    var startKnob = _lp_el('div','width:36px;height:20px;border-radius:10px;background:#3b82f6;position:relative;cursor:pointer;flex-shrink:0;');
+    startKnob.appendChild(_lp_el('div','position:absolute;top:2px;left:18px;width:16px;height:16px;border-radius:50%;background:#fff;'));
+    startRow.appendChild(startKnob);
+    startRow.appendChild(_lp_el('span','font-size:13px;color:#fff;','Start Immediately'));
+    leftB.appendChild(startRow);
+    budgetGrid.appendChild(leftB);
+
+    // Bid strategy
+    rightB.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Bid Strategy'));
+    var strategies = ['Lowest Cost','Cost Cap','Bid Cap'];
+    var bidWrap = _lp_el('div','display:flex;flex-direction:column;gap:8px;margin-bottom:20px;');
+    strategies.forEach(function(s) {
+      var active = d.bidStrategy === s;
+      var bRow = _lp_el('div',
+        'padding:10px 14px;border-radius:8px;border:1px solid;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px;' +
+        (active ? 'background:rgba(59,130,246,0.12);border-color:#3b82f6;' : 'background:rgba(255,255,255,0.03);border-color:rgba(255,255,255,0.1);'));
+      var radio = _lp_el('div',
+        'width:16px;height:16px;border-radius:50%;border:2px solid;flex-shrink:0;' +
+        (active ? 'border-color:#3b82f6;background:rgba(59,130,246,0.3);' : 'border-color:rgba(255,255,255,0.2);'));
+      bRow.appendChild(radio);
+      bRow.appendChild(_lp_el('span','font-size:13px;'+(active?'color:#fff;font-weight:600;':'color:rgba(255,255,255,0.6);'),s));
+      bRow.onclick=function(){ window._wizData.bidStrategy=s; DEMO_RENDERERS.launchpad(container); };
+      bidWrap.appendChild(bRow);
+    });
+    rightB.appendChild(bidWrap);
+
+    // Estimated results
+    rightB.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:8px;','Estimated Results (14 days)'));
+    var results = [
+      { label: 'Reach', value: '2,500 \u2013 7,200', color: '#3b82f6' },
+      { label: 'Link Clicks', value: '84 \u2013 168', color: '#a78bfa' },
+      { label: 'Est. CPL', value: '$12 \u2013 $25', color: '#34d399' }
+    ];
+    var resultsWrap = _lp_el('div','display:flex;flex-direction:column;gap:8px;');
+    results.forEach(function(r) {
+      var rRow = _lp_el('div','padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;display:flex;justify-content:space-between;align-items:center;');
+      rRow.appendChild(_lp_el('span','font-size:12px;color:rgba(255,255,255,0.5);',r.label));
+      rRow.appendChild(_lp_el('span','font-size:14px;font-weight:700;color:'+r.color+';',r.value));
+      resultsWrap.appendChild(rRow);
+    });
+    rightB.appendChild(resultsWrap);
+    budgetGrid.appendChild(rightB);
+    card.appendChild(budgetGrid);
+  }
+
+  /* ---- STEP 4: Review ---- */
+  else if (step === 4) {
+    card.appendChild(_lp_el('h3','font-size:16px;font-weight:700;color:#fff;margin:0 0 6px 0;','Review & Launch'));
+    card.appendChild(_lp_el('p','font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 20px 0;','Confirm your settings before launching.'));
+
+    var reviewGrid = _lp_el('div','display:grid;grid-template-columns:1fr 1fr;gap:24px;');
+    var leftR = _lp_el('div'), rightR = _lp_el('div');
+
+    // Summary table
+    var summaryItems = [
+      { label: 'Template', value: d.template === 'ins' ? 'Insurance Lead Gen' : d.template === 'sem' ? 'Seminar Registration' : 'Brand Story' },
+      { label: 'Headline', value: d.headline },
+      { label: 'CTA', value: d.cta },
+      { label: 'Age', value: d.ageMin + '\u2013' + d.ageMax },
+      { label: 'Gender', value: d.gender.charAt(0).toUpperCase() + d.gender.slice(1) },
+      { label: 'Locations', value: d.locations.join(', ') },
+      { label: 'Interests', value: d.interests.slice(0,3).join(', ') + (d.interests.length > 3 ? ' +' + (d.interests.length-3) : '') },
+      { label: 'Daily Budget', value: '$' + d.budget + ' SGD' },
+      { label: 'Duration', value: '14 days' },
+      { label: 'Bid Strategy', value: d.bidStrategy }
+    ];
+    var summaryTable = _lp_el('div','display:flex;flex-direction:column;gap:1px;background:rgba(255,255,255,0.06);border-radius:10px;overflow:hidden;margin-bottom:20px;');
+    summaryItems.forEach(function(item) {
+      var row = _lp_el('div','display:flex;justify-content:space-between;align-items:flex-start;padding:9px 14px;background:rgba(15,23,42,0.8);gap:12px;');
+      row.appendChild(_lp_el('span','font-size:12px;color:rgba(255,255,255,0.45);flex-shrink:0;',item.label));
+      row.appendChild(_lp_el('span','font-size:12px;color:#fff;font-weight:500;text-align:right;max-width:200px;',item.value));
+      summaryTable.appendChild(row);
+    });
+    leftR.appendChild(summaryTable);
+    reviewGrid.appendChild(leftR);
+
+    // Preview
+    rightR.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:10px;','Ad Preview'));
+    rightR.appendChild(_lp_fbPreview(d));
+    reviewGrid.appendChild(rightR);
+    card.appendChild(reviewGrid);
+  }
+
+  wizPanel.appendChild(card);
+
+  /* -- Navigation buttons -- */
+  var navRow = _lp_el('div','display:flex;justify-content:space-between;align-items:center;margin-top:20px;');
+  var backBtn = _lp_el('button',
+    'padding:10px 24px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:transparent;color:rgba(255,255,255,0.7);cursor:pointer;font-size:14px;' +
+    (step === 0 ? 'visibility:hidden;' : ''),
+    '\u2190 Back');
+  backBtn.onclick = function() { if(window._wizStep>0){window._wizStep--;DEMO_RENDERERS.launchpad(container);} };
+
+  var nextLabel = step === 4 ? 'Launch Campaign (Paused)' : 'Next \u2192';
   var nextBtn = _lp_el('button',
     'padding:10px 28px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;' +
-    (window._wizardStep === 4 ? 'background:var(--green-bright,#34d399);color:#0a0f1a;' : 'background:var(--blue-bright,#3b82f6);color:#fff;'),
-    window._wizardStep === 4 ? 'Launch Campaign (Paused)' : 'Next \u2192');
-  nextBtn.id = 'wizardNextBtn';
-  nextBtn.onclick = function() { wizardNext(); };
+    (step === 4 ? 'background:#34d399;color:#0a0f1a;' : 'background:#3b82f6;color:#fff;'),
+    nextLabel);
+  nextBtn.onclick = function() {
+    if (step === 0 && !window._wizData.template) { _lp_toast('Please select a template to continue'); return; }
+    if (step < 4) { window._wizStep++; DEMO_RENDERERS.launchpad(container); }
+    else { _lp_toast('\u2705 Campaign queued for launch (paused for review)'); }
+  };
   navRow.appendChild(backBtn);
   navRow.appendChild(nextBtn);
   wizPanel.appendChild(navRow);
-  wrap.appendChild(wizPanel);
+
+  root.appendChild(wizPanel);
 
   /* ============================================================
-     TAB 2: AGENCY DASHBOARD
+     TAB 2 — LEAD MANAGEMENT
   ============================================================ */
-  var dashPanel = _lp_el('div');
-  dashPanel.setAttribute('data-panel', 'dashboard');
-  dashPanel.className = 'lp-tab-panel';
-  dashPanel.style.display = window._lpTab === 'dashboard' ? 'block' : 'none';
-
-  // Date range selector
-  var dateRangeRow = _lp_el('div', 'display:flex;gap:8px;margin-bottom:20px;align-items:center;');
-  dateRangeRow.appendChild(_lp_el('span', 'font-size:12px;color:rgba(255,255,255,0.4);margin-right:4px;', 'Period:'));
-  var dateRanges = ['7 Days', '30 Days', '90 Days'];
-  if (!window._lpDashRange) window._lpDashRange = '30 Days';
-  dateRanges.forEach(function(r) {
-    var active = window._lpDashRange === r;
-    var btn = _lp_el('button',
-      'padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;' +
-      (active ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
-      r);
-    btn.onclick = function() {
-      window._lpDashRange = r;
-      launchpadTab('dashboard');
-    };
-    dateRangeRow.appendChild(btn);
-  });
-  dashPanel.appendChild(dateRangeRow);
-
-  var dashMetrics = [
-    { label: 'Total Spend',       value: '$4,280',  color: '#3b82f6' },
-    { label: 'Total Leads',       value: '142',     color: '#34d399' },
-    { label: 'Avg CPL',           value: '$30.14',  color: '#f59e0b' },
-    { label: 'CTR',               value: '2.8%',    color: '#a78bfa' },
-    { label: 'Active Campaigns',  value: '5',       color: '#34d399' },
-    { label: 'ROAS',              value: '3.2x',    color: '#f59e0b' },
-    { label: 'Total ROI',         value: '+218%',   color: '#34d399' },
-  ];
-  var dashGrid = _lp_el('div', 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;');
-  dashMetrics.forEach(function(m) {
-    var card = _lp_el('div', 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;');
-    card.appendChild(_lp_el('div', 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;', m.label));
-    card.appendChild(_lp_el('div', 'font-size:24px;font-weight:700;color:' + m.color + ';', m.value));
-    dashGrid.appendChild(card);
-  });
-  dashPanel.appendChild(dashGrid);
-
-  // Campaign table
-  dashPanel.appendChild(_lp_el('div', 'font-size:12px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;', 'Campaign Performance'));
-  var tbl = _lp_el('div', 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;');
-  var tblHead = _lp_el('div', 'display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;padding:10px 16px;background:rgba(255,255,255,0.05);font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;gap:8px;');
-  ['Campaign','Status','Budget','Spend','Leads','CPL'].forEach(function(h) {
-    tblHead.appendChild(_lp_el('div', '', h));
-  });
-  tbl.appendChild(tblHead);
-
-  var campaigns = [
-    { name:'Retirement Planning',  status:'active',    budget:'$50/d', spend:'$1,820', leads:54,  cpl:33.70, target:35 },
-    { name:'Health Shield Promo',  status:'active',    budget:'$40/d', spend:'$1,120', leads:38,  cpl:29.47, target:35 },
-    { name:'Seminar Registration', status:'learning',  budget:'$30/d', spend:'$690',   leads:23,  cpl:30.00, target:35 },
-    { name:'Brand Story Q2',       status:'paused',    budget:'$25/d', spend:'$450',   leads:15,  cpl:30.00, target:35 },
-    { name:'Insurance Retarget',   status:'active',    budget:'$20/d', spend:'$200',   leads:12,  cpl:16.67, target:25 },
-    { name:'Year-End Promo',       status:'completed', budget:'$60/d', spend:'$2,100', leads:68,  cpl:30.88, target:35 },
-    { name:'Wealth Planning Q1',   status:'learning',  budget:'$35/d', spend:'$310',   leads:9,   cpl:34.44, target:35 },
-  ];
-  var statusStyles = {
-    'active':    { bg:'rgba(52,211,153,0.15)',  color:'#34d399' },
-    'paused':    { bg:'rgba(245,158,11,0.15)',  color:'#f59e0b' },
-    'completed': { bg:'rgba(255,255,255,0.08)', color:'rgba(255,255,255,0.45)' },
-    'learning':  { bg:'rgba(59,130,246,0.15)',  color:'#3b82f6' },
-  };
-  campaigns.forEach(function(c, i) {
-    var cplColor = c.cpl < c.target * 0.9 ? '#34d399' : c.cpl > c.target ? '#ef4444' : '#f59e0b';
-    var row = _lp_el('div',
-      'display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;padding:12px 16px;gap:8px;align-items:center;font-size:13px;' +
-      (i % 2 === 1 ? 'background:rgba(255,255,255,0.02);' : '') +
-      'border-top:1px solid rgba(255,255,255,0.05);');
-    row.appendChild(_lp_el('div', 'color:#fff;font-weight:500;', c.name));
-    var ss = statusStyles[c.status] || statusStyles['completed'];
-    var badge = _lp_el('div',
-      'display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:' + ss.bg + ';color:' + ss.color + ';',
-      c.status.charAt(0).toUpperCase() + c.status.slice(1));
-    row.appendChild(badge);
-    row.appendChild(_lp_el('div', 'color:rgba(255,255,255,0.6);', c.budget));
-    row.appendChild(_lp_el('div', 'color:rgba(255,255,255,0.6);', c.spend));
-    row.appendChild(_lp_el('div', 'color:rgba(255,255,255,0.6);', c.leads));
-    row.appendChild(_lp_el('div', 'font-weight:700;color:' + cplColor + ';', '$' + c.cpl.toFixed(2)));
-    tbl.appendChild(row);
-  });
-  dashPanel.appendChild(tbl);
-  wrap.appendChild(dashPanel);
-
-  /* ============================================================
-     TAB 3: BLUEPRINT LIBRARY
-  ============================================================ */
-  var bpPanel = _lp_el('div');
-  bpPanel.setAttribute('data-panel', 'blueprints');
-  bpPanel.className = 'lp-tab-panel';
-  bpPanel.style.display = window._lpTab === 'blueprints' ? 'block' : 'none';
-
-  bpPanel.appendChild(_lp_el('div', 'font-size:18px;font-weight:700;color:#fff;margin-bottom:6px;', 'Blueprint Library'));
-  bpPanel.appendChild(_lp_el('div', 'font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px;', 'Pre-built campaign templates. Assign to any client in one click.'));
-
-  // Filter row
-  if (!window._lpBpFilter) window._lpBpFilter = 'All';
-  var bpFilterRow = _lp_el('div', 'display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;');
-  ['All', 'Lead Gen', 'Awareness', 'Events'].forEach(function(f) {
-    var active = window._lpBpFilter === f;
-    var fb = _lp_el('button',
-      'padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;' +
-      (active ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
-      f);
-    fb.onclick = function() { window._lpBpFilter = f; launchpadTab('blueprints'); };
-    bpFilterRow.appendChild(fb);
-  });
-  bpPanel.appendChild(bpFilterRow);
-
-  var blueprints = [
-    { icon: '\ud83d\udcca', name: 'Insurance Lead Gen',   cat: 'Lead Gen',   catColor: '#3b82f6', budget: '$30/day', clients: 12, created: 'Jan 2026', launched: 34, successRate: 84 },
-    { icon: '\ud83c\udf93', name: 'Seminar Registration', cat: 'Events',     catColor: '#f59e0b', budget: '$25/day', clients: 8,  created: 'Feb 2026', launched: 19, successRate: 72 },
-    { icon: '\ud83c\udf1f', name: 'Brand Story',          cat: 'Awareness',  catColor: '#a78bfa', budget: '$20/day', clients: 15, created: 'Dec 2025', launched: 42, successRate: 79 },
-    { icon: '\ud83c\udfe6', name: 'Retirement Planning',  cat: 'Lead Gen',   catColor: '#3b82f6', budget: '$40/day', clients: 11, created: 'Jan 2026', launched: 28, successRate: 88 },
-    { icon: '\ud83d\udee1\ufe0f', name: 'Health Shield Promo',  cat: 'Lead Gen',   catColor: '#3b82f6', budget: '$35/day', clients: 7,  created: 'Mar 2026', launched: 14, successRate: 77 },
-    { icon: '\ud83d\udcc5', name: 'Year-End Campaign',    cat: 'Awareness',  catColor: '#a78bfa', budget: '$50/day', clients: 5,  created: 'Nov 2025', launched: 11, successRate: 91 },
-  ];
-  var bpFiltered = blueprints.filter(function(bp) {
-    if (window._lpBpFilter === 'All') return true;
-    if (window._lpBpFilter === 'Events') return bp.cat === 'Events';
-    return bp.cat === window._lpBpFilter;
-  });
-  var bpGrid = _lp_el('div', 'display:grid;grid-template-columns:repeat(3,1fr);gap:16px;');
-  bpFiltered.forEach(function(bp) {
-    var card = _lp_el('div', 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;transition:border-color .15s;');
-    card.onmouseenter = function() { card.style.borderColor = 'rgba(59,130,246,0.4)'; };
-    card.onmouseleave = function() { card.style.borderColor = 'rgba(255,255,255,0.08)'; };
-    var top = _lp_el('div', 'display:flex;align-items:center;gap:12px;');
-    top.appendChild(_lp_el('div', 'font-size:28px;line-height:1;', bp.icon));
-    var info = _lp_el('div');
-    info.appendChild(_lp_el('div', 'font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;', bp.name));
-    info.appendChild(_lp_el('span',
-      'font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:' + bp.catColor + '22;color:' + bp.catColor + ';',
-      bp.cat));
-    top.appendChild(info);
-    card.appendChild(top);
-    // Stats row: created date, campaigns launched, success rate
-    var stats = _lp_el('div', 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;');
-    var statItems = [
-      { label: 'Created', value: bp.created },
-      { label: 'Launched', value: bp.launched + ' campaigns' },
-      { label: 'Success', value: bp.successRate + '%' },
-    ];
-    statItems.forEach(function(s) {
-      var st = _lp_el('div', 'background:rgba(255,255,255,0.03);border-radius:6px;padding:6px 8px;');
-      st.appendChild(_lp_el('div', 'font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:2px;', s.label));
-      st.appendChild(_lp_el('div', 'font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);', s.value));
-      stats.appendChild(st);
-    });
-    card.appendChild(stats);
-    var meta = _lp_el('div', 'display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.45);');
-    meta.appendChild(_lp_el('span', '', 'Default: ' + bp.budget));
-    meta.appendChild(_lp_el('span', '', bp.clients + ' clients'));
-    card.appendChild(meta);
-    var assignBtn = _lp_el('button',
-      'width:100%;padding:8px;border-radius:8px;border:1px solid rgba(59,130,246,0.3);background:rgba(59,130,246,0.1);color:#3b82f6;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;',
-      'Assign to Client');
-    assignBtn.onmouseenter = function() { assignBtn.style.background = 'rgba(59,130,246,0.2)'; };
-    assignBtn.onmouseleave = function() { assignBtn.style.background = 'rgba(59,130,246,0.1)'; };
-    assignBtn.onclick = function() { _lp_toast(bp.name + ' blueprint assigned to client successfully.'); };
-    card.appendChild(assignBtn);
-    bpGrid.appendChild(card);
-  });
-  bpPanel.appendChild(bpGrid);
-  wrap.appendChild(bpPanel);
-
-  /* ============================================================
-     TAB 4: LEAD MANAGEMENT
-  ============================================================ */
-  var leadPanel = _lp_el('div');
-  leadPanel.setAttribute('data-panel', 'leads');
-  leadPanel.className = 'lp-tab-panel';
-  leadPanel.style.display = window._lpTab === 'leads' ? 'block' : 'none';
-
-  // Top bar: summary + Export CSV button
-  var leadTopBar = _lp_el('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;');
-  var summaryBar = _lp_el('div',
-    'display:flex;gap:24px;padding:10px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;font-size:13px;color:rgba(255,255,255,0.6);flex-wrap:wrap;align-items:center;');
-  ['142 leads','38 qualified','12 converted','$30.14 avg CPL'].forEach(function(s, i) {
-    if (i > 0) summaryBar.appendChild(_lp_el('span', 'color:rgba(255,255,255,0.15);', '|'));
-    summaryBar.appendChild(_lp_el('span', 'color:#fff;font-weight:600;', s));
-  });
-  leadTopBar.appendChild(summaryBar);
-  var exportBtn = _lp_el('button',
-    'padding:8px 16px;border-radius:8px;border:1px solid rgba(52,211,153,0.3);background:rgba(52,211,153,0.1);color:#34d399;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;',
-    '↓ Export CSV');
-  exportBtn.onmouseenter = function() { exportBtn.style.background = 'rgba(52,211,153,0.2)'; };
-  exportBtn.onmouseleave = function() { exportBtn.style.background = 'rgba(52,211,153,0.1)'; };
-  exportBtn.onclick = function() { _lp_toast('142 leads exported to leads_export_2026-04-02.csv'); };
-  leadTopBar.appendChild(exportBtn);
-  leadPanel.appendChild(leadTopBar);
-
-  // Pipeline value
-  leadPanel.appendChild(_lp_el('div',
-    'font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px;',
-    'Estimated pipeline value: \u0024' + '42,600'));
-
-  // Table header
-  var ltWrap = _lp_el('div', 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;');
-  var ltHead = _lp_el('div',
-    'display:grid;grid-template-columns:1.5fr 2fr 1.4fr 1.6fr 0.9fr 1fr 1.2fr 1fr;' +
-    'padding:10px 16px;background:rgba(255,255,255,0.05);font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;gap:8px;');
-  ['Name','Email','Phone','Campaign','Source','Quality','Status','Date'].forEach(function(h) { ltHead.appendChild(_lp_el('div','',h)); });
-  ltWrap.appendChild(ltHead);
+  var leadsPanel = _lp_el('div');
+  leadsPanel.className = 'lp2-tab-panel';
+  leadsPanel.setAttribute('data-panel','leads');
+  leadsPanel.style.display = window._lpTab2 === 'leads' ? 'block' : 'none';
 
   var leadsData = [
-    { name:'Ahmad Razif',     email:'ahmad.r@gmail.com',   phone:'+65 9123 4567', campaign:'Insurance Lead Gen',  source:'Facebook',  quality:92, date:'Mar 30' },
-    { name:'Sarah Lim',       email:'sarah.lim@yahoo.com', phone:'+65 8234 5678', campaign:'Seminar Registration',source:'Instagram',  quality:78, date:'Mar 30' },
-    { name:'David Chen',      email:'dchen@hotmail.com',   phone:'+65 9345 6789', campaign:'Retirement Planning', source:'Lead Form',  quality:65, date:'Mar 29' },
-    { name:'Priya Nair',      email:'priya.n@gmail.com',   phone:'+65 8456 7890', campaign:'Health Shield Promo', source:'Facebook',   quality:88, date:'Mar 29' },
-    { name:'Kevin Tan',       email:'ktan@outlook.com',    phone:'+65 9567 8901', campaign:'Insurance Lead Gen',  source:'Instagram',  quality:45, date:'Mar 28' },
-    { name:'Michelle Wong',   email:'mwong@gmail.com',     phone:'+65 8678 9012', campaign:'Brand Story',         source:'Facebook',   quality:72, date:'Mar 27' },
-    { name:'Raj Sharma',      email:'raj.s@gmail.com',     phone:'+65 9789 0123', campaign:'Insurance Lead Gen',  source:'Lead Form',  quality:28, date:'Mar 27' },
-    { name:'Hui Ling Chua',   email:'hlchua@yahoo.com',    phone:'+65 8890 1234', campaign:'Retirement Planning', source:'Facebook',   quality:81, date:'Mar 26' },
+    { name:'Sarah Tan',    email:'sarah.tan@gmail.com',    phone:'+65 9123 4567', campaign:'Insurance Lead Gen', quality:95, status:0, date:'2 Apr' },
+    { name:'James Ng',     email:'james.ng@email.com',     phone:'+65 8234 5678', campaign:'Insurance Lead Gen', quality:82, status:1, date:'2 Apr' },
+    { name:'Rachel Wong',  email:'rachel.w@email.com',     phone:'+65 9345 6789', campaign:'Seminar Reg',        quality:71, status:2, date:'1 Apr' },
+    { name:'David Lim',    email:'david.lim@gmail.com',    phone:'+65 8456 7890', campaign:'Insurance Lead Gen', quality:65, status:3, date:'1 Apr' },
+    { name:'Michelle Koh', email:'michelle.k@email.com',   phone:'+65 9567 8901', campaign:'Brand Story',        quality:52, status:1, date:'31 Mar' },
+    { name:'Kevin Teo',    email:'kevin.teo@email.com',    phone:'+65 8678 9012', campaign:'Insurance Lead Gen', quality:45, status:0, date:'31 Mar' },
+    { name:'Amy Chen',     email:'amy.chen@gmail.com',     phone:'+65 9789 0123', campaign:'Seminar Reg',        quality:35, status:4, date:'30 Mar' },
+    { name:'John Doe',     email:'john.doe@email.com',     phone:'+65 8890 1234', campaign:'Brand Story',        quality:20, status:0, date:'30 Mar' }
+  ];
+  var statusNames = ['New','Contacted','Qualified','Converted','Lost'];
+  var statusColors = [
+    'background:rgba(59,130,246,0.2);color:#93c5fd;border-color:rgba(59,130,246,0.35);',
+    'background:rgba(245,158,11,0.2);color:#fcd34d;border-color:rgba(245,158,11,0.35);',
+    'background:rgba(99,102,241,0.2);color:#a5b4fc;border-color:rgba(99,102,241,0.35);',
+    'background:rgba(52,211,153,0.2);color:#6ee7b7;border-color:rgba(52,211,153,0.35);',
+    'background:rgba(239,68,68,0.2);color:#fca5a5;border-color:rgba(239,68,68,0.35);'
   ];
 
-  var sourceStyles = {
-    'Facebook':  { bg:'rgba(24,119,242,0.15)', color:'#4a90f5' },
-    'Instagram': { bg:'rgba(225,48,108,0.15)', color:'#e1306c' },
-    'Lead Form': { bg:'rgba(168,85,247,0.15)', color:'#a855f7' },
-  };
-
-  var qualityConfig = [
-    { min:90, label:'Excellent', color:'#34d399', bg:'rgba(52,211,153,0.12)' },
-    { min:70, label:'Good',      color:'#3b82f6', bg:'rgba(59,130,246,0.12)' },
-    { min:50, label:'Average',   color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
-    { min:30, label:'Low',       color:'#f97316', bg:'rgba(249,115,22,0.12)' },
-    { min:0,  label:'Poor',      color:'#ef4444', bg:'rgba(239,68,68,0.12)' },
-  ];
-  var statusConfig = {
-    'New':       { color:'#3b82f6', bg:'rgba(59,130,246,0.12)',  next:'Contacted'  },
-    'Contacted': { color:'#f59e0b', bg:'rgba(245,158,11,0.12)',  next:'Qualified'  },
-    'Qualified': { color:'#34d399', bg:'rgba(52,211,153,0.12)',  next:'Converted'  },
-    'Converted': { color:'#06b6d4', bg:'rgba(6,182,212,0.12)',   next:'Lost'       },
-    'Lost':      { color:'rgba(255,255,255,0.3)', bg:'rgba(255,255,255,0.06)', next:'New' },
-  };
-  var statusCycle = ['New','Contacted','Qualified','Converted','Lost'];
-
-  leadsData.forEach(function(lead, idx) {
-    var qConf = qualityConfig.find(function(q) { return lead.quality >= q.min; }) || qualityConfig[4];
-    var row = _lp_el('div',
-      'display:grid;grid-template-columns:1.5fr 2fr 1.4fr 1.6fr 0.9fr 1fr 1.2fr 1fr;padding:11px 16px;gap:8px;align-items:center;font-size:12px;' +
-      (idx % 2 === 1 ? 'background:rgba(255,255,255,0.02);' : '') +
-      'border-top:1px solid rgba(255,255,255,0.05);');
-    row.appendChild(_lp_el('div','color:#fff;font-weight:500;', lead.name));
-    row.appendChild(_lp_el('div','color:rgba(255,255,255,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;', lead.email));
-    row.appendChild(_lp_el('div','color:rgba(255,255,255,0.5);', lead.phone));
-    row.appendChild(_lp_el('div','color:rgba(255,255,255,0.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;', lead.campaign));
-    var sStyle = sourceStyles[lead.source] || sourceStyles['Facebook'];
-    row.appendChild(_lp_el('span',
-      'padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;background:' + sStyle.bg + ';color:' + sStyle.color + ';',
-      lead.source));
-    var qBadge = _lp_el('span',
-      'padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;background:' + qConf.bg + ';color:' + qConf.color + ';',
-      qConf.label + ' ' + lead.quality);
-    row.appendChild(qBadge);
-
-    // Status badge — clickable, cycles through statuses
-    var curStatus = window._leadStatuses[idx] || 'New';
-    var sCfg = statusConfig[curStatus] || statusConfig['New'];
-    var sBadge = _lp_el('span',
-      'padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;background:' + sCfg.bg + ';color:' + sCfg.color + ';',
-      curStatus);
-    (function(i, badge) {
-      badge.onclick = function() {
-        var cur = window._leadStatuses[i];
-        var nextIdx = (statusCycle.indexOf(cur) + 1) % statusCycle.length;
-        window._leadStatuses[i] = statusCycle[nextIdx];
-        var nc = statusConfig[window._leadStatuses[i]];
-        badge.textContent = window._leadStatuses[i];
-        badge.style.background = nc.bg;
-        badge.style.color = nc.color;
-      };
-    })(idx, sBadge);
-    row.appendChild(sBadge);
-    row.appendChild(_lp_el('div','color:rgba(255,255,255,0.35);', lead.date));
-    ltWrap.appendChild(row);
-  });
-  leadPanel.appendChild(ltWrap);
-  wrap.appendChild(leadPanel);
-
-  /* ============================================================
-     TAB 5: AD PREVIEW STUDIO
-  ============================================================ */
-  var prevPanel = _lp_el('div');
-  prevPanel.setAttribute('data-panel', 'preview');
-  prevPanel.className = 'lp-tab-panel';
-  prevPanel.style.display = window._lpTab === 'preview' ? 'block' : 'none';
-
-  prevPanel.appendChild(_lp_el('div','font-size:18px;font-weight:700;color:#fff;margin-bottom:6px;','Ad Preview Studio'));
-  prevPanel.appendChild(_lp_el('div','font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:20px;','Edit your ad copy and see all 3 formats update live.'));
-
-  var studioLayout = _lp_el('div','display:grid;grid-template-columns:280px 1fr;gap:24px;');
-
-  // Left: form inputs
-  var studioForm = _lp_el('div','display:flex;flex-direction:column;gap:14px;');
-
-  function _lp_field(labelText, id, defaultVal, rows) {
-    var g = _lp_el('div');
-    g.appendChild(_lp_el('label','display:block;font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:5px;font-weight:600;',labelText));
-    var inp;
-    if (rows) {
-      inp = document.createElement('textarea');
-      inp.rows = rows;
-      inp.style.cssText = 'width:100%;padding:9px 11px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.5;';
-    } else {
-      inp = document.createElement('input');
-      inp.type = 'text';
-      inp.style.cssText = 'width:100%;padding:9px 11px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;';
+  // Apply persisted statuses
+  leadsData.forEach(function(lead, i) {
+    if (window._lpLeadStatuses[i] !== undefined) {
+      lead.status = statusNames.indexOf(window._lpLeadStatuses[i]);
+      if (lead.status === -1) lead.status = 0;
     }
-    inp.id = id;
-    inp.value = defaultVal;
-    inp.oninput = function() { _lp_updatePreviews(); };
-    inp.onfocus = function() { inp.style.borderColor = 'var(--blue-bright,#3b82f6)'; };
-    inp.onblur  = function() { inp.style.borderColor = 'rgba(255,255,255,0.1)'; };
-    g.appendChild(inp);
-    return g;
-  }
-
-  // CTA select
-  var ctaGroup = _lp_el('div');
-  ctaGroup.appendChild(_lp_el('label','display:block;font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:5px;font-weight:600;','Call-to-Action'));
-  var ctaSel = document.createElement('select');
-  ctaSel.id = 'studio_cta';
-  ctaSel.style.cssText = 'width:100%;padding:9px 11px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;cursor:pointer;';
-  ['Learn More','Sign Up','Book Now','Get Quote','Contact Us'].forEach(function(opt) {
-    var o = document.createElement('option');
-    o.value = opt;
-    o.textContent = opt;
-    if (opt === window._wizardData.cta) o.selected = true;
-    ctaSel.appendChild(o);
   });
-  ctaSel.onchange = function() { _lp_updatePreviews(); };
-  ctaGroup.appendChild(ctaSel);
 
-  studioForm.appendChild(_lp_field('Page Name', 'studio_page', window._wizardData.pageName));
-  studioForm.appendChild(_lp_field('Headline', 'studio_headline', window._wizardData.headline));
-  studioForm.appendChild(_lp_field('Primary Text', 'studio_text', window._wizardData.text, 4));
-  studioForm.appendChild(ctaGroup);
+  // Filter counts
+  var filterCounts = { All: leadsData.length };
+  statusNames.forEach(function(s) {
+    filterCounts[s] = leadsData.filter(function(l){ return statusNames[l.status]===s; }).length;
+  });
 
-  studioLayout.appendChild(studioForm);
+  // Header
+  var leadsHeader = _lp_el('div','display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;');
+  leadsHeader.appendChild(_lp_el('h3','font-size:18px;font-weight:700;color:#fff;margin:0;','142 Leads'));
+  var exportBtn = _lp_el('button',
+    'padding:8px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);cursor:pointer;font-size:13px;font-weight:600;',
+    '\u2193 Export CSV');
+  exportBtn.onclick=function(){ _lp_toast('Exporting 142 leads as CSV...'); };
+  leadsHeader.appendChild(exportBtn);
+  leadsPanel.appendChild(leadsHeader);
 
-  // Right: 3 previews stacked
-  var previewsCol = _lp_el('div','display:flex;flex-direction:column;gap:16px;');
+  // Status filter pills
+  var filterPills = _lp_el('div','display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;');
+  var allFilters = ['All'].concat(statusNames);
+  allFilters.forEach(function(f) {
+    var active = window._lpLeadFilter === f;
+    var pill = _lp_el('button',
+      'padding:5px 14px;border-radius:20px;border:1px solid;cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;' +
+      (active ? 'background:rgba(59,130,246,0.2);border-color:#3b82f6;color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.45);'),
+      f + ' (' + filterCounts[f] + ')');
+    pill.onclick=function(){ window._lpLeadFilter=f; DEMO_RENDERERS.launchpad(container); };
+    filterPills.appendChild(pill);
+  });
+  leadsPanel.appendChild(filterPills);
 
-  // Helper: FB feed card
-  function _lp_mkFbFeed(idSuffix) {
-    var card = _lp_el('div');
-    card.appendChild(_lp_el('div','font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase;','Facebook Feed'));
-    var fb = _lp_el('div','background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.35);max-width:360px;');
-    var hdr = _lp_el('div','padding:8px 10px;display:flex;align-items:center;gap:8px;');
-    var av = _lp_el('div','width:32px;height:32px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0;','JX');
-    hdr.appendChild(av);
-    var hi = _lp_el('div');
-    var pn = _lp_el('div','font-size:13px;font-weight:700;color:#050505;');
-    pn.id = 'studio_prev_page_' + idSuffix;
-    pn.textContent = (document.getElementById('studio_page') ? document.getElementById('studio_page').value : window._wizardData.pageName);
-    hi.appendChild(pn);
-    hi.appendChild(_lp_el('div','font-size:11px;color:#606770;','Sponsored \u00b7 \ud83c\udf10'));
-    hdr.appendChild(hi);
-    fb.appendChild(hdr);
-    var txt = _lp_el('div','padding:0 10px 8px;font-size:12px;color:#050505;line-height:1.5;');
-    txt.id = 'studio_prev_text_' + idSuffix;
-    txt.textContent = (document.getElementById('studio_text') ? document.getElementById('studio_text').value : window._wizardData.text);
-    fb.appendChild(txt);
-    var img = _lp_el('div','height:140px;background:linear-gradient(135deg,#1877f2,#42b883);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;');
-    var hl = _lp_el('div','font-size:15px;font-weight:800;color:#fff;text-align:center;line-height:1.3;text-shadow:0 1px 4px rgba(0,0,0,0.3);');
-    hl.id = 'studio_prev_hl_' + idSuffix;
-    hl.textContent = (document.getElementById('studio_headline') ? document.getElementById('studio_headline').value : window._wizardData.headline);
-    img.appendChild(hl);
-    fb.appendChild(img);
-    var bar = _lp_el('div','padding:8px 10px;background:#f0f2f5;display:flex;align-items:center;justify-content:space-between;');
-    bar.appendChild(_lp_el('div','font-size:10px;color:#606770;','financialadvisory.com'));
-    var cb = _lp_el('div','background:#1877f2;color:#fff;font-size:11px;font-weight:700;padding:5px 12px;border-radius:5px;');
-    cb.id = 'studio_prev_cta_' + idSuffix;
-    cb.textContent = (document.getElementById('studio_cta') ? document.getElementById('studio_cta').value : window._wizardData.cta);
-    bar.appendChild(cb);
-    fb.appendChild(bar);
-    card.appendChild(fb);
-    return card;
-  }
+  // Leads table
+  var tableWrap = _lp_el('div','overflow-x:auto;');
+  var table = document.createElement('table');
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
 
-  // Helper: IG Story card
-  function _lp_mkIgStory(idSuffix) {
-    var card = _lp_el('div');
-    card.appendChild(_lp_el('div','font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase;','Instagram Story'));
-    var ig = _lp_el('div','width:160px;height:284px;border-radius:12px;background:linear-gradient(160deg,#0f172a,#1e293b);border:1px solid rgba(255,255,255,0.1);position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;box-sizing:border-box;');
-    var gradient = _lp_el('div','position:absolute;inset:0;background:linear-gradient(135deg,#1877f2 0%,#9333ea 100%);opacity:0.35;');
-    ig.appendChild(gradient);
-    var brand = _lp_el('div','position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;');
-    brand.appendChild(_lp_el('div','width:24px;height:24px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;','JX'));
-    var pgn = _lp_el('div','font-size:11px;color:#fff;font-weight:600;');
-    pgn.id = 'studio_ig_page_' + idSuffix;
-    pgn.textContent = (document.getElementById('studio_page') ? document.getElementById('studio_page').value : window._wizardData.pageName);
-    brand.appendChild(pgn);
-    ig.appendChild(brand);
-    var textArea = _lp_el('div','position:relative;z-index:1;');
-    var igHl = _lp_el('div','font-size:13px;font-weight:800;color:#fff;line-height:1.3;margin-bottom:6px;text-shadow:0 1px 4px rgba(0,0,0,0.5);');
-    igHl.id = 'studio_ig_hl_' + idSuffix;
-    igHl.textContent = (document.getElementById('studio_headline') ? document.getElementById('studio_headline').value : window._wizardData.headline);
-    textArea.appendChild(igHl);
-    var igCta = _lp_el('div','display:inline-block;background:rgba(255,255,255,0.9);color:#050505;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;');
-    igCta.id = 'studio_ig_cta_' + idSuffix;
-    igCta.textContent = (document.getElementById('studio_cta') ? document.getElementById('studio_cta').value : window._wizardData.cta);
-    textArea.appendChild(igCta);
-    ig.appendChild(textArea);
-    card.appendChild(ig);
-    return card;
-  }
+  // Table header
+  var thead = document.createElement('thead');
+  var headerRow = document.createElement('tr');
+  ['Name','Email','Phone','Campaign','Quality','Status','Date'].forEach(function(col) {
+    var th = document.createElement('th');
+    th.style.cssText = 'padding:10px 12px;text-align:left;font-size:11px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap;';
+    th.textContent = col;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
 
-  // Helper: FB Right Column
-  function _lp_mkFbRight(idSuffix) {
-    var card = _lp_el('div');
-    card.appendChild(_lp_el('div','font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase;','Facebook Right Column'));
-    var rc = _lp_el('div','background:#fff;border-radius:8px;padding:8px;max-width:240px;display:flex;gap:8px;align-items:flex-start;');
-    var thumb = _lp_el('div','width:72px;height:72px;flex-shrink:0;border-radius:4px;background:linear-gradient(135deg,#1877f2,#42b883);');
-    rc.appendChild(thumb);
-    var rcText = _lp_el('div','flex:1;');
-    var rcHl = _lp_el('div','font-size:12px;font-weight:700;color:#050505;line-height:1.3;margin-bottom:4px;');
-    rcHl.id = 'studio_rc_hl_' + idSuffix;
-    rcHl.textContent = (document.getElementById('studio_headline') ? document.getElementById('studio_headline').value : window._wizardData.headline);
-    rcText.appendChild(rcHl);
-    rcText.appendChild(_lp_el('div','font-size:10px;color:#606770;margin-bottom:6px;','financialadvisory.com'));
-    var rcCta = _lp_el('div','background:#1877f2;color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;display:inline-block;');
-    rcCta.id = 'studio_rc_cta_' + idSuffix;
-    rcCta.textContent = (document.getElementById('studio_cta') ? document.getElementById('studio_cta').value : window._wizardData.cta);
-    rcText.appendChild(rcCta);
-    rc.appendChild(rcText);
-    card.appendChild(rc);
-    return card;
-  }
+  // Table body
+  var tbody = document.createElement('tbody');
+  var filteredLeads = window._lpLeadFilter === 'All' ? leadsData : leadsData.filter(function(l){ return statusNames[l.status] === window._lpLeadFilter; });
 
-  // Platform selector + mobile toggle
-  var studioControlBar = _lp_el('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;');
+  filteredLeads.forEach(function(lead, i) {
+    var isExpanded = window._lpExpandedLead === lead.name;
+    var tr = document.createElement('tr');
+    tr.style.cssText = 'cursor:pointer;transition:background .1s;border-bottom:1px solid rgba(255,255,255,0.06);' +
+      (isExpanded ? 'background:rgba(59,130,246,0.08);' : '');
+    tr.onmouseenter=function(){ this.style.background='rgba(255,255,255,0.04)'; };
+    tr.onmouseleave=function(){ this.style.background = isExpanded ? 'rgba(59,130,246,0.08)' : ''; };
 
-  var platformBtns = _lp_el('div', 'display:flex;gap:6px;flex-wrap:wrap;');
-  var platforms = ['Facebook Feed', 'Instagram Story', 'Right Column'];
-  if (!window._lpStudioPlatform) window._lpStudioPlatform = 'Facebook Feed';
-  platforms.forEach(function(p) {
-    var active = window._lpStudioPlatform === p;
-    var pb = _lp_el('button',
-      'padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;' +
-      (active ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#3b82f6;' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);'),
-      p);
-    pb.onclick = function() {
-      window._lpStudioPlatform = p;
-      var previewArea = document.getElementById('studioPreviewArea');
-      if (previewArea) {
-        previewArea.innerHTML = '';
-        if (p === 'Facebook Feed') previewArea.appendChild(_lp_mkFbFeed('s'));
-        else if (p === 'Instagram Story') previewArea.appendChild(_lp_mkIgStory('s'));
-        else previewArea.appendChild(_lp_mkFbRight('s'));
-        _lp_applyMobilePreview(previewArea);
-      }
-      // update button states
-      platformBtns.querySelectorAll('button').forEach(function(btn) {
-        var sel = btn.textContent === p;
-        btn.style.background = sel ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.04)';
-        btn.style.borderColor = sel ? 'var(--blue-bright,#3b82f6)' : 'rgba(255,255,255,0.12)';
-        btn.style.color = sel ? '#3b82f6' : 'rgba(255,255,255,0.5)';
+    function td(content, style) {
+      var cell = document.createElement('td');
+      cell.style.cssText = 'padding:12px 12px;color:#fff;' + (style||'');
+      if (typeof content === 'string') cell.textContent = content;
+      else cell.appendChild(content);
+      return cell;
+    }
+
+    // Name cell (clickable)
+    var nameTd = td('');
+    nameTd.style.cssText += 'font-weight:600;color:#93c5fd;cursor:pointer;';
+    nameTd.textContent = lead.name;
+    nameTd.onclick=function(e){ e.stopPropagation(); window._lpExpandedLead = isExpanded ? null : lead.name; DEMO_RENDERERS.launchpad(container); };
+    tr.appendChild(nameTd);
+    tr.appendChild(td(lead.email, 'color:rgba(255,255,255,0.55);font-size:12px;'));
+    tr.appendChild(td(lead.phone, 'color:rgba(255,255,255,0.55);font-size:12px;'));
+    tr.appendChild(td(lead.campaign, 'color:rgba(255,255,255,0.7);font-size:12px;max-width:130px;'));
+
+    // Quality stars
+    var qualTd = document.createElement('td');
+    qualTd.style.cssText = 'padding:12px 12px;';
+    var starCount = Math.round(lead.quality / 100 * 5);
+    var starColor = lead.quality >= 70 ? '#34d399' : lead.quality >= 50 ? '#f59e0b' : 'rgba(255,255,255,0.3)';
+    var starsWrap = _lp_el('div','display:flex;align-items:center;gap:3px;');
+    for (var s = 0; s < 5; s++) {
+      starsWrap.appendChild(_lp_el('span','font-size:13px;color:' + (s < starCount ? starColor : 'rgba(255,255,255,0.15);') + ';', '\u2605'));
+    }
+    var qPct = _lp_el('span','font-size:11px;color:'+starColor+';margin-left:4px;', lead.quality+'%');
+    starsWrap.appendChild(qPct);
+    qualTd.appendChild(starsWrap);
+    tr.appendChild(qualTd);
+
+    // Status badge (clickable to cycle)
+    var statusTd = document.createElement('td');
+    statusTd.style.cssText = 'padding:12px 12px;';
+    var leadIdx = leadsData.indexOf(lead);
+    var badge = _lp_el('button',
+      'padding:3px 10px;border-radius:20px;border:1px solid;cursor:pointer;font-size:11px;font-weight:700;transition:all .15s;' + statusColors[lead.status],
+      statusNames[lead.status]);
+    badge.onclick=function(e){
+      e.stopPropagation();
+      var next = (lead.status + 1) % statusNames.length;
+      window._lpLeadStatuses[leadIdx] = statusNames[next];
+      DEMO_RENDERERS.launchpad(container);
+    };
+    statusTd.appendChild(badge);
+    tr.appendChild(statusTd);
+    tr.appendChild(td(lead.date, 'color:rgba(255,255,255,0.45);font-size:12px;'));
+    tbody.appendChild(tr);
+
+    // Expanded detail row
+    if (isExpanded) {
+      var detailTr = document.createElement('tr');
+      detailTr.style.cssText = 'background:rgba(59,130,246,0.05);border-bottom:1px solid rgba(255,255,255,0.06);';
+      var detailTd = document.createElement('td');
+      detailTd.colSpan = 7;
+      detailTd.style.cssText = 'padding:20px 16px;';
+
+      var detailPanel = _lp_el('div','display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;');
+
+      // Info section
+      var info = _lp_el('div');
+      info.appendChild(_lp_el('div','font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;','Lead Details'));
+      var infoItems = [
+        { label: 'Name', value: lead.name },
+        { label: 'Email', value: lead.email },
+        { label: 'Phone', value: lead.phone },
+        { label: 'Quality Score', value: lead.quality + '%' },
+        { label: 'Campaign', value: lead.campaign }
+      ];
+      infoItems.forEach(function(item) {
+        var r = _lp_el('div','margin-bottom:8px;');
+        r.appendChild(_lp_el('div','font-size:11px;color:rgba(255,255,255,0.4);',item.label));
+        r.appendChild(_lp_el('div','font-size:13px;color:#fff;font-weight:500;',item.value));
+        info.appendChild(r);
       });
-    };
-    platformBtns.appendChild(pb);
+      detailPanel.appendChild(info);
+
+      // Timeline
+      var timeline = _lp_el('div');
+      timeline.appendChild(_lp_el('div','font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;','Activity Timeline'));
+      var events = [
+        { time: lead.date + ', 9:14am', label: 'Lead submitted form' },
+        { time: lead.date + ', 11:30am', label: 'Auto email sent' },
+        { time: 'Pending', label: 'Advisor follow-up call' }
+      ];
+      events.forEach(function(ev) {
+        var eRow = _lp_el('div','display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;');
+        var dot = _lp_el('div','width:8px;height:8px;border-radius:50%;background:#3b82f6;flex-shrink:0;margin-top:4px;');
+        var evInfo = _lp_el('div');
+        evInfo.appendChild(_lp_el('div','font-size:11px;color:rgba(255,255,255,0.35);',ev.time));
+        evInfo.appendChild(_lp_el('div','font-size:13px;color:rgba(255,255,255,0.8);',ev.label));
+        eRow.appendChild(dot); eRow.appendChild(evInfo);
+        timeline.appendChild(eRow);
+      });
+      detailPanel.appendChild(timeline);
+
+      // Notes
+      var notes = _lp_el('div');
+      notes.appendChild(_lp_el('div','font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;','Notes'));
+      var notesArea = document.createElement('textarea');
+      notesArea.style.cssText = 'width:100%;min-height:100px;padding:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:12px;resize:vertical;outline:none;font-family:inherit;box-sizing:border-box;';
+      notesArea.placeholder = 'Add notes about this lead...';
+      notes.appendChild(notesArea);
+      var saveNoteBtn = _lp_el('button','margin-top:8px;padding:6px 16px;background:#3b82f6;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;','Save Note');
+      saveNoteBtn.onclick=function(){ _lp_toast('Note saved for '+lead.name); };
+      notes.appendChild(saveNoteBtn);
+      detailPanel.appendChild(notes);
+
+      detailTd.appendChild(detailPanel);
+      detailTr.appendChild(detailTd);
+      tbody.appendChild(detailTr);
+    }
   });
-  studioControlBar.appendChild(platformBtns);
 
-  // Mobile toggle
-  if (window._lpStudioMobile === undefined) window._lpStudioMobile = false;
-  var mobileToggleWrap = _lp_el('div', 'display:flex;align-items:center;gap:8px;cursor:pointer;');
-  var mobileToggleTrack = _lp_el('div',
-    'width:36px;height:20px;border-radius:10px;transition:background .2s;position:relative;' +
-    (window._lpStudioMobile ? 'background:var(--blue-bright,#3b82f6);' : 'background:rgba(255,255,255,0.15);'));
-  var mobileToggleThumb = _lp_el('div',
-    'width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left .2s;' +
-    (window._lpStudioMobile ? 'left:18px;' : 'left:2px;'));
-  mobileToggleTrack.appendChild(mobileToggleThumb);
-  mobileToggleWrap.appendChild(mobileToggleTrack);
-  mobileToggleWrap.appendChild(_lp_el('span', 'font-size:12px;color:rgba(255,255,255,0.55);', 'Preview on Mobile'));
-  mobileToggleWrap.onclick = function() {
-    window._lpStudioMobile = !window._lpStudioMobile;
-    mobileToggleTrack.style.background = window._lpStudioMobile ? 'var(--blue-bright,#3b82f6)' : 'rgba(255,255,255,0.15)';
-    mobileToggleThumb.style.left = window._lpStudioMobile ? '18px' : '2px';
-    var previewArea = document.getElementById('studioPreviewArea');
-    if (previewArea) _lp_applyMobilePreview(previewArea);
-  };
-  studioControlBar.appendChild(mobileToggleWrap);
-  previewsCol.appendChild(studioControlBar);
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  leadsPanel.appendChild(tableWrap);
 
-  // Helper to apply mobile scaling
-  window._lp_applyMobilePreview = function(area) {
-    if (!area) return;
-    var inner = area.firstChild;
-    if (!inner) return;
-    if (window._lpStudioMobile) {
-      area.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.2);border-radius:12px;border:1px solid rgba(255,255,255,0.07);';
-      inner.style.transform = 'scale(0.82)';
-      inner.style.transformOrigin = 'top center';
-    } else {
-      area.style.cssText = '';
-      inner.style.transform = '';
-      inner.style.transformOrigin = '';
-    }
-  };
+  // Footer summary
+  var footer = _lp_el('div',
+    'margin-top:16px;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:12px;color:rgba(255,255,255,0.4);display:flex;gap:20px;flex-wrap:wrap;');
+  footer.appendChild(_lp_el('span','','Estimated pipeline value: $42,600'));
+  footer.appendChild(_lp_el('span','color:rgba(255,255,255,0.2);','·'));
+  footer.appendChild(_lp_el('span','','Avg quality: 58%'));
+  footer.appendChild(_lp_el('span','color:rgba(255,255,255,0.2);','·'));
+  footer.appendChild(_lp_el('span','','Conversion rate: 13.4%'));
+  leadsPanel.appendChild(footer);
 
-  var studioPreviewArea = _lp_el('div', '');
-  studioPreviewArea.id = 'studioPreviewArea';
-  // Render the active platform
-  if (window._lpStudioPlatform === 'Facebook Feed') studioPreviewArea.appendChild(_lp_mkFbFeed('s'));
-  else if (window._lpStudioPlatform === 'Instagram Story') studioPreviewArea.appendChild(_lp_mkIgStory('s'));
-  else studioPreviewArea.appendChild(_lp_mkFbRight('s'));
-  _lp_applyMobilePreview(studioPreviewArea);
-  previewsCol.appendChild(studioPreviewArea);
-  studioLayout.appendChild(previewsCol);
-  prevPanel.appendChild(studioLayout);
-  wrap.appendChild(prevPanel);
-
-  // Append the main wrap to container
-  container.appendChild(wrap);
-
-  // Render wizard step
-  _renderWizardStep();
-
-  // ---- GLOBAL HELPERS ----
-  window.renderWizard = function() { DEMO_RENDERERS.launchpad(container); };
-  window.selectTemplate = function(id) { window._wizardData.template = id; renderWizard(); };
-  window.wizardNext = function() {
-    if (window._wizardStep === 4) {
-      alert('Demo Mode \u2014 campaign submitted for review and launched in paused state. No budget charged until you unpause.');
-      return;
-    }
-    window._wizardStep++;
-    renderWizard();
-  };
-  window.wizardBack = function() {
-    if (window._wizardStep > 0) { window._wizardStep--; renderWizard(); }
-  };
-  window.updateAdPreview = function() {
-    var hl = document.getElementById('wiz_headline');
-    var tx = document.getElementById('wiz_text');
-    var ct = document.getElementById('wiz_cta_sel');
-    if (hl) window._wizardData.headline = hl.value;
-    if (tx) window._wizardData.text = tx.value;
-    if (ct) window._wizardData.cta = ct.value;
-    if (hl) { var hc = document.getElementById('wiz_headline_count'); if (hc) hc.textContent = hl.value.length + '/90'; }
-    if (tx) { var tc = document.getElementById('wiz_text_count'); if (tc) tc.textContent = tx.value.length + '/500'; }
-    var prevHl = document.getElementById('previewHeadline');
-    var prevTx = document.getElementById('previewText');
-    var prevCta = document.getElementById('previewCTA');
-    if (prevHl) prevHl.textContent = window._wizardData.headline;
-    if (prevTx) prevTx.textContent = window._wizardData.text;
-    if (prevCta) prevCta.textContent = window._wizardData.cta;
-  };
-  window.toggleAudience = function(val, el) {
-    var arr = window._wizardData.interests;
-    var idx = arr.indexOf(val);
-    if (idx === -1) { arr.push(val); el.style.background='rgba(59,130,246,0.2)';el.style.borderColor='var(--blue-bright,#3b82f6)';el.style.color='#fff'; }
-    else { arr.splice(idx,1); el.style.background='rgba(255,255,255,0.05)';el.style.borderColor='rgba(255,255,255,0.15)';el.style.color='rgba(255,255,255,0.6)'; }
-    var sizeEl = document.getElementById('audienceSizeDisplay');
-    if (sizeEl) sizeEl.textContent = (_lp_calcReach()).toLocaleString();
-  };
-  window.toggleLocation = function(val, el) {
-    var arr = window._wizardData.locations;
-    var idx = arr.indexOf(val);
-    if (idx === -1) { arr.push(val); el.style.background='rgba(59,130,246,0.2)';el.style.borderColor='var(--blue-bright,#3b82f6)';el.style.color='#fff'; }
-    else { arr.splice(idx,1); el.style.background='rgba(255,255,255,0.05)';el.style.borderColor='rgba(255,255,255,0.15)';el.style.color='rgba(255,255,255,0.6)'; }
-    var sizeEl = document.getElementById('audienceSizeDisplay');
-    if (sizeEl) sizeEl.textContent = (_lp_calcReach()).toLocaleString();
-  };
-  window.updateBudget = function() {
-    var slider = document.getElementById('budgetSlider');
-    if (!slider) return;
-    window._wizardData.budget = parseInt(slider.value);
-    var bd = document.getElementById('budgetDisplay'); if (bd) bd.textContent = '$' + window._wizardData.budget;
-    var reach = document.getElementById('budgetReach'); if (reach) reach.textContent = (window._wizardData.budget * 180).toLocaleString();
-    var clicks = document.getElementById('budgetClicks'); if (clicks) clicks.textContent = (window._wizardData.budget * 6).toLocaleString();
-    var cpl = document.getElementById('budgetCPL'); if (cpl) cpl.textContent = '$' + (100 / 6).toFixed(2);
-    var total = document.getElementById('budget14day'); if (total) total.textContent = '$' + (window._wizardData.budget * 14).toLocaleString();
-  };
+  root.appendChild(leadsPanel);
+  container.appendChild(root);
 };
 
-function _lp_calcReach() {
-  var d = window._wizardData;
-  var ageBand = (d.ageMax - d.ageMin) / 5;
-  var locMult = d.locations.length;
-  var intMult = Math.max(1, d.interests.length);
-  return Math.round(ageBand * locMult * intMult * 38000);
-}
-
-window._lp_updatePreviews = function() {
-  var hl = (document.getElementById('studio_headline') || {}).value || window._wizardData.headline;
-  var tx = (document.getElementById('studio_text') || {}).value || window._wizardData.text;
-  var cta= (document.getElementById('studio_cta') || {}).value || window._wizardData.cta;
-  var pg = (document.getElementById('studio_page') || {}).value || window._wizardData.pageName;
-  var ids = ['studio_prev_hl_s','studio_ig_hl_s','studio_rc_hl_s'];
-  ids.forEach(function(id) { var el=document.getElementById(id); if(el) el.textContent=hl; });
-  var ctaIds = ['studio_prev_cta_s','studio_ig_cta_s','studio_rc_cta_s'];
-  ctaIds.forEach(function(id) { var el=document.getElementById(id); if(el) el.textContent=cta; });
-  var txId = document.getElementById('studio_prev_text_s'); if(txId) txId.textContent=tx;
-  var pgIds = ['studio_prev_page_s','studio_ig_page_s'];
-  pgIds.forEach(function(id) { var el=document.getElementById(id); if(el) el.textContent=pg; });
-};
-
-function _renderWizardStep() {
-  var content = document.getElementById('launchpadStepContent');
-  if (!content) return;
-  content.innerHTML = '';
-
-  var step = window._wizardStep;
-  var d = window._wizardData;
-
-  if (step === 0) {
-    // ---- Step 0: Template Selection ----
-    content.appendChild(_lp_el('h3','margin:0 0 6px;font-size:18px;color:#fff;','Choose a Campaign Template'));
-    content.appendChild(_lp_el('p','margin:0 0 24px;color:rgba(255,255,255,0.5);font-size:14px;','Select the goal that best fits your campaign objective.'));
-
-    var templates = [
-      { id:'lead_gen',    icon:'\ud83d\udcca', name:'Lead Generation',  desc:'Collect qualified leads using a Facebook instant form. Best for insurance and financial advisory.', badge:'Most Popular', usedBy: 47 },
-      { id:'brand',       icon:'\ud83c\udf1f', name:'Brand Awareness',  desc:'Maximise reach and impressions. Best for building trust and visibility before events.', usedBy: 31 },
-      { id:'event',       icon:'\ud83d\udcc5', name:'Event Promotion',  desc:'Drive seminar and webinar registrations with urgency-based creative and countdown hooks.', usedBy: 22 },
-      { id:'retargeting', icon:'\ud83d\udd01', name:'Retargeting',      desc:'Re-engage website visitors and video viewers with personalised follow-up ads.', usedBy: 18 },
-    ];
-    var grid = _lp_el('div','display:grid;grid-template-columns:repeat(2,1fr);gap:14px;');
-    templates.forEach(function(tpl) {
-      var isSelected = d.template === tpl.id;
-      var card = _lp_el('div',
-        'padding:20px;border-radius:12px;border:2px solid;cursor:pointer;transition:all .2s;position:relative;' +
-        (isSelected ? 'background:rgba(59,130,246,0.12);border-color:var(--blue-bright,#3b82f6);' : 'background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);'));
-      if (isSelected) card.classList.add('selected');
-      if (tpl.badge) {
-        var bdg = _lp_el('span','position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;background:rgba(245,158,11,0.2);color:#f59e0b;padding:2px 8px;border-radius:4px;',tpl.badge);
-        card.appendChild(bdg);
-      }
-      card.appendChild(_lp_el('div','font-size:28px;margin-bottom:10px;',tpl.icon));
-      card.appendChild(_lp_el('div','font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;',tpl.name));
-      card.appendChild(_lp_el('div','font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;margin-bottom:10px;',tpl.desc));
-      card.appendChild(_lp_el('div','font-size:11px;color:rgba(255,255,255,0.3);','Used by ' + tpl.usedBy + ' clients'));
-      card.onclick = function() { selectTemplate(tpl.id); };
-      card.onmouseenter = function() { if (!card.classList.contains('selected')) { card.style.borderColor='rgba(59,130,246,0.5)';card.style.background='rgba(59,130,246,0.07)'; } };
-      card.onmouseleave = function() { if (!card.classList.contains('selected')) { card.style.borderColor='rgba(255,255,255,0.1)';card.style.background='rgba(255,255,255,0.04)'; } };
-      grid.appendChild(card);
-    });
-    content.appendChild(grid);
-
-  } else if (step === 1) {
-    // ---- Step 1: Ad Copy ----
-    content.appendChild(_lp_el('h3','margin:0 0 20px;font-size:18px;color:#fff;','Ad Copy Editor'));
-
-    var cols = _lp_el('div','display:grid;grid-template-columns:1fr 1fr;gap:24px;');
-    var leftCol = _lp_el('div','display:flex;flex-direction:column;gap:14px;');
-
-    function mkWizField(label, tag, id, value, maxLen, countId, rows) {
-      var g = _lp_el('div');
-      var lbl = _lp_el('label','display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;');
-      lbl.appendChild(_lp_el('span','',label));
-      var cnt = _lp_el('span',''); cnt.id = countId; cnt.textContent = value.length + '/' + maxLen;
-      lbl.appendChild(cnt);
-      var inp;
-      if (tag === 'textarea') { inp = document.createElement('textarea'); inp.rows = rows||4; inp.style.cssText='width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;line-height:1.5;'; }
-      else { inp = document.createElement('input'); inp.type='text'; inp.style.cssText='width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;'; }
-      inp.id = id; inp.value = value; inp.maxLength = maxLen;
-      inp.oninput = function() { updateAdPreview(); };
-      inp.onfocus = function() { this.style.borderColor='var(--blue-bright,#3b82f6)'; };
-      inp.onblur  = function() { this.style.borderColor='rgba(255,255,255,0.12)'; };
-      g.appendChild(lbl); g.appendChild(inp);
-      return g;
-    }
-
-    leftCol.appendChild(mkWizField('Headline','input','wiz_headline',d.headline,90,'wiz_headline_count'));
-    leftCol.appendChild(mkWizField('Primary Text','textarea','wiz_text',d.text,500,'wiz_text_count',5));
-
-    // CTA dropdown
-    var ctaGroup = _lp_el('div');
-    ctaGroup.appendChild(_lp_el('label','display:block;font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:6px;','Call-to-Action'));
-    var ctaSel = document.createElement('select');
-    ctaSel.id = 'wiz_cta_sel';
-    ctaSel.style.cssText = 'width:100%;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;cursor:pointer;';
-    ['Learn More','Sign Up','Book Now','Get Quote','Contact Us'].forEach(function(opt) {
-      var o = document.createElement('option'); o.value=opt; o.textContent=opt;
-      if (opt === d.cta) o.selected=true;
-      ctaSel.appendChild(o);
-    });
-    ctaSel.onchange = function() { updateAdPreview(); };
-    ctaGroup.appendChild(ctaSel);
-    leftCol.appendChild(ctaGroup);
-
-    // Right: live FB feed preview
-    var rightCol = _lp_el('div');
-    rightCol.appendChild(_lp_el('div','font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;','Live Facebook Feed Preview'));
-
-    var fbCard = _lp_el('div','background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.4);max-width:320px;');
-    var fbHdr = _lp_el('div','padding:10px 12px;display:flex;align-items:center;gap:8px;');
-    var av2 = _lp_el('div','width:36px;height:36px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0;','JX');
-    fbHdr.appendChild(av2);
-    var hi2 = _lp_el('div');
-    hi2.appendChild(_lp_el('div','font-size:13px;font-weight:700;color:#050505;','Financial Advisory'));
-    hi2.appendChild(_lp_el('div','font-size:11px;color:#606770;','Sponsored \u00b7 \ud83c\udf10'));
-    fbHdr.appendChild(hi2);
-    var fbTxt = _lp_el('div','padding:0 12px 10px;font-size:13px;color:#050505;line-height:1.5;'); fbTxt.id='previewText'; fbTxt.textContent=d.text;
-    var fbImg = _lp_el('div','height:160px;background:linear-gradient(135deg,#1877f2,#42b883);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;');
-    var fbHl = _lp_el('div','font-size:16px;font-weight:800;color:#fff;text-align:center;line-height:1.3;text-shadow:0 1px 4px rgba(0,0,0,0.3);'); fbHl.id='previewHeadline'; fbHl.textContent=d.headline;
-    fbImg.appendChild(fbHl);
-    var fbBar = _lp_el('div','padding:10px 12px;background:#f0f2f5;display:flex;align-items:center;justify-content:space-between;');
-    fbBar.appendChild(_lp_el('div','font-size:11px;color:#606770;','financialadvisory.com'));
-    var cb2 = _lp_el('div','background:#1877f2;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer;'); cb2.id='previewCTA'; cb2.textContent=d.cta;
-    fbBar.appendChild(cb2);
-    fbCard.appendChild(fbHdr); fbCard.appendChild(fbTxt); fbCard.appendChild(fbImg); fbCard.appendChild(fbBar);
-    rightCol.appendChild(fbCard);
-
-    cols.appendChild(leftCol); cols.appendChild(rightCol);
-    content.appendChild(cols);
-
-  } else if (step === 2) {
-    // ---- Step 2: Audience Targeting ----
-    content.appendChild(_lp_el('h3','margin:0 0 6px;font-size:18px;color:#fff;','Audience Targeting'));
-    content.appendChild(_lp_el('p','margin:0 0 20px;color:rgba(255,255,255,0.5);font-size:14px;','Define who sees your ad.'));
-
-    // Age range sliders
-    var ageSection = _lp_el('div','margin-bottom:20px;');
-    ageSection.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;','Age Range'));
-    var ageRow = _lp_el('div','display:flex;gap:16px;align-items:center;');
-    ['Min Age','Max Age'].forEach(function(lbl, ii) {
-      var g = _lp_el('div','flex:1;');
-      g.appendChild(_lp_el('label','display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:5px;', lbl));
-      var sl = document.createElement('input'); sl.type='range'; sl.min='18'; sl.max='65'; sl.step='1';
-      sl.value = ii===0 ? d.ageMin : d.ageMax;
-      sl.style.cssText='width:100%;accent-color:var(--blue-bright,#3b82f6);cursor:pointer;';
-      var disp = _lp_el('div','font-size:16px;font-weight:700;color:var(--blue-bright,#3b82f6);margin-top:4px;', (ii===0?d.ageMin:d.ageMax)+'');
-      sl.oninput = function() {
-        disp.textContent = sl.value;
-        if (ii===0) window._wizardData.ageMin=parseInt(sl.value); else window._wizardData.ageMax=parseInt(sl.value);
-        var sizeEl=document.getElementById('audienceSizeDisplay'); if(sizeEl) sizeEl.textContent=_lp_calcReach().toLocaleString();
-      };
-      g.appendChild(sl); g.appendChild(disp);
-      ageRow.appendChild(g);
-    });
-    ageSection.appendChild(ageRow);
-    content.appendChild(ageSection);
-
-    // Gender toggles
-    var genderSection = _lp_el('div','margin-bottom:20px;');
-    genderSection.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;','Gender'));
-    var gRow = _lp_el('div','display:flex;gap:8px;');
-    ['all','male','female'].forEach(function(g) {
-      var isActive = d.gender === g;
-      var btn = _lp_el('button',
-        'padding:6px 16px;border-radius:20px;border:1px solid;cursor:pointer;font-size:13px;transition:all .15s;' +
-        (isActive ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#fff;' : 'background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);'),
-        g.charAt(0).toUpperCase() + g.slice(1));
-      btn.onclick = function() {
-        window._wizardData.gender = g;
-        gRow.querySelectorAll('button').forEach(function(b) { b.style.background='rgba(255,255,255,0.05)';b.style.borderColor='rgba(255,255,255,0.15)';b.style.color='rgba(255,255,255,0.6)'; });
-        btn.style.background='rgba(59,130,246,0.2)';btn.style.borderColor='var(--blue-bright,#3b82f6)';btn.style.color='#fff';
-      };
-      gRow.appendChild(btn);
-    });
-    genderSection.appendChild(gRow);
-    content.appendChild(genderSection);
-
-    // Location chips
-    var locSection = _lp_el('div','margin-bottom:20px;');
-    locSection.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;','Location'));
-    var locRow = _lp_el('div','display:flex;flex-wrap:wrap;gap:8px;');
-    ['Singapore','Malaysia','Indonesia','Thailand'].forEach(function(loc) {
-      var isActive = d.locations.indexOf(loc) !== -1;
-      var chip = _lp_el('button',
-        'padding:6px 14px;border-radius:20px;border:1px solid;cursor:pointer;font-size:13px;transition:all .15s;' +
-        (isActive ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#fff;' : 'background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);'),
-        loc);
-      chip.onclick = function() { toggleLocation(loc, chip); };
-      locRow.appendChild(chip);
-    });
-    locSection.appendChild(locRow);
-    content.appendChild(locSection);
-
-    // Interest chips
-    var intSection = _lp_el('div','margin-bottom:20px;');
-    intSection.appendChild(_lp_el('div','font-size:12px;font-weight:600;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;','Interests'));
-    var intRow = _lp_el('div','display:flex;flex-wrap:wrap;gap:8px;');
-    ['Insurance','Investments','Retirement','Property','Parents','PMETs','Business Owners','Health & Fitness'].forEach(function(interest) {
-      var isActive = d.interests.indexOf(interest) !== -1;
-      var chip = _lp_el('button',
-        'padding:6px 14px;border-radius:20px;border:1px solid;cursor:pointer;font-size:13px;transition:all .15s;' +
-        (isActive ? 'background:rgba(59,130,246,0.2);border-color:var(--blue-bright,#3b82f6);color:#fff;' : 'background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);'),
-        interest);
-      chip.onclick = function() { toggleAudience(interest, chip); };
-      intRow.appendChild(chip);
-    });
-    intSection.appendChild(intRow);
-    content.appendChild(intSection);
-
-    // Advantage+ toggle
-    var advRow = _lp_el('div','display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:10px;margin-bottom:16px;');
-    var advInfo = _lp_el('div');
-    advInfo.appendChild(_lp_el('div','font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;','Advantage+ Audience'));
-    advInfo.appendChild(_lp_el('div','font-size:11px;color:rgba(255,255,255,0.45);','Let Meta AI expand targeting to find more relevant people'));
-    advRow.appendChild(advInfo);
-    var toggle = _lp_el('div',
-      'width:44px;height:24px;border-radius:12px;cursor:pointer;transition:all .2s;position:relative;' +
-      (d.advantagePlus ? 'background:var(--blue-bright,#3b82f6);' : 'background:rgba(255,255,255,0.15);'));
-    var knob = _lp_el('div',
-      'position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:all .2s;' +
-      (d.advantagePlus ? 'left:23px;' : 'left:3px;'));
-    toggle.appendChild(knob);
-    toggle.onclick = function() {
-      d.advantagePlus = !d.advantagePlus;
-      toggle.style.background = d.advantagePlus ? 'var(--blue-bright,#3b82f6)' : 'rgba(255,255,255,0.15)';
-      knob.style.left = d.advantagePlus ? '23px' : '3px';
-      var sizeEl=document.getElementById('audienceSizeDisplay'); if(sizeEl) sizeEl.textContent=_lp_calcReach().toLocaleString();
-    };
-    advRow.appendChild(toggle);
-    content.appendChild(advRow);
-
-    // Estimated reach
-    var sizeBox = _lp_el('div','padding:14px 16px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;display:flex;align-items:center;justify-content:space-between;');
-    sizeBox.appendChild(_lp_el('span','font-size:13px;color:rgba(255,255,255,0.6);','Estimated Reach'));
-    var sizeNum = _lp_el('span','font-size:18px;font-weight:700;color:var(--blue-bright,#3b82f6);',_lp_calcReach().toLocaleString());
-    sizeNum.id = 'audienceSizeDisplay';
-    sizeBox.appendChild(sizeNum);
-    content.appendChild(sizeBox);
-
-  } else if (step === 3) {
-    // ---- Step 3: Budget & Schedule ----
-    content.appendChild(_lp_el('h3','margin:0 0 24px;font-size:18px;color:#fff;','Budget & Schedule'));
-
-    // Daily budget slider
-    var sliderSec = _lp_el('div','margin-bottom:24px;');
-    var sliderHdr = _lp_el('div','display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;');
-    sliderHdr.appendChild(_lp_el('span','font-size:14px;color:rgba(255,255,255,0.6);','Daily Budget'));
-    var bdDisp = _lp_el('span','font-size:22px;font-weight:700;color:var(--blue-bright,#3b82f6);','$'+d.budget); bdDisp.id='budgetDisplay';
-    sliderHdr.appendChild(bdDisp);
-    sliderSec.appendChild(sliderHdr);
-    var sl = document.createElement('input'); sl.type='range'; sl.id='budgetSlider'; sl.min='10'; sl.max='200'; sl.step='5'; sl.value=d.budget;
-    sl.style.cssText='width:100%;accent-color:var(--blue-bright,#3b82f6);cursor:pointer;';
-    sl.oninput = function() { updateBudget(); };
-    sliderSec.appendChild(sl);
-    var slRange = _lp_el('div','display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;');
-    slRange.appendChild(_lp_el('span','','$10/day')); slRange.appendChild(_lp_el('span','','$200/day'));
-    sliderSec.appendChild(slRange);
-    content.appendChild(sliderSec);
-
-    // Start/end dates
-    var dateSec = _lp_el('div','display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;');
-    [['Start Date',d.startDate],['End Date',d.endDate]].forEach(function(pair) {
-      var g = _lp_el('div');
-      g.appendChild(_lp_el('label','display:block;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;',pair[0]));
-      var di = document.createElement('input'); di.type='date'; di.value=pair[1];
-      di.style.cssText='width:100%;padding:9px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:rgba(255,255,255,0.7);font-size:13px;box-sizing:border-box;';
-      g.appendChild(di); dateSec.appendChild(g);
-    });
-    content.appendChild(dateSec);
-
-    // Bid strategy
-    var bidSec = _lp_el('div','margin-bottom:24px;');
-    bidSec.appendChild(_lp_el('label','display:block;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:6px;','Bid Strategy'));
-    var bidSel = document.createElement('select');
-    bidSel.style.cssText='width:100%;max-width:280px;padding:9px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:13px;box-sizing:border-box;cursor:pointer;';
-    ['Lowest Cost','Cost Cap','Bid Cap'].forEach(function(opt) {
-      var o = document.createElement('option'); o.value=opt; o.textContent=opt;
-      if (opt===d.bidStrategy) o.selected=true;
-      bidSel.appendChild(o);
-    });
-    bidSel.onchange = function() { window._wizardData.bidStrategy=bidSel.value; };
-    bidSec.appendChild(bidSel);
-    content.appendChild(bidSec);
-
-    // Estimated results
-    var cg = _lp_el('div','display:grid;grid-template-columns:repeat(2,1fr);gap:12px;');
-    [
-      {label:'14-Day Budget', id:'budget14day', val:'$'+(d.budget*14).toLocaleString()},
-      {label:'Est. Reach',    id:'budgetReach', val:(d.budget*180).toLocaleString()},
-      {label:'Est. Clicks',   id:'budgetClicks',val:(d.budget*6).toLocaleString()},
-      {label:'Est. CPL',      id:'budgetCPL',   val:'$'+(100/6).toFixed(2)},
-    ].forEach(function(m) {
-      var card = _lp_el('div','padding:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;text-align:center;');
-      card.appendChild(_lp_el('div','font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;',m.label));
-      var v = _lp_el('div','font-size:20px;font-weight:700;color:#fff;',m.val); v.id=m.id;
-      card.appendChild(v); cg.appendChild(card);
-    });
-    content.appendChild(cg);
-
-  } else if (step === 4) {
-    // ---- Step 4: Review & Launch ----
-    content.appendChild(_lp_el('h3','margin:0 0 20px;font-size:18px;color:#fff;','Review Your Campaign'));
-
-    var cols2 = _lp_el('div','display:grid;grid-template-columns:1fr 1fr;gap:24px;');
-    var left2 = _lp_el('div');
-    left2.appendChild(_lp_el('div','font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;','Campaign Summary'));
-
-    var tplNames = { lead_gen:'Lead Generation', brand:'Brand Awareness', event:'Event Promotion', retargeting:'Retargeting' };
-    var summaryRows = [
-      ['Template', d.template ? (tplNames[d.template]||d.template) : 'Not selected'],
-      ['Headline', d.headline],
-      ['CTA', d.cta],
-      ['Age Range', d.ageMin + '\u2013' + d.ageMax],
-      ['Gender', d.gender.charAt(0).toUpperCase()+d.gender.slice(1)],
-      ['Locations', d.locations.join(', ')||'None'],
-      ['Interests', d.interests.join(', ')||'None'],
-      ['Daily Budget', '$'+d.budget],
-      ['14-Day Total', '$'+(d.budget*14).toLocaleString()],
-      ['Bid Strategy', d.bidStrategy],
-    ];
-    var tbl2 = _lp_el('table','width:100%;border-collapse:collapse;font-size:13px;');
-    summaryRows.forEach(function(row) {
-      var tr = _lp_el('tr','border-bottom:1px solid rgba(255,255,255,0.06);');
-      var td1 = _lp_el('td','padding:7px 0;color:rgba(255,255,255,0.4);width:40%;vertical-align:top;',row[0]);
-      var td2 = _lp_el('td','padding:7px 0;color:#fff;font-weight:500;word-break:break-word;',row[1]);
-      tr.appendChild(td1); tr.appendChild(td2); tbl2.appendChild(tr);
-    });
-    left2.appendChild(tbl2);
-
-    var right2 = _lp_el('div');
-    right2.appendChild(_lp_el('div','font-size:12px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;','Ad Preview'));
-    var fbCard2 = _lp_el('div','background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.4);');
-    var fbHdr2 = _lp_el('div','padding:8px 10px;display:flex;align-items:center;gap:8px;');
-    var av3 = _lp_el('div','width:30px;height:30px;border-radius:50%;background:#1877f2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;flex-shrink:0;','JX');
-    fbHdr2.appendChild(av3);
-    var hi3 = _lp_el('div');
-    hi3.appendChild(_lp_el('div','font-size:12px;font-weight:700;color:#050505;','Financial Advisory'));
-    hi3.appendChild(_lp_el('div','font-size:10px;color:#606770;','Sponsored'));
-    fbHdr2.appendChild(hi3);
-    var fbImg2 = _lp_el('div','height:110px;background:linear-gradient(135deg,#1877f2,#42b883);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;');
-    fbImg2.appendChild(_lp_el('div','font-size:13px;font-weight:800;color:#fff;text-align:center;line-height:1.3;text-shadow:0 1px 4px rgba(0,0,0,0.3);',d.headline));
-    var fbBar2 = _lp_el('div','padding:8px 10px;background:#f0f2f5;display:flex;align-items:center;justify-content:space-between;');
-    fbBar2.appendChild(_lp_el('div','font-size:10px;color:#606770;','financialadvisory.com'));
-    fbBar2.appendChild(_lp_el('div','background:#1877f2;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:5px;',d.cta));
-    fbCard2.appendChild(fbHdr2); fbCard2.appendChild(fbImg2); fbCard2.appendChild(fbBar2);
-    right2.appendChild(fbCard2);
-
-    cols2.appendChild(left2); cols2.appendChild(right2);
-    content.appendChild(cols2);
-  }
-}
 
 /* ============================================================
    FINANCE HUB DEMO
