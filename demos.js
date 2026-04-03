@@ -268,7 +268,7 @@ DEMO_RENDERERS.calculator = function(container) {
   var line2 = sentenceLine();
   var t2a = document.createTextNode('I choose to pay for ');
   var selDur = inlineSelect('illDur',
-    [{value:5,label:'5 years'},{value:8,label:'8 years'},{value:10,label:'10 years'},{value:15,label:'15 years'},{value:20,label:'20 years'}],
+    [{value:1,label:'Single Pay'},{value:5,label:'5 Pay'},{value:10,label:'10 years'},{value:15,label:'15 years'},{value:20,label:'20 years'}],
     illCfg.duration,
     function(v) { illCfg.duration = parseInt(v,10); }
   );
@@ -1812,6 +1812,8 @@ DEMO_RENDERERS.tracker = function(container) {
     'Closed':    { icon: '\u2705',       color: '#34d399', bg: 'rgba(52,211,153,.15)'  },
     'Referral':  { icon: '\uD83D\uDD17', color: '#c084fc', bg: 'rgba(192,132,252,.15)' },
     'Servicing': { icon: '\uD83D\uDD27', color: '#2dd4bf', bg: 'rgba(45,212,191,.15)'  },
+    'Hangout':   { icon: '\u2615',       color: '#fb923c', bg: 'rgba(251,146,60,.15)'   },
+    'Story':     { icon: '\uD83D\uDCF1', color: '#a78bfa', bg: 'rgba(167,139,250,.15)'  },
   };
 
   /* Avatar colors by person */
@@ -1825,14 +1827,15 @@ DEMO_RENDERERS.tracker = function(container) {
   }
 
   var feedItems = [
-    { name: 'Sarah Lim',    type: 'Closed',    pts: 25, time: '8m ago',  policy: 'AIA Pro Achiever II',  premium: '$4,200' },
-    { name: 'Marcus Tan',   type: 'Set',       pts: 3,  time: '12m ago' },
-    { name: 'Priya Nair',   type: 'Opening',   pts: 8,  time: '24m ago' },
-    { name: 'Jason Yeo',    type: 'Closed',    pts: 25, time: '41m ago', policy: 'AIA Health Shield',    premium: '$1,800' },
-    { name: 'Wei Ling',     type: 'Referral',  pts: 10, time: '1h ago'  },
-    { name: 'Darren Koh',   type: 'Closing',   pts: 12, time: '1h ago'  },
-    { name: 'Aisha Binte',  type: 'Servicing', pts: 5,  time: '2h ago'  },
-    { name: 'Tom Huang',    type: 'Set',       pts: 3,  time: '2h ago'  },
+    { name: 'Sarah Lim',    type: 'Closed',    pts: 5,  time: '8m ago',  policy: 'AIA Pro Achiever II',  premium: '$4,200' },
+    { name: 'Marcus Tan',   type: 'Set',       pts: 1,  time: '12m ago' },
+    { name: 'Priya Nair',   type: 'Opening',   pts: 3,  time: '24m ago' },
+    { name: 'Jason Yeo',    type: 'Closed',    pts: 5,  time: '41m ago', policy: 'AIA HealthShield Gold', premium: '$1,800' },
+    { name: 'Wei Ling',     type: 'Referral',  pts: 1,  time: '1h ago'  },
+    { name: 'Darren Koh',   type: 'Closing',   pts: 4,  time: '1h ago'  },
+    { name: 'Aisha Binte',  type: 'Hangout',   pts: 2,  time: '2h ago'  },
+    { name: 'Tom Huang',    type: 'Story',     pts: 1,  time: '2h ago'  },
+    { name: 'Rachel Ng',    type: 'Servicing', pts: 2,  time: '3h ago'  },
   ];
 
   feedItems.forEach(function(item, idx) {
@@ -2168,7 +2171,7 @@ DEMO_RENDERERS.compass = function(container) {
       { name: 'CMFAS M9', sub: 'Life Insurance',       pct: 72, lessons: 48, color: '#3b82f6', locked: false },
       { name: 'CMFAS M9A', sub: 'General Insurance',   pct: 45, lessons: 36, color: '#3b82f6', locked: false },
       { name: 'CMFAS HI',  sub: 'Health Insurance',    pct: 18, lessons: 28, color: '#94a3b8', locked: false },
-      { name: 'CMFAS RES5',sub: 'Investments',          pct: 0,  lessons: 42, color: '#64748b', locked: true  },
+      { name: 'CMFAS RES5',sub: 'Rules & Regulations',   pct: 0,  lessons: 42, color: '#64748b', locked: true  },
       { name: 'Product Training', sub: 'AIA Products', pct: 85, lessons: 62, color: '#10b981', locked: false },
     ];
 
@@ -2561,7 +2564,7 @@ DEMO_RENDERERS.compass = function(container) {
       { id: 'm9',  label: 'M9 Life Insurance',      count: 426 },
       { id: 'm9a', label: 'M9A General Insurance',  count: 248 },
       { id: 'hi',  label: 'HI Health Insurance',    count: 186 },
-      { id: 'res5',label: 'RES5 Investments',        count: 164 },
+      { id: 'res5',label: 'RES5 Rules & Regulations', count: 164 },
     ];
 
     var allQuestions = [
