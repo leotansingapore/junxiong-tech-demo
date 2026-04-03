@@ -96,65 +96,212 @@ DEMO_RENDERERS.calculator = function(container) {
   };
 
   /* ======================================================
-     TAB BAR
+     SECTION DIVIDER HELPER
      ====================================================== */
-  var TAB_DEFS = [
-    { id: 'illustrator', label: 'Investment Illustrator' },
-    { id: 'retirement',  label: 'Retirement Step-by-Step' },
-  ];
+  function sectionDivider(badgeText, headline, subtext) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = [
+      'border-top:1px solid var(--border)',
+      'margin:48px 0 32px',
+      'padding-top:36px',
+    ].join(';');
 
-  var tabBar = document.createElement('div');
-  tabBar.style.cssText = [
-    'display:flex',
-    'gap:4px',
-    'margin-bottom:24px',
-    'background:var(--surface2)',
-    'border:1px solid var(--border)',
-    'border-radius:10px',
-    'padding:4px',
-  ].join(';');
+    var badge = document.createElement('div');
+    badge.style.cssText = [
+      'display:inline-block',
+      'font-size:0.68rem',
+      'font-weight:800',
+      'letter-spacing:.12em',
+      'text-transform:uppercase',
+      'color:var(--accent,#6b9bdb)',
+      'border:1px solid var(--accent,#6b9bdb)',
+      'border-radius:20px',
+      'padding:4px 14px',
+      'margin-bottom:14px',
+    ].join(';');
+    badge.textContent = badgeText;
+    wrap.appendChild(badge);
 
-  var panels = {};
-  var tabBtns = {};
+    var h2 = document.createElement('h2');
+    h2.style.cssText = [
+      'font-size:1.4rem',
+      'font-weight:800',
+      'color:var(--text1,#f9fafb)',
+      'margin:0 0 8px',
+      'line-height:1.25',
+    ].join(';');
+    h2.textContent = headline;
+    wrap.appendChild(h2);
 
-  function switchTab(id) {
-    TAB_DEFS.forEach(function(t) {
-      var isActive = t.id === id;
-      tabBtns[t.id].style.background = isActive ? 'var(--accent)' : 'transparent';
-      tabBtns[t.id].style.color      = isActive ? '#fff' : 'var(--text3)';
-      panels[t.id].style.display     = isActive ? 'block' : 'none';
-    });
-    if (id === 'illustrator') { setTimeout(renderIllChart, 0); }
+    if (subtext) {
+      var sub = document.createElement('p');
+      sub.style.cssText = 'font-size:0.88rem;color:var(--text3);margin:0;line-height:1.55;';
+      sub.textContent = subtext;
+      wrap.appendChild(sub);
+    }
+
+    return wrap;
   }
 
-  TAB_DEFS.forEach(function(t) {
-    var btn = document.createElement('button');
-    btn.textContent = t.label;
-    btn.style.cssText = [
-      'flex:1',
-      'padding:8px 16px',
-      'font-size:0.84rem',
-      'font-weight:600',
-      'border-radius:7px',
-      'border:none',
-      'cursor:pointer',
-      'transition:background .15s,color .15s',
-      'background:transparent',
-      'color:var(--text3)',
-      'white-space:nowrap',
+  /* ======================================================
+     SECTION 1 — HERO
+     ====================================================== */
+  var hero = document.createElement('div');
+  hero.style.cssText = [
+    'text-align:center',
+    'padding:40px 20px 36px',
+    'max-width:720px',
+    'margin:0 auto',
+  ].join(';');
+
+  var heroBadge = document.createElement('div');
+  heroBadge.style.cssText = [
+    'display:inline-block',
+    'font-size:0.72rem',
+    'font-weight:800',
+    'letter-spacing:.1em',
+    'text-transform:uppercase',
+    'color:#34d399',
+    'border:1px solid #34d39944',
+    'background:#34d39910',
+    'border-radius:20px',
+    'padding:5px 16px',
+    'margin-bottom:20px',
+  ].join(';');
+  heroBadge.textContent = '70+ Financial Calculators';
+  hero.appendChild(heroBadge);
+
+  var heroH1 = document.createElement('h1');
+  heroH1.style.cssText = [
+    'font-size:clamp(1.6rem, 4vw, 2.4rem)',
+    'font-weight:900',
+    'color:var(--text1,#f9fafb)',
+    'margin:0 0 16px',
+    'line-height:1.18',
+    'letter-spacing:-.02em',
+  ].join(';');
+  heroH1.textContent = 'Every Number Your Client Needs \u2014 In One Platform';
+  hero.appendChild(heroH1);
+
+  var heroSub = document.createElement('p');
+  heroSub.style.cssText = [
+    'font-size:1rem',
+    'color:var(--text3)',
+    'line-height:1.65',
+    'margin:0 0 28px',
+    'max-width:580px',
+    'margin-left:auto',
+    'margin-right:auto',
+  ].join(';');
+  heroSub.textContent = 'From retirement projections to investment illustrations, give clients clarity with professional-grade calculators that do the math in real time.';
+  hero.appendChild(heroSub);
+
+  var heroStats = document.createElement('div');
+  heroStats.style.cssText = [
+    'display:flex',
+    'flex-wrap:wrap',
+    'gap:8px 20px',
+    'justify-content:center',
+    'font-size:0.78rem',
+    'font-weight:700',
+    'color:var(--text3)',
+    'letter-spacing:.04em',
+  ].join(';');
+  ['70+ Calculators', 'Real-Time Projections', 'PDF Export', 'Multi-Language'].forEach(function(stat, i) {
+    if (i > 0) {
+      var dot = document.createElement('span');
+      dot.style.cssText = 'color:var(--border);display:inline;';
+      dot.textContent = '\u00b7';
+      heroStats.appendChild(dot);
+    }
+    var s = document.createElement('span');
+    s.textContent = stat;
+    heroStats.appendChild(s);
+  });
+  hero.appendChild(heroStats);
+
+  container.appendChild(hero);
+
+  /* ======================================================
+     SECTION 2 — KEY CAPABILITIES
+     ====================================================== */
+  var capsDiv = sectionDivider('Key Capabilities', 'Everything You Need to Advise with Confidence', null);
+  container.appendChild(capsDiv);
+
+  var CAPS = [
+    { icon: '\ud83d\udcca', title: 'Investment Illustrators',  benefit: 'Show clients exactly how their money grows with 5/8/10/15/20-year plans' },
+    { icon: '\ud83c\udfd6\ufe0f', title: 'Retirement Planning',        benefit: 'Step-by-step visualization of the retirement gap and how to close it' },
+    { icon: '\ud83d\udee1\ufe0f', title: 'Insurance Needs',            benefit: 'Calculate coverage gaps for death, TPD, critical illness & hospital' },
+    { icon: '\ud83d\udcb0', title: 'CPF & Tax',                  benefit: 'Project CPF balances to age 65 with CPF LIFE payout estimates' },
+    { icon: '\ud83c\udfe0', title: 'Property & Mortgage',        benefit: 'HDB calculator with BSD, ABSD, and CPF OA usage' },
+    { icon: '\ud83d\udccb', title: 'Proposal Generator',         benefit: 'Auto-generate professional client proposals from any calculator' },
+  ];
+
+  var capsGrid = document.createElement('div');
+  capsGrid.style.cssText = [
+    'display:grid',
+    'grid-template-columns:repeat(3,1fr)',
+    'gap:16px',
+    'margin-bottom:8px',
+  ].join(';');
+
+  /* Responsive: 2-col on narrow screens */
+  var capsMq = window.matchMedia('(max-width:640px)');
+  function applyCapsGrid(e) {
+    capsGrid.style.gridTemplateColumns = e.matches ? 'repeat(2,1fr)' : 'repeat(3,1fr)';
+  }
+  capsMq.addEventListener('change', applyCapsGrid);
+  applyCapsGrid(capsMq);
+
+  CAPS.forEach(function(cap) {
+    var card = document.createElement('div');
+    card.style.cssText = [
+      'background:var(--surface2)',
+      'border:1px solid var(--border)',
+      'border-radius:12px',
+      'padding:20px 18px',
+      'transition:border-color .2s',
     ].join(';');
-    btn.addEventListener('click', function() { switchTab(t.id); });
-    tabBtns[t.id] = btn;
-    tabBar.appendChild(btn);
+    card.addEventListener('mouseenter', function() { card.style.borderColor = 'var(--accent,#6b9bdb)'; });
+    card.addEventListener('mouseleave', function() { card.style.borderColor = 'var(--border)'; });
+
+    var iconEl = document.createElement('div');
+    iconEl.style.cssText = 'font-size:1.6rem;margin-bottom:10px;';
+    iconEl.textContent = cap.icon;
+
+    var titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-size:0.88rem;font-weight:700;color:var(--text1,#f9fafb);margin-bottom:6px;';
+    titleEl.textContent = cap.title;
+
+    var benefitEl = document.createElement('div');
+    benefitEl.style.cssText = 'font-size:0.78rem;color:var(--text3);line-height:1.5;';
+    benefitEl.textContent = cap.benefit;
+
+    card.appendChild(iconEl);
+    card.appendChild(titleEl);
+    card.appendChild(benefitEl);
+    capsGrid.appendChild(card);
   });
 
-  container.appendChild(tabBar);
+  container.appendChild(capsGrid);
+
+  /* ======================================================
+     SECTION 3 — INVESTMENT ILLUSTRATOR DEMO
+     ====================================================== */
+  var illSectionHeader = sectionDivider(
+    'Try It \u2014 Investment Illustrator',
+    'See Real-Time Investment Projections',
+    'Experience the conversational investment planning tool. Adjust inputs to see real-time projections.'
+  );
+  container.appendChild(illSectionHeader);
+
+  /* ---- Panel for illustrator (no tabs — always visible) ---- */
+  var panelIll = document.createElement('div');
 
   /* ======================================================
      PANEL 1 — INVESTMENT ILLUSTRATOR
      ====================================================== */
   var panelIll = document.createElement('div');
-  panels['illustrator'] = panelIll;
 
   /* --- State --- */
   var illCfg = {
@@ -529,11 +676,16 @@ DEMO_RENDERERS.calculator = function(container) {
   container.appendChild(panelIll);
 
   /* ======================================================
-     PANEL 2 — RETIREMENT STEP-BY-STEP
+     SECTION 4 — RETIREMENT STEP-BY-STEP DEMO
      ====================================================== */
+  var retSectionHeader = sectionDivider(
+    'Try It \u2014 Retirement Step-by-Step',
+    'Walk Through the Retirement Reality Check',
+    'See why starting early matters. Walk through the 5-step retirement reality check.'
+  );
+  container.appendChild(retSectionHeader);
+
   var panelRet = document.createElement('div');
-  panelRet.style.display = 'none';
-  panels['retirement'] = panelRet;
 
   /* Input row */
   var retInputRow = document.createElement('div');
@@ -926,9 +1078,65 @@ DEMO_RENDERERS.calculator = function(container) {
   container.appendChild(panelRet);
 
   /* ======================================================
-     ACTIVATE DEFAULT TAB + INITIAL RENDERS
+     SECTION 5 — PLATFORM STATS
      ====================================================== */
-  switchTab('illustrator');
+  var statsSectionHeader = sectionDivider('Platform Credibility', 'Trusted by Advisors Across Singapore', null);
+  container.appendChild(statsSectionHeader);
+
+  var STATS = [
+    { value: '50+',     label: 'Products Covered',         sub: 'AIA, Allianz, Manulife and more' },
+    { value: '100+',    label: 'Advisors Using This',       sub: 'Trusted across Singapore agencies' },
+    { value: '< 2 Min', label: 'Per Illustration',          sub: 'From input to professional results' },
+  ];
+
+  var statsGrid = document.createElement('div');
+  statsGrid.style.cssText = [
+    'display:grid',
+    'grid-template-columns:repeat(3,1fr)',
+    'gap:16px',
+    'margin-bottom:48px',
+  ].join(';');
+
+  var statsMq = window.matchMedia('(max-width:560px)');
+  function applyStatsGrid(e) {
+    statsGrid.style.gridTemplateColumns = e.matches ? '1fr' : 'repeat(3,1fr)';
+  }
+  statsMq.addEventListener('change', applyStatsGrid);
+  applyStatsGrid(statsMq);
+
+  STATS.forEach(function(s) {
+    var card = document.createElement('div');
+    card.style.cssText = [
+      'background:var(--surface2)',
+      'border:1px solid var(--border)',
+      'border-radius:14px',
+      'padding:28px 24px',
+      'text-align:center',
+    ].join(';');
+
+    var val = document.createElement('div');
+    val.style.cssText = 'font-size:2.2rem;font-weight:900;color:var(--accent,#6b9bdb);letter-spacing:-.03em;margin-bottom:6px;';
+    val.textContent = s.value;
+
+    var lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:0.92rem;font-weight:700;color:var(--text1,#f9fafb);margin-bottom:6px;';
+    lbl.textContent = s.label;
+
+    var sub = document.createElement('div');
+    sub.style.cssText = 'font-size:0.78rem;color:var(--text3);line-height:1.45;';
+    sub.textContent = s.sub;
+
+    card.appendChild(val);
+    card.appendChild(lbl);
+    card.appendChild(sub);
+    statsGrid.appendChild(card);
+  });
+
+  container.appendChild(statsGrid);
+
+  /* ======================================================
+     INITIAL RENDERS (no tab switching needed)
+     ====================================================== */
   setTimeout(function() { runIllCalc(); }, 0);
   renderRetStep(0);
 };
