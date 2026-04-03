@@ -4058,26 +4058,110 @@ DEMO_RENDERERS.financehub = function(container) {
   container.innerHTML = '';
   container.id = 'fhDemo';
 
-  // ---- Tab Bar ----
-  var tabDefs = [
-    { key: 'planner',    label: 'Financial Planner' },
-    { key: 'projection', label: 'Wealth Projection' },
+  // ============================================================
+  // SECTION 1: HERO
+  // ============================================================
+  var hero = document.createElement('div');
+  hero.style.cssText = 'text-align:center;padding:48px 24px 40px;';
+
+  var heroBadge = document.createElement('div');
+  heroBadge.textContent = 'Comprehensive Financial Planner';
+  heroBadge.style.cssText = 'display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:5px 14px;border-radius:20px;background:rgba(196,162,77,0.15);color:#C4A24D;border:1px solid rgba(196,162,77,0.35);margin-bottom:20px;';
+  hero.appendChild(heroBadge);
+
+  var heroHeadline = document.createElement('h2');
+  heroHeadline.textContent = 'See Your Client\u2019s Entire Financial Future \u2014 On One Screen';
+  heroHeadline.style.cssText = 'font-size:clamp(22px,4vw,34px);font-weight:800;color:#e2e8f0;line-height:1.2;margin:0 0 16px;';
+  hero.appendChild(heroHeadline);
+
+  var heroSubline = document.createElement('p');
+  heroSubline.textContent = 'Income, expenses, CPF, insurance, goals, investments \u2014 all flowing into one projection chart that shows clients exactly where they\u2019ll be at retirement.';
+  heroSubline.style.cssText = 'font-size:15px;color:rgba(255,255,255,0.5);line-height:1.6;max-width:600px;margin:0 auto 28px;';
+  hero.appendChild(heroSubline);
+
+  var heroStats = document.createElement('div');
+  heroStats.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;';
+  ['12 Planning Modules', 'CPF Integration', 'Goal Wizards', 'PDF Reports'].forEach(function(stat, i) {
+    if (i > 0) {
+      var dotSep = document.createElement('span');
+      dotSep.textContent = '\u00b7';
+      dotSep.style.cssText = 'color:rgba(255,255,255,0.2);font-size:14px;';
+      heroStats.appendChild(dotSep);
+    }
+    var s = document.createElement('span');
+    s.textContent = stat;
+    s.style.cssText = 'font-size:13px;font-weight:600;color:rgba(255,255,255,0.55);';
+    heroStats.appendChild(s);
+  });
+  hero.appendChild(heroStats);
+  container.appendChild(hero);
+
+  // ============================================================
+  // SECTION 2: WHAT YOU CAN PLAN (2x3 feature cards)
+  // ============================================================
+  var featSection = document.createElement('div');
+  featSection.style.cssText = 'padding:0 0 40px;';
+
+  var featHeading = document.createElement('div');
+  featHeading.textContent = 'What You Can Plan';
+  featHeading.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.08em;text-align:center;margin-bottom:20px;';
+  featSection.appendChild(featHeading);
+
+  var featGrid = document.createElement('div');
+  featGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;';
+
+  var featureCards = [
+    { icon: '\uD83D\uDCB0', title: 'Income & Cash Flow',       desc: 'Track salary, freelance, passive income vs expenses with visual breakdowns' },
+    { icon: '\uD83C\uDFAF', title: 'Life Goals',               desc: 'Property, vehicle, wedding, children, retirement \u2014 each with funding plans' },
+    { icon: '\uD83D\uDEE1\uFE0F', title: 'Insurance Coverage', desc: 'Gap analysis across death, TPD, critical illness, hospital & disability' },
+    { icon: '\uD83D\uDCCA', title: 'CPF Projections',          desc: 'OA/SA/MA growth to age 65 with CPF LIFE payout estimation' },
+    { icon: '\uD83D\uDCC8', title: 'Investment Tracking',      desc: 'RSP, lump sum, ILP, ETF, bonds \u2014 all projected with fee impact' },
+    { icon: '\uD83D\uDD2E', title: 'What-If Scenarios',        desc: 'Model death, disability, critical illness, career changes on finances' },
   ];
 
-  // ---- Tab Bar ----
-  var tabBar = document.createElement('div');
-  tabBar.className = 'demo-tabs';
-
-  tabDefs.forEach(function(def, i) {
-    var btn = document.createElement('button');
-    btn.className = 'demo-tab' + (i === 0 ? ' active' : '');
-    btn.dataset.tab = def.key;
-    btn.textContent = def.label;
-    btn.addEventListener('click', function() { fhTab(def.key); });
-    tabBar.appendChild(btn);
+  featureCards.forEach(function(fc) {
+    var fCard = document.createElement('div');
+    fCard.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px 16px;transition:border-color 0.2s;cursor:default;';
+    fCard.addEventListener('mouseenter', function() { fCard.style.borderColor = 'rgba(196,162,77,0.35)'; });
+    fCard.addEventListener('mouseleave', function() { fCard.style.borderColor = 'rgba(255,255,255,0.08)'; });
+    var fcIcon = document.createElement('div');
+    fcIcon.textContent = fc.icon;
+    fcIcon.style.cssText = 'font-size:22px;margin-bottom:10px;';
+    fCard.appendChild(fcIcon);
+    var fcTitle = document.createElement('div');
+    fcTitle.textContent = fc.title;
+    fcTitle.style.cssText = 'font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:6px;';
+    fCard.appendChild(fcTitle);
+    var fcDesc = document.createElement('div');
+    fcDesc.textContent = fc.desc;
+    fcDesc.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;';
+    fCard.appendChild(fcDesc);
+    featGrid.appendChild(fCard);
   });
+  featSection.appendChild(featGrid);
+  container.appendChild(featSection);
 
-  container.appendChild(tabBar);
+  // ============================================================
+  // SECTION 3 HEADER: Interactive Demo — Financial Planner
+  // ============================================================
+  var demoHdr1 = document.createElement('div');
+  demoHdr1.style.cssText = 'border-top:1px solid rgba(255,255,255,0.08);padding:32px 0 20px;';
+
+  var demoLbl1 = document.createElement('div');
+  demoLbl1.textContent = 'TRY IT \u2014 CLIENT FINANCIAL PLANNER';
+  demoLbl1.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4A24D;margin-bottom:8px;';
+  demoHdr1.appendChild(demoLbl1);
+
+  var demoTtl1 = document.createElement('div');
+  demoTtl1.textContent = 'Client Financial Planner';
+  demoTtl1.style.cssText = 'font-size:20px;font-weight:700;color:#e2e8f0;margin-bottom:6px;';
+  demoHdr1.appendChild(demoTtl1);
+
+  var demoSub1 = document.createElement('div');
+  demoSub1.textContent = 'Explore Marcus Tan\u2019s complete financial picture. See how income, expenses, goals, and insurance all connect.';
+  demoSub1.style.cssText = 'font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;';
+  demoHdr1.appendChild(demoSub1);
+  container.appendChild(demoHdr1);
 
   // ---- Toast helper (shared) ----
   var fhToastEl = document.getElementById('fhToast');
@@ -4316,7 +4400,7 @@ DEMO_RENDERERS.financehub = function(container) {
   // ============================================================
   var projPanel = document.createElement('div');
   projPanel.dataset.panel = 'projection';
-  projPanel.style.cssText = 'padding:20px 0;display:none;';
+  projPanel.style.cssText = 'padding:20px 0;';
 
   // ---- Assumptions Bar ----
   var assumBar = document.createElement('div');
@@ -4513,11 +4597,90 @@ DEMO_RENDERERS.financehub = function(container) {
 
   // ---- Append panels ----
   container.appendChild(plannerPanel);
+
+  // ============================================================
+  // SECTION 4 HEADER: Interactive Demo — Wealth Projection
+  // ============================================================
+  var demoHdr2 = document.createElement('div');
+  demoHdr2.style.cssText = 'border-top:1px solid rgba(255,255,255,0.08);padding:32px 0 20px;';
+
+  var demoLbl2 = document.createElement('div');
+  demoLbl2.textContent = 'TRY IT \u2014 WEALTH PROJECTION';
+  demoLbl2.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4A24D;margin-bottom:8px;';
+  demoHdr2.appendChild(demoLbl2);
+
+  var demoTtl2 = document.createElement('div');
+  demoTtl2.textContent = 'Wealth Projection';
+  demoTtl2.style.cssText = 'font-size:20px;font-weight:700;color:#e2e8f0;margin-bottom:6px;';
+  demoHdr2.appendChild(demoTtl2);
+
+  var demoSub2 = document.createElement('div');
+  demoSub2.textContent = 'The wow moment. See Marcus\u2019s projected net worth grow from $142k to $2.8M over 40 years.';
+  demoSub2.style.cssText = 'font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;';
+  demoHdr2.appendChild(demoSub2);
+  container.appendChild(demoHdr2);
+
   container.appendChild(projPanel);
 
-  // Render donuts after DOM is ready
+  // ============================================================
+  // SECTION 5: SINGAPORE-SPECIFIC
+  // ============================================================
+  var sgSection = document.createElement('div');
+  sgSection.style.cssText = 'border-top:1px solid rgba(255,255,255,0.08);padding:32px 0 16px;';
+
+  var sgHeading = document.createElement('div');
+  sgHeading.textContent = 'Built for Singapore Advisors';
+  sgHeading.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.08em;text-align:center;margin-bottom:20px;';
+  sgSection.appendChild(sgHeading);
+
+  var sgGrid = document.createElement('div');
+  sgGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;';
+
+  var sgCards = [
+    {
+      icon: '\uD83C\uDDF8\uD83C\uDDEC',
+      title: 'CPF-Ready',
+      desc: 'Full CPF contribution rates, allocation logic, and LIFE payout estimation',
+      color: '#C4A24D',
+    },
+    {
+      icon: '\uD83C\uDFE0',
+      title: 'HDB & Property',
+      desc: 'BSD, ABSD, MSR/TDSR calculations built in',
+      color: '#3b82f6',
+    },
+    {
+      icon: '\uD83D\uDCCA',
+      title: 'Tax Optimized',
+      desc: 'SRS, tax reliefs, and net income projections',
+      color: '#10b981',
+    },
+  ];
+
+  sgCards.forEach(function(sg) {
+    var sgCard = document.createElement('div');
+    sgCard.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px 16px;text-align:center;';
+    var sgIcon = document.createElement('div');
+    sgIcon.textContent = sg.icon;
+    sgIcon.style.cssText = 'font-size:26px;margin-bottom:10px;';
+    sgCard.appendChild(sgIcon);
+    var sgTitle = document.createElement('div');
+    sgTitle.textContent = sg.title;
+    sgTitle.style.cssText = 'font-size:14px;font-weight:700;color:' + sg.color + ';margin-bottom:6px;';
+    sgCard.appendChild(sgTitle);
+    var sgDesc = document.createElement('div');
+    sgDesc.textContent = sg.desc;
+    sgDesc.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;';
+    sgCard.appendChild(sgDesc);
+    sgGrid.appendChild(sgCard);
+  });
+  sgSection.appendChild(sgGrid);
+  container.appendChild(sgSection);
+
+  // Render charts after DOM is ready
   setTimeout(function() {
     _fhRenderDonuts(donutIncome, donutExpenses, donutAssets, donutLiab);
+    _fhRenderProjection();
   }, 100);
 };
 
