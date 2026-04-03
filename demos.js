@@ -3282,36 +3282,102 @@ DEMO_RENDERERS.launchpad = function(container) {
 
   var root = _lp_el('div','max-width:920px;margin:0 auto;padding:20px 16px;font-family:inherit;');
   root.id = 'launchpadRoot';
-  root.parentNode; // reference trick — store container ref
-  // store container ref for nav buttons
   container.__lpContainer = container;
 
-  /* ---- Tab bar ---- */
-  var tabBar = _lp_el('div','display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;');
-  var tabs = [
-    { id: 'wizard', label: 'Campaign Wizard' },
-    { id: 'leads',  label: 'Lead Management' }
-  ];
-  tabs.forEach(function(td) {
-    var active = window._lpTab2 === td.id;
-    var btn = _lp_el('button',
-      'padding:8px 20px;border-radius:8px;border:1px solid;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;' +
-      (active ? 'background:rgba(59,130,246,0.2);border-color:#3b82f6;color:#fff;' : 'background:transparent;border-color:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);'),
-      td.label);
-    btn.className = 'lp2-tab-btn';
-    btn.setAttribute('data-tab', td.id);
-    btn.onclick = function() { lpTab2(td.id); };
-    tabBar.appendChild(btn);
+  /* ============================================================
+     SECTION 1 — HERO
+  ============================================================ */
+  var hero = _lp_el('div','text-align:center;padding:48px 24px 40px;');
+
+  var badge = _lp_el('div',
+    'display:inline-block;padding:5px 14px;border-radius:20px;border:1px solid rgba(59,130,246,0.45);' +
+    'background:rgba(59,130,246,0.12);color:#93c5fd;font-size:12px;font-weight:700;letter-spacing:.06em;' +
+    'text-transform:uppercase;margin-bottom:20px;',
+    'Self-Service Ad Platform');
+  hero.appendChild(badge);
+
+  var heroTitle = _lp_el('h1',
+    'font-size:clamp(24px,4vw,38px);font-weight:800;color:#fff;margin:0 0 14px 0;line-height:1.15;',
+    'Launch Meta Ads Without Touching Ads Manager');
+  hero.appendChild(heroTitle);
+
+  var heroSub = _lp_el('p',
+    'font-size:15px;color:rgba(255,255,255,0.55);margin:0 auto 28px;max-width:580px;line-height:1.6;',
+    'Your advisors pick a template, customize copy, set a budget, and launch \u2014 all in 5 steps. You keep full control. Every campaign launches paused for review.');
+  hero.appendChild(heroSub);
+
+  var statsRow = _lp_el('div','display:flex;flex-wrap:wrap;justify-content:center;gap:8px;');
+  ['5-Step Wizard','Live Ad Preview','Lead Tracking','Quality Scoring'].forEach(function(stat) {
+    var s = _lp_el('div',
+      'padding:6px 16px;border-radius:20px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);' +
+      'font-size:12px;font-weight:600;color:rgba(255,255,255,0.65);',
+      stat);
+    statsRow.appendChild(s);
   });
-  root.appendChild(tabBar);
+  hero.appendChild(statsRow);
+  root.appendChild(hero);
 
   /* ============================================================
-     TAB 1 — CAMPAIGN WIZARD
+     SECTION 2 — HOW IT WORKS
   ============================================================ */
+  var howSection = _lp_el('div','padding:0 0 48px;');
+
+  var howTitle = _lp_el('div',
+    'font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.1em;text-align:center;margin-bottom:24px;',
+    'How It Works');
+  howSection.appendChild(howTitle);
+
+  var howGrid = _lp_el('div','display:grid;grid-template-columns:repeat(3,1fr);gap:16px;');
+  var howSteps = [
+    {
+      num: '1',
+      title: 'Pick a Template',
+      desc: 'Choose from pre-built campaign templates designed for insurance and financial advisory. Lead gen, seminar registration, brand awareness.'
+    },
+    {
+      num: '2',
+      title: 'Customize & Launch',
+      desc: 'Edit copy, set budget, define audience \u2014 see a live Facebook ad preview update in real-time. Hit launch.'
+    },
+    {
+      num: '3',
+      title: 'Track Results',
+      desc: 'Monitor leads, quality scores, campaign metrics. Every lead gets scored automatically (0\u2013100%) based on form completeness.'
+    }
+  ];
+  howSteps.forEach(function(step) {
+    var card = _lp_el('div',
+      'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:22px 20px;');
+    var numBadge = _lp_el('div',
+      'width:32px;height:32px;border-radius:50%;background:rgba(59,130,246,0.2);border:1px solid rgba(59,130,246,0.35);' +
+      'color:#93c5fd;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:14px;',
+      step.num);
+    card.appendChild(numBadge);
+    card.appendChild(_lp_el('div','font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;', step.title));
+    card.appendChild(_lp_el('div','font-size:13px;color:rgba(255,255,255,0.5);line-height:1.55;', step.desc));
+    howGrid.appendChild(card);
+  });
+  howSection.appendChild(howGrid);
+  root.appendChild(howSection);
+
+  /* ============================================================
+     SECTION 3 — INTERACTIVE DEMO: CAMPAIGN WIZARD
+  ============================================================ */
+  var wizSection = _lp_el('div','padding:0 0 48px;');
+
+  var wizHeader = _lp_el('div',
+    'margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.08);');
+  var wizLabel = _lp_el('div',
+    'font-size:11px;font-weight:700;color:#3b82f6;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;',
+    'Try It \u2014 Campaign Wizard');
+  var wizSubtext = _lp_el('div',
+    'font-size:13px;color:rgba(255,255,255,0.45);',
+    'Walk through the 5-step process. Select a template, write copy, target your audience, set budget, and review.');
+  wizHeader.appendChild(wizLabel);
+  wizHeader.appendChild(wizSubtext);
+  wizSection.appendChild(wizHeader);
+
   var wizPanel = _lp_el('div');
-  wizPanel.className = 'lp2-tab-panel';
-  wizPanel.setAttribute('data-panel','wizard');
-  wizPanel.style.display = window._lpTab2 === 'wizard' ? 'block' : 'none';
 
   var stepNames = ['Template', 'Ad Creative', 'Audience', 'Budget', 'Review'];
   var step = window._wizStep;
@@ -3701,15 +3767,27 @@ DEMO_RENDERERS.launchpad = function(container) {
   navRow.appendChild(nextBtn);
   wizPanel.appendChild(navRow);
 
-  root.appendChild(wizPanel);
+  wizSection.appendChild(wizPanel);
+  root.appendChild(wizSection);
 
   /* ============================================================
-     TAB 2 — LEAD MANAGEMENT
+     SECTION 4 — INTERACTIVE DEMO: LEAD MANAGEMENT
   ============================================================ */
+  var leadsSection = _lp_el('div','padding:0 0 48px;');
+
+  var leadsHeader2 = _lp_el('div',
+    'margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.08);');
+  var leadsLabel = _lp_el('div',
+    'font-size:11px;font-weight:700;color:#34d399;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;',
+    'Try It \u2014 Lead Management');
+  var leadsSubtext = _lp_el('div',
+    'font-size:13px;color:rgba(255,255,255,0.45);',
+    'See how leads are tracked with quality scores. Click status badges to update, click names to see details.');
+  leadsHeader2.appendChild(leadsLabel);
+  leadsHeader2.appendChild(leadsSubtext);
+  leadsSection.appendChild(leadsHeader2);
+
   var leadsPanel = _lp_el('div');
-  leadsPanel.className = 'lp2-tab-panel';
-  leadsPanel.setAttribute('data-panel','leads');
-  leadsPanel.style.display = window._lpTab2 === 'leads' ? 'block' : 'none';
 
   var leadsData = [
     { name:'Sarah Tan',    email:'sarah.tan@gmail.com',    phone:'+65 9123 4567', campaign:'Insurance Lead Gen', quality:95, status:0, date:'2 Apr' },
@@ -3926,7 +4004,48 @@ DEMO_RENDERERS.launchpad = function(container) {
   footer.appendChild(_lp_el('span','','Conversion rate: 13.4%'));
   leadsPanel.appendChild(footer);
 
-  root.appendChild(leadsPanel);
+  leadsSection.appendChild(leadsPanel);
+  root.appendChild(leadsSection);
+
+  /* ============================================================
+     SECTION 5 — INTEGRATION HIGHLIGHTS
+  ============================================================ */
+  var intSection = _lp_el('div','padding:0 0 32px;');
+
+  var intTitle = _lp_el('div',
+    'font-size:11px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.1em;text-align:center;margin-bottom:20px;',
+    'Platform Highlights');
+  intSection.appendChild(intTitle);
+
+  var intGrid = _lp_el('div','display:grid;grid-template-columns:repeat(3,1fr);gap:14px;');
+  var intCards = [
+    {
+      icon: '\uD83D\uDD17',
+      title: 'Meta API Connected',
+      desc: 'Direct integration with Facebook & Instagram. No third-party middlemen.'
+    },
+    {
+      icon: '\u23F8\uFE0F',
+      title: 'All Campaigns Paused',
+      desc: 'Every campaign launches paused so you can review before spending.'
+    },
+    {
+      icon: '\u26A1',
+      title: 'Auto Lead Sync',
+      desc: 'Leads sync automatically from Meta to your dashboard. No manual export.'
+    }
+  ];
+  intCards.forEach(function(item) {
+    var c = _lp_el('div',
+      'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px 16px;');
+    c.appendChild(_lp_el('div','font-size:22px;margin-bottom:10px;', item.icon));
+    c.appendChild(_lp_el('div','font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;', item.title));
+    c.appendChild(_lp_el('div','font-size:12px;color:rgba(255,255,255,0.45);line-height:1.5;', item.desc));
+    intGrid.appendChild(c);
+  });
+  intSection.appendChild(intGrid);
+  root.appendChild(intSection);
+
   container.appendChild(root);
 };
 
