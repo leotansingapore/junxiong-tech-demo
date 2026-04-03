@@ -3716,12 +3716,8 @@ DEMO_RENDERERS.financehub = function(container) {
 
   // ---- Tab Bar ----
   var tabDefs = [
-    { key: 'profile',    label: 'Client Profile' },
-    { key: 'income',     label: 'Income & Expenses' },
-    { key: 'goals',      label: 'Goals & Milestones' },
-    { key: 'insurance',  label: 'Insurance Coverage' },
-    { key: 'cpf',        label: 'CPF & Retirement' },
-    { key: 'projection', label: 'Projection Chart' },
+    { key: 'planner',    label: 'Financial Planner' },
+    { key: 'projection', label: 'Wealth Projection' },
   ];
 
   // ---- Tab Bar ----
@@ -3739,877 +3735,277 @@ DEMO_RENDERERS.financehub = function(container) {
 
   container.appendChild(tabBar);
 
-  // ---- Helper: make a stat card ----
-  function fhStatCard(label, value, color, small) {
+  // ---- Toast helper (shared) ----
+  var fhToastEl = document.getElementById('fhToast');
+  if (!fhToastEl) {
+    fhToastEl = document.createElement('div');
+    fhToastEl.id = 'fhToast';
+    fhToastEl.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 20px;font-size:13px;color:#e2e8f0;opacity:0;transition:opacity 0.3s;z-index:999;pointer-events:none;white-space:nowrap;';
+    document.body.appendChild(fhToastEl);
+  }
+
+  function fhToast(msg) {
+    fhToastEl.textContent = msg;
+    fhToastEl.style.opacity = '1';
+    setTimeout(function() { fhToastEl.style.opacity = '0'; }, 3000);
+  }
+
+  // ---- Shared helper: stat summary card ----
+  function fhSummaryCard(label, value, color, iconSvg) {
     var card = document.createElement('div');
-    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 16px;';
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;';
+    var topRow = document.createElement('div');
+    topRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
     var lbl = document.createElement('div');
     lbl.textContent = label;
-    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;';
+    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;';
+    var iconWrap = document.createElement('div');
+    iconWrap.style.cssText = 'width:28px;height:28px;border-radius:8px;background:' + color + '20;display:flex;align-items:center;justify-content:center;';
+    iconWrap.innerHTML = iconSvg;
+    topRow.appendChild(lbl);
+    topRow.appendChild(iconWrap);
     var val = document.createElement('div');
     val.textContent = value;
-    val.style.cssText = 'font-size:' + (small ? '15px' : '20px') + ';font-weight:700;color:' + color + ';';
-    card.appendChild(lbl);
+    val.style.cssText = 'font-size:22px;font-weight:700;color:' + color + ';';
+    card.appendChild(topRow);
     card.appendChild(val);
     return card;
   }
 
-  // ============================================================
-  // PANEL 1: CLIENT PROFILE
-  // ============================================================
-  var profilePanel = document.createElement('div');
-  profilePanel.dataset.panel = 'profile';
-  profilePanel.style.cssText = 'padding:20px 0;';
+  // ---- Helper: donut chart with legend below ----
+  function fhDonutSection(title, canvasId, centerText, items) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px;';
+    var ttl = document.createElement('div');
+    ttl.textContent = title;
+    ttl.style.cssText = 'font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:10px;text-align:center;';
+    wrap.appendChild(ttl);
+    var cnvWrap = document.createElement('div');
+    cnvWrap.style.cssText = 'display:flex;justify-content:center;margin-bottom:10px;';
+    var cnv = document.createElement('canvas');
+    cnv.id = canvasId;
+    cnvWrap.appendChild(cnv);
+    wrap.appendChild(cnvWrap);
+    // Legend
+    var legendEl = document.createElement('div');
+    legendEl.style.cssText = 'display:flex;flex-direction:column;gap:5px;';
+    items.forEach(function(item) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;font-size:11px;';
+      var left = document.createElement('div');
+      left.style.cssText = 'display:flex;align-items:center;gap:6px;';
+      var dot = document.createElement('div');
+      dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + item.color + ';flex-shrink:0;';
+      var nm = document.createElement('span');
+      nm.textContent = item.label;
+      nm.style.cssText = 'color:rgba(255,255,255,0.55);';
+      left.appendChild(dot);
+      left.appendChild(nm);
+      var amt = document.createElement('span');
+      amt.textContent = item.displayValue;
+      amt.style.cssText = 'color:#e2e8f0;font-weight:600;';
+      row.appendChild(left);
+      row.appendChild(amt);
+      legendEl.appendChild(row);
+    });
+    wrap.appendChild(legendEl);
+    return { wrap: wrap, canvasId: canvasId, centerText: centerText, items: items };
+  }
 
-  // Top row: avatar card + details card
-  var profileTop = document.createElement('div');
-  profileTop.style.cssText = 'display:grid;grid-template-columns:200px 1fr;gap:20px;margin-bottom:20px;';
+  // ============================================================
+  // PANEL 1: FINANCIAL PLANNER
+  // ============================================================
+  var plannerPanel = document.createElement('div');
+  plannerPanel.dataset.panel = 'planner';
+  plannerPanel.style.cssText = 'padding:20px 0;';
 
-  // Avatar card
-  var avatarCard = document.createElement('div');
-  avatarCard.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;';
+  // ---- Client Profile Header ----
+  var profileHeader = document.createElement('div');
+  profileHeader.style.cssText = 'display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 18px;margin-bottom:20px;';
 
   var avatarCircle = document.createElement('div');
-  avatarCircle.style.cssText = 'width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#6b9bdb,#4a7bc8);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;letter-spacing:1px;flex-shrink:0;';
+  avatarCircle.style.cssText = 'width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#6b9bdb,#4a7bc8);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;flex-shrink:0;';
   avatarCircle.textContent = 'MT';
 
-  var avatarName = document.createElement('div');
-  avatarName.style.cssText = 'font-size:15px;font-weight:700;color:#e2e8f0;text-align:center;line-height:1.3;';
-  avatarName.textContent = 'Marcus Tan Wei Ming';
-
-  var avatarAge = document.createElement('div');
-  avatarAge.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.45);text-align:center;';
-  avatarAge.textContent = 'Age 25 · Software Engineer';
+  var profileInfo = document.createElement('div');
+  profileInfo.style.cssText = 'flex:1;';
+  var profileName = document.createElement('div');
+  profileName.textContent = 'Marcus Tan Wei Ming';
+  profileName.style.cssText = 'font-size:15px;font-weight:700;color:#e2e8f0;';
+  var profileSub = document.createElement('div');
+  profileSub.textContent = 'Age 25 \u00b7 Software Engineer';
+  profileSub.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;';
+  profileInfo.appendChild(profileName);
+  profileInfo.appendChild(profileSub);
 
   var riskBadge = document.createElement('div');
   riskBadge.textContent = 'Moderate Risk';
-  riskBadge.style.cssText = 'font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;background:#C4A24D22;color:#C4A24D;border:1px solid #C4A24D44;';
+  riskBadge.style.cssText = 'font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;background:#C4A24D22;color:#C4A24D;border:1px solid #C4A24D44;flex-shrink:0;';
 
-  avatarCard.appendChild(avatarCircle);
-  avatarCard.appendChild(avatarName);
-  avatarCard.appendChild(avatarAge);
-  avatarCard.appendChild(riskBadge);
+  profileHeader.appendChild(avatarCircle);
+  profileHeader.appendChild(profileInfo);
+  profileHeader.appendChild(riskBadge);
+  plannerPanel.appendChild(profileHeader);
 
-  // Details card
-  var detailsCard = document.createElement('div');
-  detailsCard.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:20px 24px;';
+  // ---- Summary Cards (4-column) ----
+  var summaryGrid = document.createElement('div');
+  summaryGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;';
 
-  var detailsTitle = document.createElement('div');
-  detailsTitle.textContent = 'Personal Details';
-  detailsTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;';
-  detailsCard.appendChild(detailsTitle);
+  var svgPiggy = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + '#34d399' + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11c0-5.5-9-5.5-9 0"/><path d="M3 11v2c0 3.3 2.7 6 6 6h6.5a4.5 4.5 0 0 0 0-9H9"/><path d="M11 21v-2"/><path d="M15 21v-2"/><circle cx="20" cy="11" r="1"/></svg>';
+  var svgCard = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>';
+  var svgWallet = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b9bdb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/><path d="M16 12h5v4h-5a2 2 0 0 1 0-4z"/></svg>';
+  var svgTrend = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>';
 
-  var detailsGrid = document.createElement('div');
-  detailsGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;';
+  summaryGrid.appendChild(fhSummaryCard('Total Assets',       '$892,400', '#34d399', svgPiggy));
+  summaryGrid.appendChild(fhSummaryCard('Total Liabilities',  '$423,600', '#ef4444', svgCard));
+  summaryGrid.appendChild(fhSummaryCard('Net Worth',          '$468,800', '#6b9bdb', svgWallet));
+  summaryGrid.appendChild(fhSummaryCard('Monthly Cash Flow',  '+$5,500',  '#34d399', svgTrend));
+  plannerPanel.appendChild(summaryGrid);
 
-  var details = [
-    { label: 'Date of Birth',     value: '1 Mar 2000' },
-    { label: 'Gender',            value: 'Male' },
-    { label: 'Occupation',        value: 'Software Engineer' },
-    { label: 'Employer',          value: 'TechCorp Pte Ltd' },
-    { label: 'Gross Salary',      value: '$6,500 / month' },
-    { label: 'Residency',         value: 'Singapore Citizen' },
-    { label: 'Retirement Age',    value: '62' },
-    { label: 'Dependants',        value: 'None currently' },
-  ];
+  // ---- Donut Chart Grid (2x2) ----
+  var sectionTitle = document.createElement('div');
+  sectionTitle.textContent = 'Financial Breakdown';
+  sectionTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
+  plannerPanel.appendChild(sectionTitle);
 
-  details.forEach(function(d) {
-    var item = document.createElement('div');
-    item.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
-    var lbl = document.createElement('div');
-    lbl.textContent = d.label;
-    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);';
-    var val = document.createElement('div');
-    val.textContent = d.value;
-    val.style.cssText = 'font-size:13px;color:#e2e8f0;font-weight:500;';
-    item.appendChild(lbl);
-    item.appendChild(val);
-    detailsGrid.appendChild(item);
-  });
+  var donutGrid = document.createElement('div');
+  donutGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;';
 
-  detailsCard.appendChild(detailsGrid);
+  var donutIncome = fhDonutSection('Income', 'fhDonutIncome', '$9,700/mo', [
+    { label: 'Salary',       displayValue: '$8,000',  color: '#3b82f6', value: 8000  },
+    { label: 'Freelance',    displayValue: '$1,200',  color: '#10b981', value: 1200  },
+    { label: 'Investments',  displayValue: '$500',    color: '#f59e0b', value: 500   },
+  ]);
+  var donutExpenses = fhDonutSection('Expenses', 'fhDonutExpenses', '$4,200/mo', [
+    { label: 'Housing',    displayValue: '$1,800', color: '#ef4444', value: 1800 },
+    { label: 'Food',       displayValue: '$800',   color: '#f59e0b', value: 800  },
+    { label: 'Transport',  displayValue: '$600',   color: '#8b5cf6', value: 600  },
+    { label: 'Insurance',  displayValue: '$450',   color: '#3b82f6', value: 450  },
+    { label: 'Others',     displayValue: '$550',   color: '#64748b', value: 550  },
+  ]);
+  var donutAssets = fhDonutSection('Assets', 'fhDonutAssets', '$892k', [
+    { label: 'Property',       displayValue: '$420k', color: '#3b82f6', value: 420000 },
+    { label: 'CPF',            displayValue: '$186k', color: '#10b981', value: 186000 },
+    { label: 'Investments',    displayValue: '$152k', color: '#f59e0b', value: 152400 },
+    { label: 'Cash',           displayValue: '$84k',  color: '#8b5cf6', value: 84000  },
+    { label: 'Insurance CSV',  displayValue: '$50k',  color: '#64748b', value: 50000  },
+  ]);
+  var donutLiab = fhDonutSection('Liabilities', 'fhDonutLiab', '$424k', [
+    { label: 'HDB Loan',     displayValue: '$380k', color: '#ef4444', value: 380000 },
+    { label: 'Car Loan',     displayValue: '$35.6k',color: '#f59e0b', value: 35600  },
+    { label: 'Credit Card',  displayValue: '$8k',   color: '#64748b', value: 8000   },
+  ]);
 
-  // Last Updated timestamp
-  var lastUpdated = document.createElement('div');
-  lastUpdated.style.cssText = 'margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.3);';
-  lastUpdated.textContent = 'Last Updated: 2 days ago';
-  detailsCard.appendChild(lastUpdated);
+  donutGrid.appendChild(donutIncome.wrap);
+  donutGrid.appendChild(donutExpenses.wrap);
+  donutGrid.appendChild(donutAssets.wrap);
+  donutGrid.appendChild(donutLiab.wrap);
+  plannerPanel.appendChild(donutGrid);
 
-  profileTop.appendChild(avatarCard);
-  profileTop.appendChild(detailsCard);
-  profilePanel.appendChild(profileTop);
-
-  // Risk Assessment section
-  var riskSection = document.createElement('div');
-  riskSection.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 20px;margin-bottom:16px;';
-  var riskSectionTitle = document.createElement('div');
-  riskSectionTitle.textContent = 'Risk Assessment';
-  riskSectionTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  riskSection.appendChild(riskSectionTitle);
-
-  var riskMeter = document.createElement('div');
-  riskMeter.style.cssText = 'display:flex;gap:6px;';
-  var riskLevels = [
-    { label: 'Conservative', active: false, color: '#34d399' },
-    { label: 'Moderate',     active: true,  color: '#C4A24D' },
-    { label: 'Aggressive',   active: false, color: '#ef4444' },
-  ];
-  riskLevels.forEach(function(lvl) {
-    var seg = document.createElement('div');
-    seg.style.cssText = 'flex:1;padding:8px 10px;border-radius:8px;text-align:center;font-size:12px;font-weight:' + (lvl.active ? '700' : '500') + ';cursor:default;' +
-      (lvl.active
-        ? 'background:' + lvl.color + '25;border:2px solid ' + lvl.color + ';color:' + lvl.color + ';'
-        : 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);');
-    seg.textContent = lvl.label + (lvl.active ? ' \u2713' : '');
-    riskMeter.appendChild(seg);
-  });
-  riskSection.appendChild(riskMeter);
-  profilePanel.appendChild(riskSection);
-
-  // Advisor Notes section
-  var notesSection = document.createElement('div');
-  notesSection.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 20px;margin-bottom:16px;';
-  var notesSectionTitle = document.createElement('div');
-  notesSectionTitle.textContent = 'Advisor Notes';
-  notesSectionTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;';
-  notesSection.appendChild(notesSectionTitle);
-
-  var advisorNotes = [
-    { date: '31 Mar 2026', text: 'Client is open to increasing monthly savings by $500 once car loan is settled in 2028.' },
-    { date: '15 Mar 2026', text: 'Discussed CI coverage gap \u2014 client agreed to review upgrade to $400k at next meeting.' },
-    { date: '2 Mar 2026',  text: 'Salary increment expected in Q3 2026. Revisit CPF top-up strategy post-increment.' },
-  ];
-  advisorNotes.forEach(function(note) {
-    var noteRow = document.createElement('div');
-    noteRow.style.cssText = 'display:flex;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);';
-    var noteDateEl = document.createElement('div');
-    noteDateEl.textContent = note.date;
-    noteDateEl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);white-space:nowrap;padding-top:1px;min-width:76px;';
-    var noteTextEl = document.createElement('div');
-    noteTextEl.textContent = note.text;
-    noteTextEl.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.65);line-height:1.5;';
-    noteRow.appendChild(noteDateEl);
-    noteRow.appendChild(noteTextEl);
-    notesSection.appendChild(noteRow);
-  });
-  profilePanel.appendChild(notesSection);
-
-  // Bottom: quick financial snapshot
-  var snapshotTitle = document.createElement('div');
-  snapshotTitle.textContent = 'Financial Snapshot';
-  snapshotTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  profilePanel.appendChild(snapshotTitle);
-
-  var snapshotGrid = document.createElement('div');
-  snapshotGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;';
-  [
-    { label: 'Monthly Income',  value: '$6,500',   color: '#34d399' },
-    { label: 'Monthly Expenses',value: '$4,200',   color: '#ef4444' },
-    { label: 'Net Worth',       value: '$142,000', color: '#6b9bdb' },
-    { label: 'CPF Balance',     value: '$55,000',  color: '#C4A24D' },
-  ].forEach(function(s) {
-    snapshotGrid.appendChild(fhStatCard(s.label, s.value, s.color, false));
-  });
-  profilePanel.appendChild(snapshotGrid);
-
-  // ============================================================
-  // PANEL 2: INCOME & EXPENSES
-  // ============================================================
-  var incomePanel = document.createElement('div');
-  incomePanel.dataset.panel = 'income';
-  incomePanel.style.cssText = 'padding:20px 0;display:none;';
-
-  var incomeCols = document.createElement('div');
-  incomeCols.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:24px;';
-
-  // Left: income table
-  var incomeLeft = document.createElement('div');
-  var incomeSectionTitle = document.createElement('div');
-  incomeSectionTitle.textContent = 'Income Sources';
-  incomeSectionTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;';
-  incomeLeft.appendChild(incomeSectionTitle);
-
-  var incomeSources = [
-    { label: 'Gross Salary',   value: '$6,500/mo', badge: 'CPF',      badgeColor: '#6b9bdb' },
-    { label: 'Annual Bonus',   value: '$6,500/yr', badge: 'Taxable',  badgeColor: '#C4A24D' },
-    { label: 'Freelance',      value: '$1,200/mo', badge: 'Variable', badgeColor: '#a78bfa' },
-  ];
-
-  incomeSources.forEach(function(src) {
-    var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;margin-bottom:8px;';
-    var rowLeft = document.createElement('div');
-    rowLeft.style.cssText = 'display:flex;align-items:center;gap:10px;';
-    var badge = document.createElement('span');
-    badge.textContent = src.badge;
-    badge.style.cssText = 'font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:' + src.badgeColor + '22;color:' + src.badgeColor + ';border:1px solid ' + src.badgeColor + '33;';
-    var srcLabel = document.createElement('span');
-    srcLabel.textContent = src.label;
-    srcLabel.style.cssText = 'font-size:13px;color:#e2e8f0;';
-    rowLeft.appendChild(badge);
-    rowLeft.appendChild(srcLabel);
-    var rowRight = document.createElement('div');
-    rowRight.textContent = src.value;
-    rowRight.style.cssText = 'font-size:14px;font-weight:700;color:#34d399;';
-    row.appendChild(rowLeft);
-    row.appendChild(rowRight);
-    incomeLeft.appendChild(row);
-  });
-
-  var incomeTotalRow = document.createElement('div');
-  incomeTotalRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;margin-top:4px;';
-  var iTotalLabel = document.createElement('span');
-  iTotalLabel.textContent = 'Total Effective Monthly';
-  iTotalLabel.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.6);font-weight:600;';
-  var iTotalVal = document.createElement('span');
-  iTotalVal.textContent = '$9,700';
-  iTotalVal.style.cssText = 'font-size:18px;font-weight:700;color:#34d399;';
-  incomeTotalRow.appendChild(iTotalLabel);
-  incomeTotalRow.appendChild(iTotalVal);
-  incomeLeft.appendChild(incomeTotalRow);
-
-  // Right: expenses donut + summary
-  var incomeRight = document.createElement('div');
-  var expSectionTitle = document.createElement('div');
-  expSectionTitle.textContent = 'Expense Breakdown';
-  expSectionTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:14px;';
-  incomeRight.appendChild(expSectionTitle);
-
-  var expDonutWrap = document.createElement('div');
-  expDonutWrap.style.cssText = 'display:flex;justify-content:center;margin-bottom:14px;';
-  var expDonutCanvas = document.createElement('canvas');
-  expDonutCanvas.id = 'fhExpDonut';
-  expDonutWrap.appendChild(expDonutCanvas);
-  incomeRight.appendChild(expDonutWrap);
-
-  var expCategories = [
-    { label: 'Housing',             value: 1800, pct: '32%', color: '#ef4444' },
-    { label: 'Transport',           value: 600,  pct: '11%', color: '#f59e0b' },
-    { label: 'Food',                value: 800,  pct: '14%', color: '#34d399' },
-    { label: 'Insurance Premiums',  value: 450,  pct: '8%',  color: '#6b9bdb' },
-    { label: 'Utilities',           value: 200,  pct: '4%',  color: '#64748b' },
-    { label: 'Entertainment',       value: 350,  pct: '6%',  color: '#a78bfa' },
-  ];
-
-  var expLegendWrap = document.createElement('div');
-  expLegendWrap.style.cssText = 'display:flex;flex-direction:column;gap:5px;margin-bottom:14px;';
-  expCategories.forEach(function(cat) {
-    var r = document.createElement('div');
-    r.style.cssText = 'display:flex;align-items:center;justify-content:space-between;font-size:12px;';
-    var rLeft = document.createElement('div');
-    rLeft.style.cssText = 'display:flex;align-items:center;gap:7px;';
-    var dot = document.createElement('div');
-    dot.style.cssText = 'width:9px;height:9px;border-radius:50%;background:' + cat.color + ';flex-shrink:0;';
-    var lbl = document.createElement('span');
-    lbl.textContent = cat.label;
-    lbl.style.cssText = 'color:rgba(255,255,255,0.65);';
-    rLeft.appendChild(dot);
-    rLeft.appendChild(lbl);
-    var rRight = document.createElement('div');
-    rRight.style.cssText = 'display:flex;gap:10px;';
-    var vSpan = document.createElement('span');
-    vSpan.textContent = '$' + cat.value.toLocaleString();
-    vSpan.style.cssText = 'color:#e2e8f0;font-weight:600;';
-    var pSpan = document.createElement('span');
-    pSpan.textContent = cat.pct;
-    pSpan.style.cssText = 'color:rgba(255,255,255,0.3);width:30px;text-align:right;';
-    rRight.appendChild(vSpan);
-    rRight.appendChild(pSpan);
-    r.appendChild(rLeft);
-    r.appendChild(rRight);
-    expLegendWrap.appendChild(r);
-  });
-  incomeRight.appendChild(expLegendWrap);
-
-  var surplusRow = document.createElement('div');
-  surplusRow.style.cssText = 'display:flex;gap:10px;';
-  var surplusCard = document.createElement('div');
-  surplusCard.style.cssText = 'flex:1;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px 14px;';
-  var surplusLbl = document.createElement('div');
-  surplusLbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:3px;display:flex;align-items:center;gap:6px;';
-  var surplusLblText = document.createElement('span');
-  surplusLblText.textContent = 'Monthly Surplus';
-  var surplusTrendBadge = document.createElement('span');
-  surplusTrendBadge.textContent = '\u25b2 3.2% vs last month';
-  surplusTrendBadge.style.cssText = 'font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:rgba(52,211,153,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.25);';
-  surplusLbl.appendChild(surplusLblText);
-  surplusLbl.appendChild(surplusTrendBadge);
-  var surplusVal = document.createElement('div');
-  surplusVal.textContent = '$5,500';
-  surplusVal.style.cssText = 'font-size:18px;font-weight:700;color:#34d399;';
-  surplusCard.appendChild(surplusLbl);
-  surplusCard.appendChild(surplusVal);
-  var savingsCard = document.createElement('div');
-  savingsCard.style.cssText = 'flex:1;background:rgba(107,155,219,0.08);border:1px solid rgba(107,155,219,0.2);border-radius:10px;padding:10px 14px;';
-  var savingsLbl = document.createElement('div');
-  savingsLbl.textContent = 'Savings Rate';
-  savingsLbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:3px;';
-  var savingsVal = document.createElement('div');
-  savingsVal.textContent = '57%';
-  savingsVal.style.cssText = 'font-size:18px;font-weight:700;color:#6b9bdb;';
-  savingsCard.appendChild(savingsLbl);
-  savingsCard.appendChild(savingsVal);
-  surplusRow.appendChild(surplusCard);
-  surplusRow.appendChild(savingsCard);
-  incomeRight.appendChild(surplusRow);
-
-  // Top 3 Expense Categories mini-ranking
-  var top3Title = document.createElement('div');
-  top3Title.textContent = 'Top 3 Expense Categories';
-  top3Title.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-top:16px;margin-bottom:8px;';
-  incomeRight.appendChild(top3Title);
-
-  var top3Data = [
-    { rank: '1', label: 'Housing',   value: '$1,800', pct: 43, color: '#ef4444' },
-    { rank: '2', label: 'Food',      value: '$800',   pct: 19, color: '#34d399' },
-    { rank: '3', label: 'Transport', value: '$600',   pct: 14, color: '#f59e0b' },
-  ];
-  top3Data.forEach(function(item) {
-    var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:6px;';
-    var rankEl = document.createElement('div');
-    rankEl.textContent = item.rank;
-    rankEl.style.cssText = 'width:18px;height:18px;border-radius:50%;background:' + item.color + '25;border:1px solid ' + item.color + '50;color:' + item.color + ';font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
-    var barWrap = document.createElement('div');
-    barWrap.style.cssText = 'flex:1;';
-    var barLabelRow = document.createElement('div');
-    barLabelRow.style.cssText = 'display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;';
-    var barLabel = document.createElement('span');
-    barLabel.textContent = item.label;
-    barLabel.style.cssText = 'color:rgba(255,255,255,0.6);';
-    var barValue = document.createElement('span');
-    barValue.textContent = item.value;
-    barValue.style.cssText = 'color:' + item.color + ';font-weight:600;';
-    barLabelRow.appendChild(barLabel);
-    barLabelRow.appendChild(barValue);
-    var barTrackT3 = document.createElement('div');
-    barTrackT3.style.cssText = 'background:rgba(255,255,255,0.07);border-radius:3px;height:4px;overflow:hidden;';
-    var barFillT3 = document.createElement('div');
-    barFillT3.style.cssText = 'height:100%;border-radius:3px;background:' + item.color + ';width:' + item.pct + '%;';
-    barTrackT3.appendChild(barFillT3);
-    barWrap.appendChild(barLabelRow);
-    barWrap.appendChild(barTrackT3);
-    row.appendChild(rankEl);
-    row.appendChild(barWrap);
-    incomeRight.appendChild(row);
-  });
-
-  // Income growth projection
-  var incomeGrowthCard = document.createElement('div');
-  incomeGrowthCard.style.cssText = 'margin-top:14px;padding:10px 14px;background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:10px;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.5;';
-  var incomeGrowthText = document.createElement('span');
-  incomeGrowthText.innerHTML = 'Projected annual income at age 35: <strong style="color:#a78bfa;font-size:14px;">$132,000</strong>';
-  incomeGrowthCard.appendChild(incomeGrowthText);
-  incomeRight.appendChild(incomeGrowthCard);
-
-  incomeCols.appendChild(incomeLeft);
-  incomeCols.appendChild(incomeRight);
-  incomePanel.appendChild(incomeCols);
-
-  // ============================================================
-  // PANEL 3: GOALS & MILESTONES
-  // ============================================================
-  var goalsPanel = document.createElement('div');
-  goalsPanel.dataset.panel = 'goals';
-  goalsPanel.style.cssText = 'padding:20px 0;display:none;';
-
-  var goalsHeader = document.createElement('div');
-  goalsHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;';
-  var goalsSectionTitle = document.createElement('div');
-  goalsSectionTitle.textContent = 'Life Goals Timeline';
-  goalsSectionTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;';
-  var addGoalBtn = document.createElement('button');
-  addGoalBtn.textContent = '+ Add Goal';
-  addGoalBtn.style.cssText = 'font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;background:rgba(107,155,219,0.15);color:#6b9bdb;border:1px solid rgba(107,155,219,0.3);cursor:pointer;';
-  addGoalBtn.addEventListener('click', function() {
-    var toast = document.getElementById('fhToast');
-    if (toast) {
-      toast.textContent = 'In the full app, create custom goals for any life event.';
-      toast.style.opacity = '1';
-      setTimeout(function() { toast.style.opacity = '0'; }, 3000);
-    }
-  });
-  goalsHeader.appendChild(goalsSectionTitle);
-  goalsHeader.appendChild(addGoalBtn);
-  goalsPanel.appendChild(goalsHeader);
-
-  // Toast
-  var goalsToast = document.createElement('div');
-  goalsToast.id = 'fhToast';
-  goalsToast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 20px;font-size:13px;color:#e2e8f0;opacity:0;transition:opacity 0.3s;z-index:999;pointer-events:none;white-space:nowrap;';
-  document.body.appendChild(goalsToast);
-
-  // Total Funding Required summary card
-  var totalFundingCard = document.createElement('div');
-  totalFundingCard.style.cssText = 'background:rgba(196,162,77,0.08);border:1px solid rgba(196,162,77,0.25);border-radius:12px;padding:12px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;';
-  var tfLeft = document.createElement('div');
-  var tfLabel = document.createElement('div');
-  tfLabel.textContent = 'Total Funding Required';
-  tfLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;';
-  var tfValue = document.createElement('div');
-  tfValue.textContent = '$1,945,000';
-  tfValue.style.cssText = 'font-size:22px;font-weight:700;color:#C4A24D;';
-  tfLeft.appendChild(tfLabel);
-  tfLeft.appendChild(tfValue);
-  var tfRight = document.createElement('div');
-  tfRight.textContent = 'across 5 goals';
-  tfRight.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.35);';
-  totalFundingCard.appendChild(tfLeft);
-  totalFundingCard.appendChild(tfRight);
-  goalsPanel.appendChild(totalFundingCard);
+  // ---- Life Goals Timeline ----
+  var goalsTitle = document.createElement('div');
+  goalsTitle.textContent = 'Life Goals Timeline';
+  goalsTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
+  plannerPanel.appendChild(goalsTitle);
 
   var goalsData = [
-    { icon: '\uD83D\uDE97', name: 'Buy Car',      age: 28, year: 2028, cost: '$80,000',     saved: 15000, total: 80000,   sources: ['Cash'],         color: '#f59e0b', priority: 'Medium' },
-    { icon: '\uD83C\uDFE0', name: 'Buy HDB',      age: 30, year: 2030, cost: '$600,000',    saved: 55000, total: 600000,  sources: ['CPF', 'Loan'],  color: '#6b9bdb', priority: 'High'   },
-    { icon: '\uD83D\uDC8D', name: 'Wedding',      age: 32, year: 2032, cost: '$50,000',     saved: 5000,  total: 50000,   sources: ['Cash'],         color: '#a78bfa', priority: 'Medium' },
-    { icon: '\uD83D\uDC76', name: 'First Child',  age: 33, year: 2033, cost: '$15,000/yr',  saved: 0,     total: 15000,   sources: ['Cash'],         color: '#34d399', priority: 'Low'    },
-    { icon: '\uD83C\uDFC6', name: 'Retirement',   age: 62, year: 2062, cost: '$1.2M target',saved: 142000,total: 1200000, sources: ['CPF', 'Cash'],  color: '#C4A24D', priority: 'High'   },
+    { icon: '\uD83D\uDE97', label: 'Buy Car',     age: 28, cost: '$80k',   funded: 35,  color: '#f59e0b' },
+    { icon: '\uD83C\uDFE0', label: 'Buy HDB',     age: 30, cost: '$600k',  funded: 12,  color: '#3b82f6' },
+    { icon: '\uD83D\uDC8D', label: 'Wedding',     age: 32, cost: '$50k',   funded: 0,   color: '#8b5cf6' },
+    { icon: '\uD83D\uDC76', label: 'First Child', age: 33, cost: '$15k/yr',funded: 0,   color: '#10b981' },
+    { icon: '\uD83C\uDFD6\uFE0F', label: 'Retirement', age: 62, cost: '$1.2M', funded: 8, color: '#C4A24D' },
   ];
 
   var goalsTimeline = document.createElement('div');
-  goalsTimeline.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
+  goalsTimeline.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
 
   goalsData.forEach(function(goal) {
     var card = document.createElement('div');
-    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:16px;';
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;';
 
-    // Year badge
-    var yearBadge = document.createElement('div');
-    yearBadge.style.cssText = 'display:flex;flex-direction:column;align-items:center;min-width:52px;';
-    var yearNum = document.createElement('div');
-    yearNum.textContent = goal.year;
-    yearNum.style.cssText = 'font-size:13px;font-weight:700;color:' + goal.color + ';';
-    var ageLbl = document.createElement('div');
-    ageLbl.textContent = 'Age ' + goal.age;
-    ageLbl.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.35);';
-    yearBadge.appendChild(yearNum);
-    yearBadge.appendChild(ageLbl);
-
-    // Icon
     var iconEl = document.createElement('div');
     iconEl.textContent = goal.icon;
-    iconEl.style.cssText = 'font-size:24px;flex-shrink:0;';
+    iconEl.style.cssText = 'font-size:20px;flex-shrink:0;';
 
-    // Main info
-    var info = document.createElement('div');
-    info.style.cssText = 'flex:1;';
-    var goalNameRow = document.createElement('div');
-    goalNameRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;';
-    var goalName = document.createElement('div');
-    goalName.textContent = goal.name;
-    goalName.style.cssText = 'font-size:14px;font-weight:600;color:#e2e8f0;';
-    var priorityColors = { High: '#ef4444', Medium: '#f59e0b', Low: '#64748b' };
-    var priorityBadge = document.createElement('span');
-    priorityBadge.textContent = goal.priority;
-    var pColor = priorityColors[goal.priority] || '#64748b';
-    priorityBadge.style.cssText = 'font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:' + pColor + '20;color:' + pColor + ';border:1px solid ' + pColor + '40;';
-    goalNameRow.appendChild(goalName);
-    goalNameRow.appendChild(priorityBadge);
+    var infoEl = document.createElement('div');
+    infoEl.style.cssText = 'flex:1;min-width:0;';
+
+    var labelRow = document.createElement('div');
+    labelRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:5px;';
+    var labelTxt = document.createElement('span');
+    labelTxt.textContent = goal.label;
+    labelTxt.style.cssText = 'font-size:13px;font-weight:600;color:#e2e8f0;';
+    var ageBadge = document.createElement('span');
+    ageBadge.textContent = 'Age ' + goal.age;
+    ageBadge.style.cssText = 'font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:' + goal.color + '20;color:' + goal.color + ';border:1px solid ' + goal.color + '40;';
+    labelRow.appendChild(labelTxt);
+    labelRow.appendChild(ageBadge);
+
     var barTrack = document.createElement('div');
-    barTrack.style.cssText = 'background:rgba(255,255,255,0.07);border-radius:4px;height:6px;margin-bottom:4px;overflow:hidden;';
+    barTrack.style.cssText = 'background:rgba(255,255,255,0.07);border-radius:4px;height:5px;overflow:hidden;';
     var barFill = document.createElement('div');
-    var pct = Math.min(goal.saved / goal.total * 100, 100);
-    barFill.style.cssText = 'height:100%;border-radius:4px;background:' + goal.color + ';width:' + pct.toFixed(1) + '%;';
+    barFill.style.cssText = 'height:100%;border-radius:4px;background:' + goal.color + ';width:' + goal.funded + '%;';
     barTrack.appendChild(barFill);
+
     var pctLbl = document.createElement('div');
-    pctLbl.textContent = pct.toFixed(0) + '% funded';
-    pctLbl.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:5px;';
-    var sourcesRow = document.createElement('div');
-    sourcesRow.style.cssText = 'display:flex;gap:6px;';
-    goal.sources.forEach(function(src) {
-      var badge = document.createElement('span');
-      badge.textContent = src;
-      badge.style.cssText = 'font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);';
-      sourcesRow.appendChild(badge);
-    });
-    info.appendChild(goalNameRow);
-    info.appendChild(barTrack);
-    info.appendChild(pctLbl);
-    info.appendChild(sourcesRow);
+    pctLbl.textContent = goal.funded + '% funded';
+    pctLbl.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);margin-top:3px;';
 
-    // Cost
+    infoEl.appendChild(labelRow);
+    infoEl.appendChild(barTrack);
+    infoEl.appendChild(pctLbl);
+
     var costEl = document.createElement('div');
-    costEl.style.cssText = 'text-align:right;min-width:90px;';
-    var costVal = document.createElement('div');
-    costVal.textContent = goal.cost;
-    costVal.style.cssText = 'font-size:14px;font-weight:700;color:' + goal.color + ';';
-    var savedLbl = document.createElement('div');
-    savedLbl.textContent = '$' + (goal.saved / 1000).toFixed(0) + 'k saved';
-    savedLbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);margin-top:3px;';
-    costEl.appendChild(costVal);
-    costEl.appendChild(savedLbl);
+    costEl.textContent = goal.cost;
+    costEl.style.cssText = 'font-size:13px;font-weight:700;color:' + goal.color + ';flex-shrink:0;';
 
-    card.appendChild(yearBadge);
     card.appendChild(iconEl);
-    card.appendChild(info);
+    card.appendChild(infoEl);
     card.appendChild(costEl);
     goalsTimeline.appendChild(card);
   });
 
-  goalsPanel.appendChild(goalsTimeline);
+  plannerPanel.appendChild(goalsTimeline);
 
   // ============================================================
-  // PANEL 4: INSURANCE COVERAGE
-  // ============================================================
-  var insPanel = document.createElement('div');
-  insPanel.dataset.panel = 'insurance';
-  insPanel.style.cssText = 'padding:20px 0;display:none;';
-
-  var insCols = document.createElement('div');
-  insCols.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:24px;';
-
-  // Left: coverage analysis table
-  var insLeft = document.createElement('div');
-  var insTableTitle = document.createElement('div');
-  insTableTitle.textContent = 'Coverage Gap Analysis';
-  insTableTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;';
-  insLeft.appendChild(insTableTitle);
-
-  var insCoverageData = [
-    { category: 'Death',           recommended: '$800,000', current: '$500,000', gap: '$300,000',    status: 'Partial',   statusColor: '#f59e0b', pct: 500000/800000  },
-    { category: 'TPD',             recommended: '$600,000', current: '$600,000', gap: '—',           status: 'Adequate',  statusColor: '#34d399', pct: 1.0             },
-    { category: 'Critical Illness',recommended: '$400,000', current: '$150,000', gap: '$250,000',    status: 'Gap',       statusColor: '#ef4444', pct: 150000/400000  },
-    { category: 'Hospital',        recommended: 'Class B1', current: 'Class B1', gap: '—',           status: 'Covered',   statusColor: '#34d399', pct: 1.0             },
-    { category: 'Disability Income',recommended:'$3,250/mo',current: '$2,000/mo',gap: '$1,250/mo',  status: 'Partial',   statusColor: '#f59e0b', pct: 2000/3250       },
-  ];
-
-  insCoverageData.forEach(function(item) {
-    var row = document.createElement('div');
-    row.style.cssText = 'margin-bottom:14px;';
-
-    var rowHdr = document.createElement('div');
-    rowHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;';
-    var catLbl = document.createElement('div');
-    catLbl.textContent = item.category;
-    catLbl.style.cssText = 'font-size:13px;font-weight:600;color:#e2e8f0;';
-    var sBadge = document.createElement('div');
-    sBadge.textContent = item.status;
-    sBadge.style.cssText = 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:' + item.statusColor + '22;color:' + item.statusColor + ';border:1px solid ' + item.statusColor + '44;';
-    rowHdr.appendChild(catLbl);
-    rowHdr.appendChild(sBadge);
-    row.appendChild(rowHdr);
-
-    var barTrack = document.createElement('div');
-    barTrack.style.cssText = 'background:rgba(255,255,255,0.07);border-radius:4px;height:8px;overflow:hidden;margin-bottom:5px;';
-    var barFill = document.createElement('div');
-    barFill.style.cssText = 'height:100%;border-radius:4px;background:' + item.statusColor + ';width:' + Math.round(item.pct * 100) + '%;';
-    barTrack.appendChild(barFill);
-    row.appendChild(barTrack);
-
-    var rowSub = document.createElement('div');
-    rowSub.style.cssText = 'display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.35);';
-    var curSub = document.createElement('span');
-    curSub.textContent = 'Current: ' + item.current;
-    var recSub = document.createElement('span');
-    recSub.textContent = 'Recommended: ' + item.recommended;
-    rowSub.appendChild(curSub);
-    rowSub.appendChild(recSub);
-    row.appendChild(rowSub);
-
-    insLeft.appendChild(row);
-  });
-
-  // Right: active policies
-  var insRight = document.createElement('div');
-
-  // Monthly Premium Total card
-  var premiumTotalCard = document.createElement('div');
-  premiumTotalCard.style.cssText = 'background:rgba(107,155,219,0.08);border:1px solid rgba(107,155,219,0.25);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;';
-  var ptLeft = document.createElement('div');
-  var ptLabel = document.createElement('div');
-  ptLabel.textContent = 'Monthly Premium Total';
-  ptLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;';
-  var ptValue = document.createElement('div');
-  ptValue.textContent = '$283/month';
-  ptValue.style.cssText = 'font-size:20px;font-weight:700;color:#6b9bdb;';
-  ptLeft.appendChild(ptLabel);
-  ptLeft.appendChild(ptValue);
-  var ptRight = document.createElement('div');
-  ptRight.textContent = 'across 3 policies';
-  ptRight.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.35);';
-  premiumTotalCard.appendChild(ptLeft);
-  premiumTotalCard.appendChild(ptRight);
-  insRight.appendChild(premiumTotalCard);
-
-  var policiesTitle = document.createElement('div');
-  policiesTitle.textContent = 'Active Policies';
-  policiesTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;';
-  insRight.appendChild(policiesTitle);
-
-  var policies = [
-    { name: 'AIA Term Life',         coverage: '$500k Death',   premium: '$35/month',   color: '#6b9bdb' },
-    { name: 'AIA Critical Cover',    coverage: '$150k CI',      premium: '$28/month',   color: '#ef4444' },
-    { name: 'AIA HealthShield Gold', coverage: 'Class B1',      premium: '$180/year',   color: '#34d399' },
-  ];
-
-  policies.forEach(function(pol) {
-    var polCard = document.createElement('div');
-    polCard.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-left:3px solid ' + pol.color + ';border-radius:10px;padding:12px 16px;margin-bottom:10px;';
-    var polName = document.createElement('div');
-    polName.textContent = pol.name;
-    polName.style.cssText = 'font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:6px;';
-    var polMeta = document.createElement('div');
-    polMeta.style.cssText = 'display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.45);';
-    var polCoverage = document.createElement('span');
-    polCoverage.textContent = pol.coverage;
-    var polPremium = document.createElement('span');
-    polPremium.textContent = pol.premium;
-    polPremium.style.cssText = 'color:' + pol.color + ';font-weight:600;';
-    polMeta.appendChild(polCoverage);
-    polMeta.appendChild(polPremium);
-    polCard.appendChild(polName);
-    polCard.appendChild(polMeta);
-    insRight.appendChild(polCard);
-  });
-
-  // Gap summary cards
-  var gapTitle = document.createElement('div');
-  gapTitle.textContent = 'Coverage Gaps';
-  gapTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-top:16px;margin-bottom:10px;';
-  insRight.appendChild(gapTitle);
-
-  var gapGrid = document.createElement('div');
-  gapGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;';
-  [
-    { label: 'Death Gap',     value: '$300k',   color: '#f59e0b' },
-    { label: 'CI Gap',        value: '$250k',   color: '#ef4444' },
-    { label: 'TPD',           value: 'Adequate',color: '#34d399' },
-    { label: 'Hospital',      value: 'Covered', color: '#34d399' },
-  ].forEach(function(g) {
-    gapGrid.appendChild(fhStatCard(g.label, g.value, g.color, true));
-  });
-  insRight.appendChild(gapGrid);
-
-  // Recommendations section
-  var recTitle = document.createElement('div');
-  recTitle.textContent = 'Recommendations';
-  recTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-top:16px;margin-bottom:10px;';
-  insRight.appendChild(recTitle);
-
-  var recommendations = [
-    { text: 'Increase CI coverage by $250k to close protection gap', icon: '\u2191', color: '#ef4444' },
-    { text: 'Consider adding disability income rider to Term Life policy', icon: '+', color: '#f59e0b' },
-  ];
-  recommendations.forEach(function(rec) {
-    var recRow = document.createElement('div');
-    recRow.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-left:3px solid ' + rec.color + ';border-radius:8px;margin-bottom:8px;';
-    var recIcon = document.createElement('div');
-    recIcon.textContent = rec.icon;
-    recIcon.style.cssText = 'font-size:12px;font-weight:700;color:' + rec.color + ';width:16px;text-align:center;flex-shrink:0;padding-top:1px;';
-    var recText = document.createElement('div');
-    recText.textContent = rec.text;
-    recText.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.6);line-height:1.4;';
-    recRow.appendChild(recIcon);
-    recRow.appendChild(recText);
-    insRight.appendChild(recRow);
-  });
-
-  insCols.appendChild(insLeft);
-  insCols.appendChild(insRight);
-  insPanel.appendChild(insCols);
-
-  // ============================================================
-  // PANEL 5: CPF & RETIREMENT
-  // ============================================================
-  var cpfPanel = document.createElement('div');
-  cpfPanel.dataset.panel = 'cpf';
-  cpfPanel.style.cssText = 'padding:20px 0;display:none;';
-
-  // CPF account balance cards
-  var cpfBalTitle = document.createElement('div');
-  cpfBalTitle.textContent = 'CPF Account Balances';
-  cpfBalTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  cpfPanel.appendChild(cpfBalTitle);
-
-  var cpfAccountsRow = document.createElement('div');
-  cpfAccountsRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;';
-
-  var cpfAccounts = [
-    { label: 'Ordinary Account (OA)', value: '$35,000', color: '#6b9bdb', sub: 'Housing, education, investments' },
-    { label: 'Special Account (SA)',  value: '$12,000', color: '#C4A24D', sub: 'Retirement savings' },
-    { label: 'MediSave Account (MA)', value: '$8,000',  color: '#34d399', sub: 'Healthcare' },
-  ];
-
-  cpfAccounts.forEach(function(acc) {
-    var card = document.createElement('div');
-    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-top:3px solid ' + acc.color + ';border-radius:12px;padding:14px 16px;';
-    var lbl = document.createElement('div');
-    lbl.textContent = acc.label;
-    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;';
-    var val = document.createElement('div');
-    val.textContent = acc.value;
-    val.style.cssText = 'font-size:22px;font-weight:700;color:' + acc.color + ';margin-bottom:4px;';
-    var sub = document.createElement('div');
-    sub.textContent = acc.sub;
-    sub.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);';
-    card.appendChild(lbl);
-    card.appendChild(val);
-    card.appendChild(sub);
-    cpfAccountsRow.appendChild(card);
-  });
-  cpfPanel.appendChild(cpfAccountsRow);
-
-  // Monthly Contribution + Readiness row
-  var cpfMetaRow = document.createElement('div');
-  cpfMetaRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;';
-
-  var cpfContribCard = document.createElement('div');
-  cpfContribCard.style.cssText = 'background:rgba(196,162,77,0.07);border:1px solid rgba(196,162,77,0.2);border-radius:12px;padding:12px 16px;';
-  var cpfContribLabel = document.createElement('div');
-  cpfContribLabel.textContent = 'Monthly CPF Contribution';
-  cpfContribLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;';
-  var cpfContribValue = document.createElement('div');
-  cpfContribValue.textContent = '$2,405/mo';
-  cpfContribValue.style.cssText = 'font-size:20px;font-weight:700;color:#C4A24D;';
-  var cpfContribSub = document.createElement('div');
-  cpfContribSub.textContent = 'Employee $1,300 + Employer $1,105';
-  cpfContribSub.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);margin-top:3px;';
-  cpfContribCard.appendChild(cpfContribLabel);
-  cpfContribCard.appendChild(cpfContribValue);
-  cpfContribCard.appendChild(cpfContribSub);
-
-  var cpfReadyCard = document.createElement('div');
-  cpfReadyCard.style.cssText = 'background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px 16px;';
-  var cpfReadyLabel = document.createElement('div');
-  cpfReadyLabel.textContent = 'Retirement Readiness';
-  cpfReadyLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;';
-  var cpfReadyBadge = document.createElement('div');
-  cpfReadyBadge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.35);';
-  var cpfReadyDot = document.createElement('div');
-  cpfReadyDot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:#34d399;';
-  var cpfReadyText = document.createElement('span');
-  cpfReadyText.textContent = 'On Track';
-  cpfReadyText.style.cssText = 'font-size:14px;font-weight:700;color:#34d399;';
-  cpfReadyBadge.appendChild(cpfReadyDot);
-  cpfReadyBadge.appendChild(cpfReadyText);
-  var cpfReadySub = document.createElement('div');
-  cpfReadySub.textContent = 'Projected to hit FRS by age 55';
-  cpfReadySub.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;';
-  cpfReadyCard.appendChild(cpfReadyLabel);
-  cpfReadyCard.appendChild(cpfReadyBadge);
-  cpfReadyCard.appendChild(cpfReadySub);
-
-  cpfMetaRow.appendChild(cpfContribCard);
-  cpfMetaRow.appendChild(cpfReadyCard);
-  cpfPanel.appendChild(cpfMetaRow);
-
-  // CPF projection chart
-  var cpfProjTitle = document.createElement('div');
-  cpfProjTitle.textContent = 'CPF Growth Projection (Age 25–65)';
-  cpfProjTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  cpfPanel.appendChild(cpfProjTitle);
-
-  var cpfChartWrap = document.createElement('div');
-  var cpfBarCanvas = document.createElement('canvas');
-  cpfBarCanvas.id = 'fhCPFBar';
-  cpfChartWrap.appendChild(cpfBarCanvas);
-  cpfPanel.appendChild(cpfChartWrap);
-
-  // CPF Life section
-  var cpfLifeSection = document.createElement('div');
-  cpfLifeSection.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;';
-
-  // Left: thresholds
-  var cpfThresholds = document.createElement('div');
-  var cpfThresholdTitle = document.createElement('div');
-  cpfThresholdTitle.textContent = 'CPF Life Retirement Sums (2026)';
-  cpfThresholdTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  cpfThresholds.appendChild(cpfThresholdTitle);
-
-  [
-    { label: 'Basic Retirement Sum (BRS)',   value: '$106,500', color: '#34d399', payout: '$750–$900/mo' },
-    { label: 'Full Retirement Sum (FRS)',    value: '$213,000', color: '#6b9bdb', payout: '$1,500–$1,800/mo' },
-    { label: 'Enhanced Retirement Sum (ERS)',value: '$426,000', color: '#C4A24D', payout: '$2,300–$2,800/mo' },
-  ].forEach(function(t) {
-    var tRow = document.createElement('div');
-    tRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;margin-bottom:6px;';
-    var tLeft = document.createElement('div');
-    var tLabel = document.createElement('div');
-    tLabel.textContent = t.label;
-    tLabel.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:2px;';
-    var tVal = document.createElement('div');
-    tVal.textContent = t.value;
-    tVal.style.cssText = 'font-size:14px;font-weight:700;color:' + t.color + ';';
-    tLeft.appendChild(tLabel);
-    tLeft.appendChild(tVal);
-    var tPayout = document.createElement('div');
-    tPayout.textContent = t.payout;
-    tPayout.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-align:right;';
-    tRow.appendChild(tLeft);
-    tRow.appendChild(tPayout);
-    cpfThresholds.appendChild(tRow);
-  });
-
-  // Right: scheme comparison
-  var cpfScheme = document.createElement('div');
-  var cpfSchemeTitle = document.createElement('div');
-  cpfSchemeTitle.textContent = 'Estimated Monthly Payout at 65';
-  cpfSchemeTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  cpfScheme.appendChild(cpfSchemeTitle);
-
-  var schemes = [
-    { name: 'Standard Plan',   payout: '$1,800–$2,000', note: 'Level payouts for life', color: '#6b9bdb' },
-    { name: 'Basic Plan',      payout: '$2,100–$2,400', note: 'Higher early, bequest remainder', color: '#C4A24D' },
-    { name: 'Escalating Plan', payout: '$1,600–$2,500', note: 'Grows 2% yearly', color: '#34d399' },
-  ];
-
-  schemes.forEach(function(s) {
-    var sCard = document.createElement('div');
-    sCard.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-left:3px solid ' + s.color + ';border-radius:8px;padding:10px 14px;margin-bottom:8px;';
-    var sName = document.createElement('div');
-    sName.textContent = s.name;
-    sName.style.cssText = 'font-size:12px;font-weight:600;color:#e2e8f0;margin-bottom:3px;';
-    var sPayout = document.createElement('div');
-    sPayout.textContent = s.payout + '/mo';
-    sPayout.style.cssText = 'font-size:15px;font-weight:700;color:' + s.color + ';margin-bottom:2px;';
-    var sNote = document.createElement('div');
-    sNote.textContent = s.note;
-    sNote.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);';
-    sCard.appendChild(sName);
-    sCard.appendChild(sPayout);
-    sCard.appendChild(sNote);
-    cpfScheme.appendChild(sCard);
-  });
-
-  cpfLifeSection.appendChild(cpfThresholds);
-  cpfLifeSection.appendChild(cpfScheme);
-  cpfPanel.appendChild(cpfLifeSection);
-
-  // What-If scenario section
-  var whatIfSection = document.createElement('div');
-  whatIfSection.style.cssText = 'margin-top:20px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.18);border-radius:12px;padding:14px 18px;';
-  var whatIfTitle = document.createElement('div');
-  whatIfTitle.textContent = 'What-If Scenario';
-  whatIfTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;';
-  whatIfSection.appendChild(whatIfTitle);
-  var whatIfRow = document.createElement('div');
-  whatIfRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;';
-  var whatIfLeft = document.createElement('div');
-  whatIfLeft.style.cssText = 'font-size:13px;color:rgba(255,255,255,0.55);line-height:1.5;';
-  whatIfLeft.textContent = 'If salary increases 3% annually \u2192 CPF at 65:';
-  var whatIfRight = document.createElement('div');
-  whatIfRight.style.cssText = 'font-size:22px;font-weight:700;color:#a78bfa;white-space:nowrap;';
-  whatIfRight.textContent = '$1,140,000';
-  whatIfRow.appendChild(whatIfLeft);
-  whatIfRow.appendChild(whatIfRight);
-  whatIfSection.appendChild(whatIfRow);
-  var whatIfNote = document.createElement('div');
-  whatIfNote.textContent = 'vs. $984,000 at flat salary \u2014 +$156k additional retirement savings';
-  whatIfNote.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;';
-  whatIfSection.appendChild(whatIfNote);
-  cpfPanel.appendChild(whatIfSection);
-
-  // ============================================================
-  // PANEL 6: PROJECTION CHART
+  // PANEL 2: WEALTH PROJECTION
   // ============================================================
   var projPanel = document.createElement('div');
   projPanel.dataset.panel = 'projection';
   projPanel.style.cssText = 'padding:20px 0;display:none;';
 
-  var projTopTitle = document.createElement('div');
-  projTopTitle.textContent = 'Net Worth Projection — Age 25 to 65';
-  projTopTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;';
-  projPanel.appendChild(projTopTitle);
+  // ---- Assumptions Bar ----
+  var assumBar = document.createElement('div');
+  assumBar.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 18px;margin-bottom:20px;align-items:center;';
+  var assumLabel = document.createElement('div');
+  assumLabel.textContent = 'Assumptions:';
+  assumLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;';
+  assumBar.appendChild(assumLabel);
+  [
+    { label: 'Inflation', value: '3%' },
+    { label: 'Returns', value: '6%' },
+    { label: 'Salary Growth', value: '3%' },
+    { label: 'Life Expectancy', value: '90' },
+  ].forEach(function(a) {
+    var chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px;';
+    var lbl = document.createElement('span');
+    lbl.textContent = a.label + ':';
+    lbl.style.cssText = 'color:rgba(255,255,255,0.4);';
+    var val = document.createElement('span');
+    val.textContent = a.value;
+    val.style.cssText = 'font-weight:700;color:#e2e8f0;';
+    chip.appendChild(lbl);
+    chip.appendChild(val);
+    assumBar.appendChild(chip);
+  });
+  projPanel.appendChild(assumBar);
+
+  // ---- Projection Area Chart ----
+  var projChartTitle = document.createElement('div');
+  projChartTitle.textContent = 'Net Worth Projection \u2014 Age 25 to 65';
+  projChartTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
+  projPanel.appendChild(projChartTitle);
 
   var projChartWrap = document.createElement('div');
   projChartWrap.style.cssText = 'margin-bottom:16px;';
@@ -4618,138 +4014,166 @@ DEMO_RENDERERS.financehub = function(container) {
   projChartWrap.appendChild(projCanvas);
   projPanel.appendChild(projChartWrap);
 
-  // Milestone markers row — clickable chips
-  var milestonesRow = document.createElement('div');
-  milestonesRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;';
-  var activeMilestoneChip = null;
+  // ---- Goal Marker Chips ----
+  var markersRow = document.createElement('div');
+  markersRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;';
   [
-    { icon: '\uD83D\uDE97', label: 'Car',        age: 28, color: '#f59e0b' },
-    { icon: '\uD83C\uDFE0', label: 'HDB',        age: 30, color: '#6b9bdb' },
-    { icon: '\uD83D\uDC8D', label: 'Wedding',    age: 32, color: '#a78bfa' },
-    { icon: '\uD83D\uDC76', label: 'Child',      age: 33, color: '#34d399' },
-    { icon: '\uD83C\uDFC6', label: 'Retirement', age: 62, color: '#C4A24D' },
+    { icon: '\uD83D\uDE97', label: 'Car',      age: 28, color: '#f59e0b' },
+    { icon: '\uD83C\uDFE0', label: 'HDB',      age: 30, color: '#3b82f6' },
+    { icon: '\uD83D\uDC8D', label: 'Wedding',  age: 32, color: '#8b5cf6' },
+    { icon: '\uD83D\uDC76', label: 'Child',    age: 33, color: '#10b981' },
+    { icon: '\uD83C\uDFD6\uFE0F', label: 'Retire', age: 62, color: '#C4A24D' },
   ].forEach(function(m) {
     var chip = document.createElement('div');
-    var chipBaseStyle = 'display:flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:20px;background:' + m.color + '15;border:1px solid ' + m.color + '30;color:' + m.color + ';cursor:pointer;transition:all 0.15s;';
-    chip.style.cssText = chipBaseStyle;
-    chip.textContent = m.icon + ' Age ' + m.age + ' \u00b7 ' + m.label;
-    (function(chipEl, milestone) {
-      chipEl.addEventListener('click', function() {
-        var isActive = activeMilestoneChip === chipEl;
-        if (activeMilestoneChip) {
-          activeMilestoneChip.style.fontWeight = '';
-          activeMilestoneChip.style.boxShadow = '';
-        }
-        if (isActive) {
-          activeMilestoneChip = null;
-        } else {
-          chipEl.style.fontWeight = '700';
-          chipEl.style.boxShadow = '0 0 0 2px ' + milestone.color + '55';
-          activeMilestoneChip = chipEl;
-          var toast = document.getElementById('fhToast');
-          if (toast) {
-            toast.textContent = milestone.icon + ' ' + milestone.label + ' milestone at Age ' + milestone.age;
-            toast.style.opacity = '1';
-            setTimeout(function() { toast.style.opacity = '0'; }, 2500);
-          }
-        }
-      });
-    })(chip, m);
-    milestonesRow.appendChild(chip);
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px;border-radius:20px;background:' + m.color + '15;border:1px solid ' + m.color + '35;color:' + m.color + ';cursor:pointer;transition:all 0.15s;';
+    chip.textContent = m.icon + ' ' + m.label + ' (' + m.age + ')';
+    chip.addEventListener('click', function() {
+      fhToast(m.icon + ' ' + m.label + ' milestone at Age ' + m.age);
+    });
+    markersRow.appendChild(chip);
   });
-  projPanel.appendChild(milestonesRow);
+  projPanel.appendChild(markersRow);
 
-  // Key Assumptions collapsible
-  var assumptionsWrap = document.createElement('div');
-  assumptionsWrap.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;margin-bottom:16px;overflow:hidden;';
-  var assumptionsHeader = document.createElement('div');
-  assumptionsHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;user-select:none;';
-  var assumptionsHTitle = document.createElement('span');
-  assumptionsHTitle.textContent = 'Key Assumptions';
-  assumptionsHTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.06em;';
-  var assumptionsChevron = document.createElement('span');
-  assumptionsChevron.textContent = '\u25b8';
-  assumptionsChevron.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.3);transition:transform 0.2s;display:inline-block;';
-  assumptionsHeader.appendChild(assumptionsHTitle);
-  assumptionsHeader.appendChild(assumptionsChevron);
-  var assumptionsBody = document.createElement('div');
-  assumptionsBody.style.cssText = 'display:none;padding:4px 16px 14px;';
-  var aGrid = document.createElement('div');
-  aGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;';
+  // ---- Key Insight Cards ----
+  var insightsTitle = document.createElement('div');
+  insightsTitle.textContent = 'Key Insights';
+  insightsTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
+  projPanel.appendChild(insightsTitle);
+
+  var insightsGrid = document.createElement('div');
+  insightsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;';
+
+  function fhInsightCard(headline, detail, badge, badgeColor) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px;';
+    var topRow = document.createElement('div');
+    topRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
+    var bdg = document.createElement('div');
+    bdg.textContent = badge;
+    bdg.style.cssText = 'font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:' + badgeColor + '25;color:' + badgeColor + ';border:1px solid ' + badgeColor + '45;';
+    topRow.appendChild(bdg);
+    var h2 = document.createElement('div');
+    h2.textContent = headline;
+    h2.style.cssText = 'font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:5px;';
+    var det = document.createElement('div');
+    det.textContent = detail;
+    det.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.45);line-height:1.4;';
+    card.appendChild(topRow);
+    card.appendChild(h2);
+    card.appendChild(det);
+    return card;
+  }
+
+  insightsGrid.appendChild(fhInsightCard('Retirement Ready by Age 60', 'On track to exceed $2.8M target', 'On Track', '#34d399'));
+  insightsGrid.appendChild(fhInsightCard('Property Paid Off by Age 55', 'HDB mortgage fully cleared in 25 years', 'Milestone', '#3b82f6'));
+  insightsGrid.appendChild(fhInsightCard('CPF Life at 65', 'Estimated $1,800–$2,500/month payout', 'CPF LIFE', '#C4A24D'));
+  projPanel.appendChild(insightsGrid);
+
+  // ---- CPF Breakdown ----
+  var cpfTitle = document.createElement('div');
+  cpfTitle.textContent = 'CPF Breakdown';
+  cpfTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
+  projPanel.appendChild(cpfTitle);
+
+  var cpfAccountsRow = document.createElement('div');
+  cpfAccountsRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;';
   [
-    { label: 'Inflation',           value: '3% per annum' },
-    { label: 'Investment Returns',  value: '6% per annum' },
-    { label: 'Salary Growth',       value: '3% per annum' },
-    { label: 'CPF OA Rate',         value: '2.5% per annum' },
-    { label: 'CPF SA Rate',         value: '4.0% per annum' },
-    { label: 'Retirement Age',      value: '62 years old' },
-  ].forEach(function(a) {
-    var aItem = document.createElement('div');
-    aItem.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
-    var aLabel = document.createElement('div');
-    aLabel.textContent = a.label;
-    aLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);';
-    var aValue = document.createElement('div');
-    aValue.textContent = a.value;
-    aValue.style.cssText = 'font-size:13px;color:#e2e8f0;font-weight:500;';
-    aItem.appendChild(aLabel);
-    aItem.appendChild(aValue);
-    aGrid.appendChild(aItem);
+    { label: 'Ordinary Account (OA)', value: '$35k',  rate: '2.5% p.a.', color: '#3b82f6' },
+    { label: 'Special Account (SA)',  value: '$12k',  rate: '4.0% p.a.', color: '#C4A24D' },
+    { label: 'MediSave (MA)',         value: '$8k',   rate: '4.0% p.a.', color: '#10b981' },
+  ].forEach(function(acc) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-top:3px solid ' + acc.color + ';border-radius:12px;padding:14px 16px;';
+    var lbl = document.createElement('div');
+    lbl.textContent = acc.label;
+    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;';
+    var val = document.createElement('div');
+    val.textContent = acc.value;
+    val.style.cssText = 'font-size:20px;font-weight:700;color:' + acc.color + ';margin-bottom:4px;';
+    var rate = document.createElement('div');
+    rate.textContent = acc.rate;
+    rate.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);';
+    card.appendChild(lbl);
+    card.appendChild(val);
+    card.appendChild(rate);
+    cpfAccountsRow.appendChild(card);
   });
-  assumptionsBody.appendChild(aGrid);
-  assumptionsHeader.addEventListener('click', function() {
-    var isOpen = assumptionsBody.style.display !== 'none';
-    assumptionsBody.style.display = isOpen ? 'none' : 'block';
-    assumptionsChevron.style.transform = isOpen ? '' : 'rotate(90deg)';
+  projPanel.appendChild(cpfAccountsRow);
+
+  // CPF projection mini-chart
+  var cpfChartTitle = document.createElement('div');
+  cpfChartTitle.textContent = 'CPF Growth Projection (Age 25\u201365)';
+  cpfChartTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;';
+  projPanel.appendChild(cpfChartTitle);
+
+  var cpfChartWrap = document.createElement('div');
+  var cpfBarCanvas = document.createElement('canvas');
+  cpfBarCanvas.id = 'fhCPFBar';
+  cpfChartWrap.appendChild(cpfBarCanvas);
+  projPanel.appendChild(cpfChartWrap);
+
+  // CPF LIFE thresholds
+  var cpfLifeTitle = document.createElement('div');
+  cpfLifeTitle.textContent = 'CPF LIFE Retirement Sums (2026)';
+  cpfLifeTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-top:16px;margin-bottom:10px;';
+  projPanel.appendChild(cpfLifeTitle);
+
+  var cpfLifeRow = document.createElement('div');
+  cpfLifeRow.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px;';
+  var cpfSums = [
+    { label: 'BRS — Basic Retirement Sum',    value: '$106,500', payout: '$750\u2013$900/mo',     color: '#10b981', projected: false },
+    { label: 'FRS — Full Retirement Sum',     value: '$213,000', payout: '$1,500\u2013$1,800/mo', color: '#3b82f6', projected: true  },
+    { label: 'ERS — Enhanced Retirement Sum', value: '$426,000', payout: '$2,300\u2013$2,800/mo', color: '#C4A24D', projected: false },
+  ];
+  cpfSums.forEach(function(s) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;' +
+      (s.projected ? 'border-color:' + s.color + '40;background:' + s.color + '0d;' : '');
+    var left = document.createElement('div');
+    var lbl = document.createElement('div');
+    lbl.textContent = s.label;
+    lbl.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:3px;';
+    var val = document.createElement('div');
+    val.textContent = s.value;
+    val.style.cssText = 'font-size:14px;font-weight:700;color:' + s.color + ';';
+    left.appendChild(lbl);
+    left.appendChild(val);
+    var right = document.createElement('div');
+    right.style.cssText = 'text-align:right;';
+    var payout = document.createElement('div');
+    payout.textContent = s.payout;
+    payout.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.5);';
+    if (s.projected) {
+      var projBadge = document.createElement('div');
+      projBadge.textContent = 'Projected';
+      projBadge.style.cssText = 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:' + s.color + '25;color:' + s.color + ';border:1px solid ' + s.color + '45;margin-bottom:4px;display:inline-block;';
+      right.appendChild(projBadge);
+    }
+    right.appendChild(payout);
+    row.appendChild(left);
+    row.appendChild(right);
+    cpfLifeRow.appendChild(row);
   });
-  assumptionsWrap.appendChild(assumptionsHeader);
-  assumptionsWrap.appendChild(assumptionsBody);
-  projPanel.appendChild(assumptionsWrap);
+  projPanel.appendChild(cpfLifeRow);
 
-  // Key insight cards
-  var insightTitle = document.createElement('div');
-  insightTitle.textContent = 'Key Insights';
-  insightTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  projPanel.appendChild(insightTitle);
-
-  var insightGrid = document.createElement('div');
-  insightGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;';
-  [
-    { label: 'Retirement Ready By',  value: 'Age 60',  color: '#34d399' },
-    { label: 'Property Paid Off',    value: 'Age 55',  color: '#6b9bdb' },
-    { label: 'Target Net Worth',     value: '$2.8M',   color: '#C4A24D' },
-  ].forEach(function(ins) {
-    insightGrid.appendChild(fhStatCard(ins.label, ins.value, ins.color, false));
-  });
-  projPanel.appendChild(insightGrid);
-
-  // Export Report button
+  // Export button
   var exportBtn = document.createElement('button');
-  exportBtn.textContent = '\u21af  Export Report';
-  exportBtn.style.cssText = 'font-size:13px;font-weight:600;padding:9px 20px;border-radius:10px;background:rgba(196,162,77,0.15);color:#C4A24D;border:1px solid rgba(196,162,77,0.35);cursor:pointer;';
+  exportBtn.textContent = 'Export Full Report';
+  exportBtn.style.cssText = 'font-size:13px;font-weight:600;padding:10px 22px;border-radius:10px;background:rgba(196,162,77,0.15);color:#C4A24D;border:1px solid rgba(196,162,77,0.35);cursor:pointer;';
   exportBtn.addEventListener('mouseenter', function() { exportBtn.style.background = 'rgba(196,162,77,0.25)'; });
   exportBtn.addEventListener('mouseleave', function() { exportBtn.style.background = 'rgba(196,162,77,0.15)'; });
   exportBtn.addEventListener('click', function() {
-    var toast = document.getElementById('fhToast');
-    if (toast) {
-      toast.textContent = '\u2713 Exported \u2014 Marcus_Tan_FinancialPlan_Apr2026.pdf';
-      toast.style.opacity = '1';
-      setTimeout(function() { toast.style.opacity = '0'; }, 3000);
-    }
+    fhToast('\u2713 Exported \u2014 Marcus_Tan_WealthProjection_Apr2026.pdf');
   });
   projPanel.appendChild(exportBtn);
 
-  // ---- Append all panels ----
-  container.appendChild(profilePanel);
-  container.appendChild(incomePanel);
-  container.appendChild(goalsPanel);
-  container.appendChild(insPanel);
-  container.appendChild(cpfPanel);
+  // ---- Append panels ----
+  container.appendChild(plannerPanel);
   container.appendChild(projPanel);
 
-  // Render initial tab charts after DOM is ready
+  // Render donuts after DOM is ready
   setTimeout(function() {
-    _fhRenderExpDonut();
+    _fhRenderDonuts(donutIncome, donutExpenses, donutAssets, donutLiab);
   }, 100);
 };
 
@@ -4766,24 +4190,23 @@ function fhTab(tab) {
   });
 
   setTimeout(function() {
-    if (tab === 'income')     _fhRenderExpDonut();
-    if (tab === 'cpf')        _fhRenderCPF();
     if (tab === 'projection') _fhRenderProjection();
   }, 50);
 }
 
-/* ---- Income & Expenses: expense donut ---- */
-function _fhRenderExpDonut() {
-  var canvas = document.getElementById('fhExpDonut');
-  if (!canvas) return;
-  Charts.donut(canvas, [
-    { value: 1800, color: '#ef4444', label: 'Housing' },
-    { value: 600,  color: '#f59e0b', label: 'Transport' },
-    { value: 800,  color: '#34d399', label: 'Food' },
-    { value: 450,  color: '#6b9bdb', label: 'Insurance' },
-    { value: 200,  color: '#64748b', label: 'Utilities' },
-    { value: 350,  color: '#a78bfa', label: 'Entertainment' },
-  ], { size: 150, centerText: '$4.2k', centerSub: 'monthly' });
+/* ---- Financial Planner: render all 4 donuts ---- */
+function _fhRenderDonuts(income, expenses, assets, liab) {
+  function renderOne(config) {
+    var canvas = document.getElementById(config.canvasId);
+    if (!canvas) return;
+    Charts.donut(canvas, config.items.map(function(i) {
+      return { value: i.value, color: i.color, label: i.label };
+    }), { size: 130, centerText: config.centerText, centerSub: '' });
+  }
+  renderOne(income);
+  renderOne(expenses);
+  renderOne(assets);
+  renderOne(liab);
 }
 
 /* ---- CPF Projection chart ---- */
@@ -4791,9 +4214,7 @@ function _fhRenderCPF() {
   var canvas = document.getElementById('fhCPFBar');
   if (!canvas) return;
 
-  // CPF contributions for Marcus: salary $6,500, age 25
-  // Employee OA 23%, SA 6%, MA 8% (simplified under 55 rate)
-  var salary = 6500;
+  var salary = 8000;
   var oaContrib = salary * 0.23;
   var saContrib = salary * 0.06;
   var maContrib = salary * 0.08;
@@ -4809,24 +4230,23 @@ function _fhRenderCPF() {
                (years > 0 ? saContrib * 12 * ((Math.pow(1 + saRate, years) - 1) / saRate) : 0);
     var maFV = maBase * Math.pow(1 + maRate, years) +
                (years > 0 ? maContrib * 12 * ((Math.pow(1 + maRate, years) - 1) / maRate) : 0);
-    // After 55 SA moves to RA, simplify by capping SA growth
     if (age >= 55) { saFV = Math.min(saFV, 213000); }
     return {
       label: '' + age,
       segments: [
-        { value: Math.round(oaFV), color: '#6b9bdb' },
+        { value: Math.round(oaFV), color: '#3b82f6' },
         { value: Math.round(saFV), color: '#C4A24D' },
-        { value: Math.round(maFV), color: '#34d399' },
+        { value: Math.round(maFV), color: '#10b981' },
       ]
     };
   });
 
   Charts.stackedBar(canvas, cpfData, {
-    height: 220,
+    height: 200,
     legend: [
-      { label: 'OA', color: '#6b9bdb' },
+      { label: 'OA', color: '#3b82f6' },
       { label: 'SA', color: '#C4A24D' },
-      { label: 'MA', color: '#34d399' },
+      { label: 'MA', color: '#10b981' },
     ],
   });
 }
@@ -4850,13 +4270,16 @@ function _fhRenderProjection() {
 
   Charts.area(canvas, projData, {
     color: '#C4A24D',
-    height: 260,
+    height: 280,
     currency: true,
     gridLines: 5,
     yMin: 0,
     yMax: 3000000,
   });
+
+  _fhRenderCPF();
 }
+
 
 /* ============================================================
    MOBILE MENU TOGGLE
