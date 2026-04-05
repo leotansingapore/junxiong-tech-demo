@@ -92,7 +92,7 @@
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Rebuilt with slider inputs (amount $100-$10K, frequency toggle, term 5-30yr, return 3-8%), 4 summary cards, Charts.multiLine projection chart, fee breakdown grid, and full year-by-year table. Removed retirement step-by-step and platform stats sections. Compound interest with annual fee deduction."
+      "notes": "Rebuilt with slider inputs (amount $100-$50K, frequency toggle, term 5-30yr, return 3-8% in 0.25% steps), 4 summary cards, Charts.multiLine projection chart, fee breakdown grid, and full year-by-year table. Removed retirement step-by-step and platform stats sections. Compound interest with annual fee deduction."
     },
     {
       "id": "US-005",

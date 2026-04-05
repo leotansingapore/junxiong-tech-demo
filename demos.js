@@ -377,7 +377,7 @@ DEMO_RENDERERS.calculator = function(container) {
   var controlsWrap = document.createElement('div');
   controlsWrap.style.cssText = 'background:var(--surface2,var(--bg2));border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:24px;';
 
-  controlsWrap.appendChild(makeSlider('Investment Amount (per period)', 100, 10000, 100, illCfg.monthly, '$', function(v) {
+  controlsWrap.appendChild(makeSlider('Investment Amount (per period)', 100, 50000, 100, illCfg.monthly, '$', function(v) {
     illCfg.monthly = v;
     runIllCalc();
   }));
@@ -396,7 +396,7 @@ DEMO_RENDERERS.calculator = function(container) {
     runIllCalc();
   }));
 
-  controlsWrap.appendChild(makeSlider('Expected Return Rate', 3, 8, 0.5, illCfg.retRate, '%', function(v) {
+  controlsWrap.appendChild(makeSlider('Expected Return Rate', 3, 8, 0.25, illCfg.retRate, '%', function(v) {
     illCfg.retRate = v;
     runIllCalc();
   }));
