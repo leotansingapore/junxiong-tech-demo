@@ -2721,6 +2721,10 @@ DEMO_RENDERERS.financehub = function(container) {
 
   var featGrid = document.createElement('div');
   featGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;';
+  var featMq = window.matchMedia('(max-width:640px)');
+  function applyFeatMq(e) { featGrid.style.gridTemplateColumns = e.matches ? 'repeat(2,1fr)' : 'repeat(3,1fr)'; }
+  featMq.addEventListener('change', applyFeatMq);
+  applyFeatMq(featMq);
 
   var featureCards = [
     { icon: '\uD83D\uDCB0', title: 'Income & Cash Flow',       desc: 'Track salary, freelance, passive income vs expenses with visual breakdowns' },
@@ -2812,48 +2816,8 @@ DEMO_RENDERERS.financehub = function(container) {
     return card;
   }
 
-  // ---- Helper: donut chart with legend below ----
-  function fhDonutSection(title, canvasId, centerText, items) {
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px;';
-    var ttl = document.createElement('div');
-    ttl.textContent = title;
-    ttl.style.cssText = 'font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:10px;text-align:center;';
-    wrap.appendChild(ttl);
-    var cnvWrap = document.createElement('div');
-    cnvWrap.style.cssText = 'display:flex;justify-content:center;margin-bottom:10px;';
-    var cnv = document.createElement('canvas');
-    cnv.id = canvasId;
-    cnvWrap.appendChild(cnv);
-    wrap.appendChild(cnvWrap);
-    // Legend
-    var legendEl = document.createElement('div');
-    legendEl.style.cssText = 'display:flex;flex-direction:column;gap:5px;';
-    items.forEach(function(item) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;font-size:11px;';
-      var left = document.createElement('div');
-      left.style.cssText = 'display:flex;align-items:center;gap:6px;';
-      var dot = document.createElement('div');
-      dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + item.color + ';flex-shrink:0;';
-      var nm = document.createElement('span');
-      nm.textContent = item.label;
-      nm.style.cssText = 'color:rgba(255,255,255,0.55);';
-      left.appendChild(dot);
-      left.appendChild(nm);
-      var amt = document.createElement('span');
-      amt.textContent = item.displayValue;
-      amt.style.cssText = 'color:#e2e8f0;font-weight:600;';
-      row.appendChild(left);
-      row.appendChild(amt);
-      legendEl.appendChild(row);
-    });
-    wrap.appendChild(legendEl);
-    return { wrap: wrap, canvasId: canvasId, centerText: centerText, items: items };
-  }
-
   // ============================================================
-  // PANEL 1: FINANCIAL PLANNER
+  // FINANCIAL PLANNER PANEL
   // ============================================================
   var plannerPanel = document.createElement('div');
   plannerPanel.dataset.panel = 'planner';
@@ -2887,9 +2851,13 @@ DEMO_RENDERERS.financehub = function(container) {
   profileHeader.appendChild(riskBadge);
   plannerPanel.appendChild(profileHeader);
 
-  // ---- Summary Cards (4-column) ----
+  // ---- Summary Cards (4-column, 2 on mobile) ----
   var summaryGrid = document.createElement('div');
   summaryGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;';
+  var summaryMq = window.matchMedia('(max-width:640px)');
+  function applySummaryMq(e) { summaryGrid.style.gridTemplateColumns = e.matches ? 'repeat(2,1fr)' : 'repeat(4,1fr)'; }
+  summaryMq.addEventListener('change', applySummaryMq);
+  applySummaryMq(summaryMq);
 
   var svgPiggy = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + '#34d399' + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11c0-5.5-9-5.5-9 0"/><path d="M3 11v2c0 3.3 2.7 6 6 6h6.5a4.5 4.5 0 0 0 0-9H9"/><path d="M11 21v-2"/><path d="M15 21v-2"/><circle cx="20" cy="11" r="1"/></svg>';
   var svgCard = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>';
@@ -2902,45 +2870,134 @@ DEMO_RENDERERS.financehub = function(container) {
   summaryGrid.appendChild(fhSummaryCard('Monthly Cash Flow',  '+$5,500',  '#34d399', svgTrend));
   plannerPanel.appendChild(summaryGrid);
 
-  // ---- Donut Chart Grid (2x2) ----
-  var sectionTitle = document.createElement('div');
-  sectionTitle.textContent = 'Financial Breakdown';
-  sectionTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  plannerPanel.appendChild(sectionTitle);
+  // ---- Wealth Projection Chart (centerpiece) ----
+  var projTitle = document.createElement('div');
+  projTitle.textContent = 'Net Worth Projection -- Age 25 to 65';
+  projTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
+  plannerPanel.appendChild(projTitle);
 
-  var donutGrid = document.createElement('div');
-  donutGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;';
+  var assumBar = document.createElement('div');
+  assumBar.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 18px;margin-bottom:16px;align-items:center;';
+  var assumLabel = document.createElement('div');
+  assumLabel.textContent = 'Assumptions:';
+  assumLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;';
+  assumBar.appendChild(assumLabel);
+  [
+    { label: 'Inflation', value: '3%' },
+    { label: 'Returns', value: '6%' },
+    { label: 'Salary Growth', value: '3%' },
+    { label: 'Life Expectancy', value: '90' },
+  ].forEach(function(a) {
+    var chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px;';
+    var lbl = document.createElement('span');
+    lbl.textContent = a.label + ':';
+    lbl.style.cssText = 'color:rgba(255,255,255,0.4);';
+    var val = document.createElement('span');
+    val.textContent = a.value;
+    val.style.cssText = 'font-weight:700;color:#e2e8f0;';
+    chip.appendChild(lbl);
+    chip.appendChild(val);
+    assumBar.appendChild(chip);
+  });
+  plannerPanel.appendChild(assumBar);
 
-  var donutIncome = fhDonutSection('Income', 'fhDonutIncome', '$9,700/mo', [
-    { label: 'Salary',       displayValue: '$8,000',  color: '#3b82f6', value: 8000  },
-    { label: 'Freelance',    displayValue: '$1,200',  color: '#10b981', value: 1200  },
-    { label: 'Investments',  displayValue: '$500',    color: '#f59e0b', value: 500   },
-  ]);
-  var donutExpenses = fhDonutSection('Expenses', 'fhDonutExpenses', '$4,200/mo', [
-    { label: 'Housing',    displayValue: '$1,800', color: '#ef4444', value: 1800 },
-    { label: 'Food',       displayValue: '$800',   color: '#f59e0b', value: 800  },
-    { label: 'Transport',  displayValue: '$600',   color: '#8b5cf6', value: 600  },
-    { label: 'Insurance',  displayValue: '$450',   color: '#3b82f6', value: 450  },
-    { label: 'Others',     displayValue: '$550',   color: '#64748b', value: 550  },
-  ]);
-  var donutAssets = fhDonutSection('Assets', 'fhDonutAssets', '$892k', [
-    { label: 'Property',       displayValue: '$420k', color: '#3b82f6', value: 420000 },
-    { label: 'CPF',            displayValue: '$186k', color: '#10b981', value: 186000 },
-    { label: 'Investments',    displayValue: '$152k', color: '#f59e0b', value: 152400 },
-    { label: 'Cash',           displayValue: '$84k',  color: '#8b5cf6', value: 84000  },
-    { label: 'Insurance CSV',  displayValue: '$50k',  color: '#64748b', value: 50000  },
-  ]);
-  var donutLiab = fhDonutSection('Liabilities', 'fhDonutLiab', '$424k', [
-    { label: 'HDB Loan',     displayValue: '$380k', color: '#ef4444', value: 380000 },
-    { label: 'Car Loan',     displayValue: '$35.6k',color: '#f59e0b', value: 35600  },
-    { label: 'Credit Card',  displayValue: '$8k',   color: '#64748b', value: 8000   },
-  ]);
+  var projChartWrap = document.createElement('div');
+  projChartWrap.style.cssText = 'margin-bottom:16px;';
+  var projCanvas = document.createElement('canvas');
+  projCanvas.id = 'fhProjArea';
+  projChartWrap.appendChild(projCanvas);
+  plannerPanel.appendChild(projChartWrap);
 
-  donutGrid.appendChild(donutIncome.wrap);
-  donutGrid.appendChild(donutExpenses.wrap);
-  donutGrid.appendChild(donutAssets.wrap);
-  donutGrid.appendChild(donutLiab.wrap);
-  plannerPanel.appendChild(donutGrid);
+  // ---- Goal Marker Chips ----
+  var markersRow = document.createElement('div');
+  markersRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;';
+  [
+    { icon: '\uD83D\uDE97', label: 'Car',      age: 28, color: '#f59e0b' },
+    { icon: '\uD83C\uDFE0', label: 'HDB',      age: 30, color: '#3b82f6' },
+    { icon: '\uD83D\uDC8D', label: 'Wedding',  age: 32, color: '#8b5cf6' },
+    { icon: '\uD83D\uDC76', label: 'Child',    age: 33, color: '#10b981' },
+    { icon: '\uD83C\uDFD6\uFE0F', label: 'Retire', age: 62, color: '#C4A24D' },
+  ].forEach(function(m) {
+    var chip = document.createElement('div');
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px;border-radius:20px;background:' + m.color + '15;border:1px solid ' + m.color + '35;color:' + m.color + ';cursor:pointer;transition:all 0.15s;';
+    chip.textContent = m.icon + ' ' + m.label + ' (' + m.age + ')';
+    chip.addEventListener('click', function() {
+      fhToast(m.icon + ' ' + m.label + ' milestone at Age ' + m.age);
+    });
+    markersRow.appendChild(chip);
+  });
+  plannerPanel.appendChild(markersRow);
+
+  // ---- Collapsed Financial Breakdown (replaces 4 donut charts) ----
+  var breakdownTitle = document.createElement('div');
+  breakdownTitle.textContent = 'Financial Breakdown';
+  breakdownTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
+  plannerPanel.appendChild(breakdownTitle);
+
+  var breakdownGrid = document.createElement('div');
+  breakdownGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;';
+
+  function fhBreakdownItem(title, total, items, color) {
+    var card = document.createElement('div');
+    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-top:3px solid ' + color + ';border-radius:12px;padding:14px;';
+    var ttl = document.createElement('div');
+    ttl.textContent = title;
+    ttl.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;';
+    card.appendChild(ttl);
+    var totalEl = document.createElement('div');
+    totalEl.textContent = total;
+    totalEl.style.cssText = 'font-size:18px;font-weight:700;color:' + color + ';margin-bottom:8px;';
+    card.appendChild(totalEl);
+    items.forEach(function(item) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;';
+      var lbl = document.createElement('span');
+      lbl.textContent = item.label;
+      lbl.style.cssText = 'color:rgba(255,255,255,0.4);';
+      var val = document.createElement('span');
+      val.textContent = item.value;
+      val.style.cssText = 'color:rgba(255,255,255,0.6);font-weight:600;';
+      row.appendChild(lbl);
+      row.appendChild(val);
+      card.appendChild(row);
+    });
+    return card;
+  }
+
+  breakdownGrid.appendChild(fhBreakdownItem('Income', '$9,700/mo', [
+    { label: 'Salary', value: '$8,000' },
+    { label: 'Freelance', value: '$1,200' },
+    { label: 'Investments', value: '$500' },
+  ], '#3b82f6'));
+
+  breakdownGrid.appendChild(fhBreakdownItem('Expenses', '$4,200/mo', [
+    { label: 'Housing', value: '$1,800' },
+    { label: 'Food', value: '$800' },
+    { label: 'Transport', value: '$600' },
+  ], '#ef4444'));
+
+  breakdownGrid.appendChild(fhBreakdownItem('Assets', '$892k', [
+    { label: 'Property', value: '$420k' },
+    { label: 'CPF', value: '$186k' },
+    { label: 'Investments', value: '$152k' },
+  ], '#10b981'));
+
+  breakdownGrid.appendChild(fhBreakdownItem('Liabilities', '$424k', [
+    { label: 'HDB Loan', value: '$380k' },
+    { label: 'Car Loan', value: '$35.6k' },
+    { label: 'Credit Card', value: '$8k' },
+  ], '#f59e0b'));
+
+  plannerPanel.appendChild(breakdownGrid);
+
+  // Responsive: 2-col on mobile
+  var breakdownMq = window.matchMedia('(max-width:640px)');
+  function applyBreakdownGrid(e) {
+    breakdownGrid.style.gridTemplateColumns = e.matches ? 'repeat(2,1fr)' : 'repeat(4,1fr)';
+  }
+  breakdownMq.addEventListener('change', applyBreakdownGrid);
+  applyBreakdownGrid(breakdownMq);
 
   // ---- Life Goals Timeline ----
   var goalsTitle = document.createElement('div');
@@ -3007,232 +3064,6 @@ DEMO_RENDERERS.financehub = function(container) {
 
   plannerPanel.appendChild(goalsTimeline);
 
-  // ============================================================
-  // PANEL 2: WEALTH PROJECTION
-  // ============================================================
-  var projPanel = document.createElement('div');
-  projPanel.dataset.panel = 'projection';
-  projPanel.style.cssText = 'padding:20px 0;';
-
-  // ---- Assumptions Bar ----
-  var assumBar = document.createElement('div');
-  assumBar.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 18px;margin-bottom:20px;align-items:center;';
-  var assumLabel = document.createElement('div');
-  assumLabel.textContent = 'Assumptions:';
-  assumLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.05em;flex-shrink:0;';
-  assumBar.appendChild(assumLabel);
-  [
-    { label: 'Inflation', value: '3%' },
-    { label: 'Returns', value: '6%' },
-    { label: 'Salary Growth', value: '3%' },
-    { label: 'Life Expectancy', value: '90' },
-  ].forEach(function(a) {
-    var chip = document.createElement('div');
-    chip.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px;';
-    var lbl = document.createElement('span');
-    lbl.textContent = a.label + ':';
-    lbl.style.cssText = 'color:rgba(255,255,255,0.4);';
-    var val = document.createElement('span');
-    val.textContent = a.value;
-    val.style.cssText = 'font-weight:700;color:#e2e8f0;';
-    chip.appendChild(lbl);
-    chip.appendChild(val);
-    assumBar.appendChild(chip);
-  });
-  projPanel.appendChild(assumBar);
-
-  // ---- Projection Area Chart ----
-  var projChartTitle = document.createElement('div');
-  projChartTitle.textContent = 'Net Worth Projection \u2014 Age 25 to 65';
-  projChartTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  projPanel.appendChild(projChartTitle);
-
-  var projChartWrap = document.createElement('div');
-  projChartWrap.style.cssText = 'margin-bottom:16px;';
-  var projCanvas = document.createElement('canvas');
-  projCanvas.id = 'fhProjArea';
-  projChartWrap.appendChild(projCanvas);
-  projPanel.appendChild(projChartWrap);
-
-  // ---- Goal Marker Chips ----
-  var markersRow = document.createElement('div');
-  markersRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;';
-  [
-    { icon: '\uD83D\uDE97', label: 'Car',      age: 28, color: '#f59e0b' },
-    { icon: '\uD83C\uDFE0', label: 'HDB',      age: 30, color: '#3b82f6' },
-    { icon: '\uD83D\uDC8D', label: 'Wedding',  age: 32, color: '#8b5cf6' },
-    { icon: '\uD83D\uDC76', label: 'Child',    age: 33, color: '#10b981' },
-    { icon: '\uD83C\uDFD6\uFE0F', label: 'Retire', age: 62, color: '#C4A24D' },
-  ].forEach(function(m) {
-    var chip = document.createElement('div');
-    chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px;border-radius:20px;background:' + m.color + '15;border:1px solid ' + m.color + '35;color:' + m.color + ';cursor:pointer;transition:all 0.15s;';
-    chip.textContent = m.icon + ' ' + m.label + ' (' + m.age + ')';
-    chip.addEventListener('click', function() {
-      fhToast(m.icon + ' ' + m.label + ' milestone at Age ' + m.age);
-    });
-    markersRow.appendChild(chip);
-  });
-  projPanel.appendChild(markersRow);
-
-  // ---- Key Insight Cards ----
-  var insightsTitle = document.createElement('div');
-  insightsTitle.textContent = 'Key Insights';
-  insightsTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  projPanel.appendChild(insightsTitle);
-
-  var insightsGrid = document.createElement('div');
-  insightsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;';
-
-  function fhInsightCard(headline, detail, badge, badgeColor) {
-    var card = document.createElement('div');
-    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px;';
-    var topRow = document.createElement('div');
-    topRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
-    var bdg = document.createElement('div');
-    bdg.textContent = badge;
-    bdg.style.cssText = 'font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:' + badgeColor + '25;color:' + badgeColor + ';border:1px solid ' + badgeColor + '45;';
-    topRow.appendChild(bdg);
-    var h2 = document.createElement('div');
-    h2.textContent = headline;
-    h2.style.cssText = 'font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:5px;';
-    var det = document.createElement('div');
-    det.textContent = detail;
-    det.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.45);line-height:1.4;';
-    card.appendChild(topRow);
-    card.appendChild(h2);
-    card.appendChild(det);
-    return card;
-  }
-
-  insightsGrid.appendChild(fhInsightCard('Retirement Ready by Age 60', 'On track to exceed $2.8M target', 'On Track', '#34d399'));
-  insightsGrid.appendChild(fhInsightCard('Property Paid Off by Age 55', 'HDB mortgage fully cleared in 25 years', 'Milestone', '#3b82f6'));
-  insightsGrid.appendChild(fhInsightCard('CPF Life at 65', 'Estimated $1,800–$2,500/month payout', 'CPF LIFE', '#C4A24D'));
-  projPanel.appendChild(insightsGrid);
-
-  // ---- CPF Breakdown ----
-  var cpfTitle = document.createElement('div');
-  cpfTitle.textContent = 'CPF Breakdown';
-  cpfTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;';
-  projPanel.appendChild(cpfTitle);
-
-  var cpfAccountsRow = document.createElement('div');
-  cpfAccountsRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;';
-  [
-    { label: 'Ordinary Account (OA)', value: '$35k',  rate: '2.5% p.a.', color: '#3b82f6' },
-    { label: 'Special Account (SA)',  value: '$12k',  rate: '4.0% p.a.', color: '#C4A24D' },
-    { label: 'MediSave (MA)',         value: '$8k',   rate: '4.0% p.a.', color: '#10b981' },
-  ].forEach(function(acc) {
-    var card = document.createElement('div');
-    card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-top:3px solid ' + acc.color + ';border-radius:12px;padding:14px 16px;';
-    var lbl = document.createElement('div');
-    lbl.textContent = acc.label;
-    lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:6px;';
-    var val = document.createElement('div');
-    val.textContent = acc.value;
-    val.style.cssText = 'font-size:20px;font-weight:700;color:' + acc.color + ';margin-bottom:4px;';
-    var rate = document.createElement('div');
-    rate.textContent = acc.rate;
-    rate.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.3);';
-    card.appendChild(lbl);
-    card.appendChild(val);
-    card.appendChild(rate);
-    cpfAccountsRow.appendChild(card);
-  });
-  projPanel.appendChild(cpfAccountsRow);
-
-  // CPF projection mini-chart
-  var cpfChartTitle = document.createElement('div');
-  cpfChartTitle.textContent = 'CPF Growth Projection (Age 25\u201365)';
-  cpfChartTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;';
-  projPanel.appendChild(cpfChartTitle);
-
-  var cpfChartWrap = document.createElement('div');
-  var cpfBarCanvas = document.createElement('canvas');
-  cpfBarCanvas.id = 'fhCPFBar';
-  cpfChartWrap.appendChild(cpfBarCanvas);
-  projPanel.appendChild(cpfChartWrap);
-
-  // CPF LIFE thresholds
-  var cpfLifeTitle = document.createElement('div');
-  cpfLifeTitle.textContent = 'CPF LIFE Retirement Sums (2026)';
-  cpfLifeTitle.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-top:16px;margin-bottom:10px;';
-  projPanel.appendChild(cpfLifeTitle);
-
-  var cpfLifeRow = document.createElement('div');
-  cpfLifeRow.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px;';
-  var cpfSums = [
-    { label: 'BRS — Basic Retirement Sum',    value: '$106,500', payout: '$750\u2013$900/mo',     color: '#10b981', projected: false },
-    { label: 'FRS — Full Retirement Sum',     value: '$213,000', payout: '$1,500\u2013$1,800/mo', color: '#3b82f6', projected: true  },
-    { label: 'ERS — Enhanced Retirement Sum', value: '$426,000', payout: '$2,300\u2013$2,800/mo', color: '#C4A24D', projected: false },
-  ];
-  cpfSums.forEach(function(s) {
-    var row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;' +
-      (s.projected ? 'border-color:' + s.color + '40;background:' + s.color + '0d;' : '');
-    var left = document.createElement('div');
-    var lbl = document.createElement('div');
-    lbl.textContent = s.label;
-    lbl.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:3px;';
-    var val = document.createElement('div');
-    val.textContent = s.value;
-    val.style.cssText = 'font-size:14px;font-weight:700;color:' + s.color + ';';
-    left.appendChild(lbl);
-    left.appendChild(val);
-    var right = document.createElement('div');
-    right.style.cssText = 'text-align:right;';
-    var payout = document.createElement('div');
-    payout.textContent = s.payout;
-    payout.style.cssText = 'font-size:12px;color:rgba(255,255,255,0.5);';
-    if (s.projected) {
-      var projBadge = document.createElement('div');
-      projBadge.textContent = 'Projected';
-      projBadge.style.cssText = 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:' + s.color + '25;color:' + s.color + ';border:1px solid ' + s.color + '45;margin-bottom:4px;display:inline-block;';
-      right.appendChild(projBadge);
-    }
-    right.appendChild(payout);
-    row.appendChild(left);
-    row.appendChild(right);
-    cpfLifeRow.appendChild(row);
-  });
-  projPanel.appendChild(cpfLifeRow);
-
-  // Export button
-  var exportBtn = document.createElement('button');
-  exportBtn.textContent = 'Export Full Report';
-  exportBtn.style.cssText = 'font-size:13px;font-weight:600;padding:10px 22px;border-radius:10px;background:rgba(196,162,77,0.15);color:#C4A24D;border:1px solid rgba(196,162,77,0.35);cursor:pointer;';
-  exportBtn.addEventListener('mouseenter', function() { exportBtn.style.background = 'rgba(196,162,77,0.25)'; });
-  exportBtn.addEventListener('mouseleave', function() { exportBtn.style.background = 'rgba(196,162,77,0.15)'; });
-  exportBtn.addEventListener('click', function() {
-    fhToast('\u2713 Exported \u2014 Marcus_Tan_WealthProjection_Apr2026.pdf');
-  });
-  projPanel.appendChild(exportBtn);
-
-  // ---- Append panels ----
-  container.appendChild(plannerPanel);
-
-  // ============================================================
-  // SECTION 4 HEADER: Interactive Demo — Wealth Projection
-  // ============================================================
-  var demoHdr2 = document.createElement('div');
-  demoHdr2.style.cssText = 'border-top:1px solid rgba(255,255,255,0.08);padding:32px 0 20px;';
-
-  var demoLbl2 = document.createElement('div');
-  demoLbl2.textContent = 'TRY IT \u2014 WEALTH PROJECTION';
-  demoLbl2.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#C4A24D;margin-bottom:8px;';
-  demoHdr2.appendChild(demoLbl2);
-
-  var demoTtl2 = document.createElement('div');
-  demoTtl2.textContent = 'Wealth Projection';
-  demoTtl2.style.cssText = 'font-size:20px;font-weight:700;color:#e2e8f0;margin-bottom:6px;';
-  demoHdr2.appendChild(demoTtl2);
-
-  var demoSub2 = document.createElement('div');
-  demoSub2.textContent = 'The wow moment. See Marcus\u2019s projected net worth grow from $142k to $2.8M over 40 years.';
-  demoSub2.style.cssText = 'font-size:13px;color:rgba(255,255,255,0.4);line-height:1.5;';
-  demoHdr2.appendChild(demoSub2);
-  container.appendChild(demoHdr2);
-
-  container.appendChild(projPanel);
 
   // ============================================================
   // SECTION 5: SINGAPORE-SPECIFIC
@@ -3291,42 +3122,11 @@ DEMO_RENDERERS.financehub = function(container) {
 
   // Render charts after DOM is ready
   setTimeout(function() {
-    _fhRenderDonuts(donutIncome, donutExpenses, donutAssets, donutLiab);
     _fhRenderProjection();
   }, 100);
 };
 
-/* ---- Tab switcher ---- */
-function fhTab(tab) {
-  var tabs   = document.querySelectorAll('#fhDemo .demo-tab');
-  var panels = document.querySelectorAll('#fhDemo [data-panel]');
-
-  tabs.forEach(function(t) {
-    t.classList.toggle('active', t.dataset.tab === tab);
-  });
-  panels.forEach(function(p) {
-    p.style.display = p.dataset.panel === tab ? '' : 'none';
-  });
-
-  setTimeout(function() {
-    if (tab === 'projection') _fhRenderProjection();
-  }, 50);
-}
-
-/* ---- Financial Planner: render all 4 donuts ---- */
-function _fhRenderDonuts(income, expenses, assets, liab) {
-  function renderOne(config) {
-    var canvas = document.getElementById(config.canvasId);
-    if (!canvas) return;
-    Charts.donut(canvas, config.items.map(function(i) {
-      return { value: i.value, color: i.color, label: i.label };
-    }), { size: 130, centerText: config.centerText, centerSub: '' });
-  }
-  renderOne(income);
-  renderOne(expenses);
-  renderOne(assets);
-  renderOne(liab);
-}
+/* ---- (Tab switcher and donut renderer removed — projection chart now inline) ---- */
 
 /* ---- CPF Projection chart ---- */
 function _fhRenderCPF() {

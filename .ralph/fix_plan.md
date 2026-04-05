@@ -5,7 +5,6 @@
 
 ## Medium Priority
 
-- [ ] US-005: Finance Hub -- Simplify, focus on wealth projection chart
 - [ ] US-006: Cross-platform navigation and routing verification
 
 ## Low Priority
@@ -17,6 +16,7 @@
 - [x] US-002: Product Compass -- Replaced roleplay, quiz, coverage (~700 lines) with 6-course catalog grid. Expandable detail view with video placeholder, module outline, resources, Skool-style comments.
 - [x] US-003: Product Compass -- Scripts library with 8 scripts, category/audience filters, expandable cards with highlighted phrases, copy-to-clipboard.
 - [x] US-004: Calculator -- Rebuilt as investment illustrator with sliders ($100-$50K, 5-30yr, 3-8%), premium frequency toggle, 4 summary cards, projection chart, fee breakdown, year-by-year table. Retirement section removed.
+- [x] US-005: Finance Hub -- Moved wealth projection chart above donut charts as centerpiece. Collapsed 4 donuts into text-based breakdown grid. Mobile responsive. Removed redundant Section 4 header.
 
 ## Notes
 - Focus on MVP functionality first

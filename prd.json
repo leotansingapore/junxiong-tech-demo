@@ -111,8 +111,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "Minimal changes — mostly reordering and simplifying. The donut charts can be collapsed into a single row or removed entirely. The wealth projection canvas chart should be the hero of this page."
+      "passes": true,
+      "notes": "Moved wealth projection chart to be first thing below summary cards. Replaced 4 donut charts with collapsed text-based breakdown grid (4-col, 2-col mobile). Removed Section 4 header and redundant projection panel. Added mobile-responsive media queries for summary and feature grids. Kept hero, feature cards, client profile, summary cards, Life Goals Timeline, and Singapore section."
     },
     {
       "id": "US-006",
