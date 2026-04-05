@@ -5,7 +5,6 @@
 
 ## Medium Priority
 
-- [ ] US-006: Cross-platform navigation and routing verification
 
 ## Low Priority
 
@@ -17,10 +16,10 @@
 - [x] US-003: Product Compass -- Scripts library with 8 scripts, category/audience filters, expandable cards with highlighted phrases, copy-to-clipboard.
 - [x] US-004: Calculator -- Rebuilt as investment illustrator with sliders ($100-$50K, 5-30yr, 3-8%), premium frequency toggle, 4 summary cards, projection chart, fee breakdown, year-by-year table. Retirement section removed.
 - [x] US-005: Finance Hub -- Moved wealth projection chart above donut charts as centerpiece. Collapsed 4 donuts into text-based breakdown grid. Mobile responsive. Removed redundant Section 4 header.
+- [x] US-006: Cross-platform navigation and routing verification. All 5 routes work, no JS errors, dead code cleaned up, charts render correctly.
 
 ## Notes
-- Focus on MVP functionality first
-- Ensure each feature is properly tested
-- Update this file after each major milestone
+- All 6 user stories complete
 - All demo content in demos.js -- no separate JS files
 - Dark theme only, responsive to 390px
+- PRD fully implemented

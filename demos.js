@@ -3126,50 +3126,6 @@ DEMO_RENDERERS.financehub = function(container) {
   }, 100);
 };
 
-/* ---- (Tab switcher and donut renderer removed — projection chart now inline) ---- */
-
-/* ---- CPF Projection chart ---- */
-function _fhRenderCPF() {
-  var canvas = document.getElementById('fhCPFBar');
-  if (!canvas) return;
-
-  var salary = 8000;
-  var oaContrib = salary * 0.23;
-  var saContrib = salary * 0.06;
-  var maContrib = salary * 0.08;
-  var oaRate = 0.025, saRate = 0.04, maRate = 0.04;
-  var oaBase = 35000, saBase = 12000, maBase = 8000;
-  var ages = [25, 30, 35, 40, 45, 50, 55, 60, 65];
-
-  var cpfData = ages.map(function(age) {
-    var years = age - 25;
-    var oaFV = oaBase * Math.pow(1 + oaRate, years) +
-               (years > 0 ? oaContrib * 12 * ((Math.pow(1 + oaRate, years) - 1) / oaRate) : 0);
-    var saFV = saBase * Math.pow(1 + saRate, years) +
-               (years > 0 ? saContrib * 12 * ((Math.pow(1 + saRate, years) - 1) / saRate) : 0);
-    var maFV = maBase * Math.pow(1 + maRate, years) +
-               (years > 0 ? maContrib * 12 * ((Math.pow(1 + maRate, years) - 1) / maRate) : 0);
-    if (age >= 55) { saFV = Math.min(saFV, 213000); }
-    return {
-      label: '' + age,
-      segments: [
-        { value: Math.round(oaFV), color: '#3b82f6' },
-        { value: Math.round(saFV), color: '#C4A24D' },
-        { value: Math.round(maFV), color: '#10b981' },
-      ]
-    };
-  });
-
-  Charts.stackedBar(canvas, cpfData, {
-    height: 200,
-    legend: [
-      { label: 'OA', color: '#3b82f6' },
-      { label: 'SA', color: '#C4A24D' },
-      { label: 'MA', color: '#10b981' },
-    ],
-  });
-}
-
 /* ---- Projection Chart: net worth area chart ---- */
 function _fhRenderProjection() {
   var canvas = document.getElementById('fhProjArea');
@@ -3195,8 +3151,6 @@ function _fhRenderProjection() {
     yMin: 0,
     yMax: 3000000,
   });
-
-  _fhRenderCPF();
 }
 
 
