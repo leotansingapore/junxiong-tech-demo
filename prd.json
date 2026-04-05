@@ -1,0 +1,141 @@
+{
+  "project": "junxiong-tech-demo",
+  "branchName": "ralph/interactive-demo-redesign",
+  "description": "Replace product-tour pages with interactive demos — iframe embeds for Activity Tracker, faithful recreations for Calculator and Compass, chart focus for Finance Hub",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Activity Tracker — Replace with 4 tabbed iframes",
+      "description": "As a prospect, I want to interact with live Activity Tracker demos via embedded iframes so I can experience the actual platform.",
+      "acceptanceCriteria": [
+        "Keep existing hero section in DEMO_RENDERERS.tracker",
+        "Remove all existing 'Platform & Pricing' and 'Live Dashboard Preview' tab content",
+        "Add 4-tab interface: Activity, Leaderboard, Calculator, Forest",
+        "Activity tab loads iframe of https://activitytracker-demo.vercel.app/demos/activity.html",
+        "Leaderboard tab loads iframe of https://activitytracker-demo.vercel.app/demos/leaderboard.html",
+        "Calculator tab loads iframe of https://activitytracker-demo.vercel.app/demos/activity-calc.html",
+        "Forest tab loads iframe of https://tree-showcase-omega.vercel.app/mockup.html#daily",
+        "Iframes are full-width with min-height 800px",
+        "Iframes lazy-load — only load src when tab is activated",
+        "Show loading spinner while iframe loads, hide on iframe onload",
+        "Include 'Open in new tab' fallback link below each iframe",
+        "Tab bar sticks below nav when scrolling into demo section",
+        "Works on mobile 390px without horizontal overflow",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Replaced ~868 lines with ~105 lines. 4 tabbed iframes: Activity, Leaderboard, Calculator, Forest. Lazy-loading, spinner, fallback links, sticky tab bar, mobile responsive."
+    },
+    {
+      "id": "US-002",
+      "title": "Product Compass — Remove roleplay and quiz, add course catalog",
+      "description": "As a prospect, I want to browse a course library so I can see the breadth of training content available.",
+      "acceptanceCriteria": [
+        "Keep existing hero section and 'What's Inside' feature grid in DEMO_RENDERERS.compass",
+        "Remove the AI Roleplay Interactive Demo section entirely (Section 3)",
+        "Remove the Exam Prep Interactive Quiz section entirely (Section 4)",
+        "Remove the Platform Coverage section (Section 5)",
+        "Add new Section 3: Course Library with a grid of 6 course cards (ILP Fundamentals, Protection Planning, Retirement Solutions, Critical Illness, Investment-Linked Products, Compliance & Ethics)",
+        "Each card shows: thumbnail placeholder, course title, module count, duration estimate, progress bar",
+        "Clicking a course card expands to show course detail view inline",
+        "Detail view has: video player placeholder (dark thumbnail with centered play button icon), module outline sidebar with 4-6 collapsible lesson titles with duration and completion checkmarks",
+        "Detail view has: progress bar showing simulated 40% completion",
+        "Detail view has: resources panel listing 3 downloadable items (PDF icon + title)",
+        "Below the video area, show 2-3 sample community comments (avatar, name, timestamp, comment text) in a Skool-style discussion layout",
+        "Dark theme matching existing design language",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "This replaces ~700 lines (roleplay + quiz) with course catalog. Use realistic course names from the insurance/financial advisory domain. The course detail view should feel like a real LMS."
+    },
+    {
+      "id": "US-003",
+      "title": "Product Compass — Add scripts library section",
+      "description": "As a prospect, I want to browse and filter sales scripts so I can see the practical tools available for advisors.",
+      "acceptanceCriteria": [
+        "Add new Section 4 below the course library in DEMO_RENDERERS.compass",
+        "Section title: 'Scripts Library' with subtitle",
+        "Filter bar with two dropdowns: Category (All, Prospecting, Follow-Up, Closing, Objection Handling) and Audience (All, Young Adult, Working Professional, Retiree, Business Owner)",
+        "Selecting a filter re-renders the visible script cards (client-side filtering)",
+        "Show 8 sample script cards in a responsive grid",
+        "Each card shows: title, category badge (colored pill), audience tag, 2-3 line preview snippet",
+        "Each card has a 'View Full Script' button that expands the card to show full script text",
+        "Expanded view highlights key phrases in a subtle accent color",
+        "Expanded view has a 'Copy Script' button that copies text to clipboard and shows a brief toast confirmation",
+        "Script content should be realistic follow-up and prospecting scripts for financial advisors",
+        "Dark theme, responsive on mobile 390px",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "This adds ~200-300 lines to the compass renderer. Use realistic script data — follow-up messages, prospecting openers, objection handlers for insurance/investment products."
+    },
+    {
+      "id": "US-004",
+      "title": "Calculator — Rebuild as investment illustrator",
+      "description": "As a prospect, I want to interact with a realistic investment illustrator so I can see how the platform helps advisors present investment plans.",
+      "acceptanceCriteria": [
+        "Keep existing hero section and key capabilities grid in DEMO_RENDERERS.calculator",
+        "Replace the current investment illustrator demo section with a new recreation based on Finance Illustrator premium tab",
+        "Input fields: Investment Amount (slider or input, $100-$50,000/mo), Premium Frequency (monthly/quarterly/annually toggle), Policy Term (slider 5-30 years), Expected Return Rate (slider 3-8%)",
+        "Real-time calculation on any input change — no submit button needed",
+        "Summary cards row: Total Premiums Paid, Projected Maturity Value, Net Return, Annualized Yield — each with formatted dollar values",
+        "Projection chart using charts.js: area/line chart showing year-by-year growth of investment value vs total premiums paid",
+        "Fee breakdown section: management fee %, insurance cost, net vs gross returns comparison shown as two numbers or a simple table",
+        "Year-by-year breakdown table: Year, Premium Paid (cumulative), Gross Value, Fees, Net Value — at least 10 rows",
+        "Remove or simplify the retirement step-by-step section (keep only if it fits naturally, otherwise remove entirely)",
+        "All calculations must produce realistic numbers (compound interest formula with fee deductions)",
+        "Dark theme, responsive on mobile 390px",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "This rewrites ~1055 lines. The key is realistic financial math — compound growth minus annual fees. Use charts.js for the projection chart. Reference https://present.financeillustrator.com/long-term-investment-illustrator premium tab for layout inspiration."
+    },
+    {
+      "id": "US-005",
+      "title": "Finance Hub — Simplify and focus on wealth projection chart",
+      "description": "As a prospect, I want to see the wealth projection chart as the centerpiece of the Finance Hub demo.",
+      "acceptanceCriteria": [
+        "Keep existing hero section and 'What You Can Plan' feature grid in DEMO_RENDERERS.financehub",
+        "Keep client profile header and summary cards (Total Assets, Liabilities, Net Worth, Cash Flow)",
+        "Keep the wealth projection chart — ensure it renders correctly and is visually prominent",
+        "Remove or collapse the 4 financial breakdown donut charts into a simpler summary (they are secondary to the main chart)",
+        "Keep the Life Goals Timeline section",
+        "Keep the goal breakdown table",
+        "Ensure the wealth projection chart is the first thing visible below the summary cards",
+        "Chart should have clear labels, legend, and goal marker annotations",
+        "Dark theme, responsive on mobile 390px",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Minimal changes — mostly reordering and simplifying. The donut charts can be collapsed into a single row or removed entirely. The wealth projection canvas chart should be the hero of this page."
+    },
+    {
+      "id": "US-006",
+      "title": "Cross-platform navigation and routing verification",
+      "description": "As a user, I want all 5 platform demos to load correctly and navigation between them to work without errors.",
+      "acceptanceCriteria": [
+        "Landing page at / shows all 5 platform cards",
+        "Clicking each card navigates to its demo page",
+        "/calculator loads the investment illustrator demo",
+        "/tracker loads the tabbed iframe demos",
+        "/compass loads the course library and scripts library",
+        "/launchpad loads the campaign wizard (unchanged)",
+        "/financehub loads the financial planner with chart",
+        "Back button and nav brand click return to the platform grid",
+        "No JavaScript console errors on any page",
+        "All charts render without errors",
+        "All iframe demos load (or show fallback) without errors",
+        "Mobile navigation hamburger menu works",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "This is the final verification story. Run through all 5 platforms after all other changes are complete. Check browser console for errors."
+    }
+  ]
+}

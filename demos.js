@@ -1382,870 +1382,109 @@ function initScrollReveal() {
 }
 
 /* ============================================================
-   ACTIVITY TRACKER DEMO — Full Product Demo with Pricing Builder
+   ACTIVITY TRACKER DEMO — 4 Tabbed Iframe Embeds
    ============================================================ */
 DEMO_RENDERERS.tracker = function(container) {
   container.id = 'trackerDemo';
   while (container.firstChild) { container.removeChild(container.firstChild); }
 
-  /* ---- Shared helpers ---- */
-  function sgd(n) {
-    return '$' + n.toLocaleString();
-  }
-
-  function showToast(msg) {
-    var t = document.createElement('div');
-    t.style.cssText = [
-      'position:fixed', 'bottom:28px', 'left:50%', 'transform:translateX(-50%)',
-      'background:#1a2235', 'border:1px solid var(--border)',
-      'color:var(--text)', 'font-size:0.82rem', 'font-weight:600',
-      'padding:10px 20px', 'border-radius:8px',
-      'box-shadow:0 4px 24px rgba(0,0,0,.5)',
-      'z-index:9999', 'white-space:nowrap',
-      'opacity:0', 'transition:opacity .2s',
-    ].join(';');
-    t.textContent = msg;
-    document.body.appendChild(t);
-    requestAnimationFrame(function() { t.style.opacity = '1'; });
-    setTimeout(function() {
-      t.style.opacity = '0';
-      setTimeout(function() { t.remove(); }, 300);
-    }, 2600);
-  }
-
-  function clearChildren(el) {
-    while (el.firstChild) { el.removeChild(el.firstChild); }
-  }
-
   /* ================================================================
-     TAB BAR
+     TAB DEFINITIONS — 4 iframe demos
      ================================================================ */
   var tabDefs = [
-    { id: 'platform', label: 'Platform & Pricing' },
-    { id: 'dashboard', label: 'Live Dashboard Preview' },
+    { id: 'activity',    label: 'Activity',    src: 'https://activitytracker-demo.vercel.app/demos/activity.html' },
+    { id: 'leaderboard', label: 'Leaderboard', src: 'https://activitytracker-demo.vercel.app/demos/leaderboard.html' },
+    { id: 'calculator',  label: 'Calculator',  src: 'https://activitytracker-demo.vercel.app/demos/activity-calc.html' },
+    { id: 'forest',      label: 'Forest',      src: 'https://tree-showcase-omega.vercel.app/mockup.html#daily' },
   ];
 
+  /* ---- Tab bar ---- */
   var tabBar = document.createElement('div');
-  tabBar.style.cssText = 'display:flex;gap:4px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:24px;';
+  tabBar.style.cssText = 'display:flex;gap:4px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:24px;position:sticky;top:60px;z-index:50;';
 
-  var tab1Pane = document.createElement('div');
-  var tab2Pane = document.createElement('div');
-  var panes = [tab1Pane, tab2Pane];
-  var activeTab = 0;
+  var panes = [];
+  var iframes = [];
+  var loaded = [];
 
   function switchTrackerTab(idx) {
-    activeTab = idx;
-    panes.forEach(function(p, i) {
-      p.style.display = i === idx ? 'block' : 'none';
-    });
+    panes.forEach(function(p, i) { p.style.display = i === idx ? 'block' : 'none'; });
     tabBar.querySelectorAll('.tracker-tab-btn').forEach(function(btn, i) {
       if (i === idx) {
-        btn.style.cssText = 'flex:1;padding:8px 16px;border-radius:7px;font-size:0.82rem;font-weight:700;cursor:pointer;border:none;background:var(--primary,#3b82f6);color:#fff;transition:background .15s;';
+        btn.style.cssText = 'flex:1;padding:10px 16px;border-radius:7px;font-size:0.82rem;font-weight:700;cursor:pointer;border:none;background:var(--primary,#3b82f6);color:#fff;transition:background .15s;white-space:nowrap;';
       } else {
-        btn.style.cssText = 'flex:1;padding:8px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;';
+        btn.style.cssText = 'flex:1;padding:10px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;white-space:nowrap;';
       }
     });
+    /* Lazy-load: set iframe src only when tab is first activated */
+    if (!loaded[idx]) {
+      loaded[idx] = true;
+      iframes[idx].src = tabDefs[idx].src;
+    }
   }
 
   tabDefs.forEach(function(td, idx) {
+    /* Tab button */
     var btn = document.createElement('button');
     btn.className = 'tracker-tab-btn';
     btn.textContent = td.label;
-    btn.style.cssText = 'flex:1;padding:8px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;';
+    btn.style.cssText = 'flex:1;padding:10px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;white-space:nowrap;';
     btn.addEventListener('click', function() { switchTrackerTab(idx); });
     tabBar.appendChild(btn);
+
+    /* Pane wrapper */
+    var pane = document.createElement('div');
+    pane.style.display = 'none';
+
+    /* Loading spinner */
+    var spinner = document.createElement('div');
+    spinner.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:800px;flex-direction:column;gap:12px;';
+    var ring = document.createElement('div');
+    ring.style.cssText = 'width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary,#3b82f6);border-radius:50%;animation:trackerSpin 0.8s linear infinite;';
+    var spinLabel = document.createElement('span');
+    spinLabel.style.cssText = 'font-size:0.8rem;color:var(--text3);';
+    spinLabel.textContent = 'Loading ' + td.label + '...';
+    spinner.appendChild(ring);
+    spinner.appendChild(spinLabel);
+    pane.appendChild(spinner);
+
+    /* Iframe */
+    var iframe = document.createElement('iframe');
+    iframe.style.cssText = 'width:100%;min-height:800px;border:none;border-radius:10px;display:none;';
+    iframe.setAttribute('loading', 'lazy');
+    iframe.setAttribute('allow', 'clipboard-write');
+    iframe.title = td.label + ' Demo';
+    iframe.addEventListener('load', function() {
+      spinner.style.display = 'none';
+      iframe.style.display = 'block';
+    });
+    pane.appendChild(iframe);
+
+    /* Fallback link */
+    var fallback = document.createElement('a');
+    fallback.href = td.src;
+    fallback.target = '_blank';
+    fallback.rel = 'noopener';
+    fallback.style.cssText = 'display:block;text-align:center;font-size:0.78rem;color:var(--primary-light,#6b9bdb);margin-top:10px;text-decoration:none;';
+    fallback.textContent = 'Open ' + td.label + ' in new tab';
+    pane.appendChild(fallback);
+
+    iframes.push(iframe);
+    loaded.push(false);
+    panes.push(pane);
   });
+
   container.appendChild(tabBar);
-
-  container.appendChild(tab1Pane);
-  container.appendChild(tab2Pane);
-
-  /* ================================================================
-     TAB 1: PLATFORM & PRICING
-     ================================================================ */
-  var tab1Container = tab1Pane;
-
-  /* ================================================================
-     SECTION 1: PLATFORM OVERVIEW
-     ================================================================ */
-  var s1 = document.createElement('div');
-  s1.style.cssText = 'text-align:center;padding:28px 20px 24px;background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(52,211,153,.06));border-radius:12px;margin-bottom:24px;border:1px solid var(--border);';
-
-  var s1h = document.createElement('h2');
-  s1h.style.cssText = 'font-size:1.28rem;font-weight:800;color:var(--text);margin:0 0 8px;line-height:1.3;';
-  s1h.textContent = 'The Complete Activity Tracking Platform';
-  s1.appendChild(s1h);
-
-  var s1sub = document.createElement('p');
-  s1sub.style.cssText = 'font-size:0.84rem;color:var(--text2);margin:0 0 18px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;';
-  s1sub.textContent = '11 integrated modules for financial advisory teams. Everything from daily tracking to AI-powered coaching.';
-  s1.appendChild(s1sub);
-
-  var statsRow = document.createElement('div');
-  statsRow.style.cssText = 'display:flex;flex-wrap:wrap;justify-content:center;gap:6px;';
-  var statItems = ['11 Modules', '4 Core', '7 Add-ons', 'Built for Teams of 5\u2013100'];
-  statItems.forEach(function(st) {
-    var pill = document.createElement('span');
-    pill.style.cssText = 'padding:4px 14px;background:rgba(107,155,219,.12);border:1px solid rgba(107,155,219,.25);border-radius:99px;font-size:0.74rem;font-weight:600;color:var(--primary-light,#6b9bdb);white-space:nowrap;';
-    pill.textContent = st;
-    statsRow.appendChild(pill);
-  });
-  s1.appendChild(statsRow);
-  tab1Container.appendChild(s1);
-
-  /* ================================================================
-     SECTION 2: MODULE CARDS GRID
-     ================================================================ */
-  var s2head = document.createElement('div');
-  s2head.style.cssText = 'display:flex;align-items:baseline;gap:10px;margin-bottom:14px;';
-  var s2title = document.createElement('h3');
-  s2title.style.cssText = 'font-size:1rem;font-weight:700;color:var(--text);margin:0;';
-  s2title.textContent = 'All 11 Modules';
-  var s2sub = document.createElement('span');
-  s2sub.style.cssText = 'font-size:0.74rem;color:var(--text3);';
-  s2sub.textContent = 'Click any card to explore';
-  s2head.appendChild(s2title);
-  s2head.appendChild(s2sub);
-  tab1Container.appendChild(s2head);
-
-  var moduleData = [
-    { emoji: '\u{1F4CA}', name: 'Activity Tracking & Feed',    type: 'core',   desc: 'Real-time activity logging, team feed, reactions, GPS verification, daily progress tracking' },
-    { emoji: '\u{1F3C6}', name: 'Leaderboard & Analytics',     type: 'core',   desc: 'Hall of Fame podium, full activity leaderboard, sales funnel, team trends & inactivity alerts' },
-    { emoji: '\u2705',    name: 'Habit Tracker',               type: 'core',   desc: 'Daily habits, streak tracking, contribution heatmaps, work & personal separation' },
-    { emoji: '\u{1F4CB}', name: 'Digital Pledge Sheet',        type: 'core',   desc: 'Reverse-engineer activity targets from FYC goals. Presets, save/load sheets, PDF export' },
-    { emoji: '\u{1F4B0}', name: 'Commission Calculator',       type: 'addon',  desc: '30+ AIA product commission rates with SPI, AI bonuses, and career totals' },
-    { emoji: '\u{1F4C8}', name: 'Income Projection',           type: 'addon',  desc: 'Multi-year income layering with 9 streams: FYC, SPI, renewals, career benefits' },
-    { emoji: '\u{1F4CA}', name: 'Sales Dashboard',             type: 'addon',  isNew: true, desc: 'Centralized FYC leaderboard with Life, HSG, A&H breakdowns, filters, PDF export' },
-    { emoji: '\u{1F3B0}', name: 'Gamification & Rewards',      type: 'addon',  isNew: true, desc: 'Wheel of Fortune, activity credits, real-life reward redemptions' },
-    { emoji: '\u{1F4C5}', name: 'Coaching & Booking',          type: 'addon',  desc: 'Public booking pages, calendar view, Google Calendar sync, email confirmations' },
-    { emoji: '\u{1F4AD}', name: 'Team Reflections',            type: 'addon',  desc: 'Weekly reflections, submission tracking, AI coaching feedback, automated reminders' },
-    { emoji: '\u2705',    name: 'Accountability Board',        type: 'addon',  isNew: true, desc: 'Scheduled to-do lists, shared tasks, XP streaks, team visibility' },
-  ];
-
-  var grid = document.createElement('div');
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:28px;';
-
-  moduleData.forEach(function(mod) {
-    var card = document.createElement('div');
-    card.style.cssText = [
-      'background:var(--bg2)',
-      'border:1px solid var(--border)',
-      'border-radius:10px',
-      'padding:16px',
-      'display:flex',
-      'flex-direction:column',
-      'gap:10px',
-      'cursor:pointer',
-      'transition:border-color .15s,box-shadow .15s',
-    ].join(';');
-
-    card.addEventListener('mouseenter', function() {
-      card.style.borderColor = 'var(--accent,#3b82f6)';
-      card.style.boxShadow = '0 2px 12px rgba(59,130,246,.15)';
-    });
-    card.addEventListener('mouseleave', function() {
-      card.style.borderColor = 'var(--border)';
-      card.style.boxShadow = 'none';
-    });
-
-    /* Top row: icon + badges */
-    var topRow = document.createElement('div');
-    topRow.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;';
-
-    var iconCircle = document.createElement('div');
-    var iconBg = mod.type === 'core'
-      ? 'background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.25);'
-      : 'background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.2);';
-    iconCircle.style.cssText = 'width:48px;height:48px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;' + iconBg;
-    iconCircle.textContent = mod.emoji;
-    topRow.appendChild(iconCircle);
-
-    var badges = document.createElement('div');
-    badges.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;';
-
-    var typeBadge = document.createElement('span');
-    typeBadge.style.cssText = mod.type === 'core'
-      ? 'padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(52,211,153,.15);color:var(--green-bright,#34d399);border:1px solid rgba(52,211,153,.3);'
-      : 'padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);';
-    typeBadge.textContent = mod.type === 'core' ? 'Core' : 'Add-on';
-    badges.appendChild(typeBadge);
-
-    if (mod.isNew) {
-      var newBadge = document.createElement('span');
-      newBadge.style.cssText = 'padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(251,146,60,.15);color:#fb923c;border:1px solid rgba(251,146,60,.3);';
-      newBadge.textContent = 'New';
-      badges.appendChild(newBadge);
-    }
-
-    topRow.appendChild(badges);
-    card.appendChild(topRow);
-
-    /* Module name */
-    var mname = document.createElement('h3');
-    mname.style.cssText = 'font-size:0.9rem;font-weight:700;color:var(--text);margin:0;line-height:1.3;';
-    mname.textContent = mod.name;
-    card.appendChild(mname);
-
-    /* Description */
-    var mdesc = document.createElement('p');
-    mdesc.style.cssText = 'font-size:0.78rem;color:var(--text2);margin:0;line-height:1.6;flex:1;';
-    mdesc.textContent = mod.desc;
-    card.appendChild(mdesc);
-
-    /* CTA link */
-    var cta = document.createElement('a');
-    cta.style.cssText = 'font-size:0.76rem;font-weight:600;color:var(--primary-light,#6b9bdb);cursor:pointer;text-decoration:none;margin-top:4px;';
-    cta.textContent = 'Try Interactive Demo \u2192';
-    cta.addEventListener('click', function(e) {
-      e.preventDefault();
-      showToast('Full demo available in the live platform');
-    });
-    card.appendChild(cta);
-
-    grid.appendChild(card);
-  });
-
-  tab1Container.appendChild(grid);
-
-  /* ================================================================
-     SECTION 3: PRICING BUILDER (Interactive)
-     ================================================================ */
-  var pricingComponents = [
-    { emoji: '\u{1F4CA}', name: 'Activity Tracking',    setup: 2000, perUser: 19, preselected: true  },
-    { emoji: '\u{1F3C6}', name: 'Leaderboard',          setup: 1500, perUser: 15, preselected: true  },
-    { emoji: '\u2705',    name: 'Habit Tracker',        setup: 1500, perUser:  5, preselected: true  },
-    { emoji: '\u{1F4CB}', name: 'Pledge Sheet',         setup: 1000, perUser:  5, preselected: true  },
-    { emoji: '\u{1F4B0}', name: 'Commission Calc',      setup: 1500, perUser:  5, preselected: false },
-    { emoji: '\u{1F4C8}', name: 'Income Projection',    setup: 1500, perUser:  5, preselected: false },
-    { emoji: '\u{1F4CA}', name: 'Sales Dashboard',      setup: 2000, perUser:  5, preselected: false },
-    { emoji: '\u{1F3B0}', name: 'Gamification',         setup: 1500, perUser:  5, preselected: false },
-    { emoji: '\u{1F4C5}', name: 'Coaching & Booking',   setup: 2000, perUser:  5, preselected: false },
-    { emoji: '\u{1F4AD}', name: 'Team Reflections',     setup: 1500, perUser:  5, preselected: false },
-    { emoji: '\u2705',    name: 'Accountability Board', setup: 2500, perUser:  5, preselected: false },
-  ];
-
-  /* State */
-  var teamSize = 15;
-  var selected = pricingComponents.map(function(c) { return c.preselected; });
-
-  var pricingSection = document.createElement('div');
-  pricingSection.style.cssText = 'margin-bottom:28px;';
-
-  var ph2 = document.createElement('h3');
-  ph2.style.cssText = 'font-size:1rem;font-weight:700;color:var(--text);margin:0 0 6px;';
-  ph2.textContent = 'Interactive Pricing Builder';
-  pricingSection.appendChild(ph2);
-
-  var psub = document.createElement('p');
-  psub.style.cssText = 'font-size:0.78rem;color:var(--text2);margin:0 0 18px;';
-  psub.textContent = 'Select modules and team size to calculate your investment.';
-  pricingSection.appendChild(psub);
-
-  /* Team size slider */
-  var sliderWrap = document.createElement('div');
-  sliderWrap.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:16px;';
-
-  var sliderLabel = document.createElement('div');
-  sliderLabel.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;';
-
-  var sliderTitle = document.createElement('span');
-  sliderTitle.style.cssText = 'font-size:0.84rem;font-weight:600;color:var(--text);';
-  sliderTitle.textContent = 'Team Size';
-
-  var sliderVal = document.createElement('span');
-  sliderVal.style.cssText = 'font-size:0.9rem;font-weight:700;color:var(--accent,#3b82f6);';
-  sliderVal.textContent = '15 consultants';
-
-  sliderLabel.appendChild(sliderTitle);
-  sliderLabel.appendChild(sliderVal);
-  sliderWrap.appendChild(sliderLabel);
-
-  var slider = document.createElement('input');
-  slider.type = 'range';
-  slider.className = 'demo-slider';
-  slider.min = 5;
-  slider.max = 100;
-  slider.step = 1;
-  slider.value = 15;
-  slider.style.cssText = 'width:100%;';
-  sliderWrap.appendChild(slider);
-
-  var sliderHints = document.createElement('div');
-  sliderHints.style.cssText = 'display:flex;justify-content:space-between;margin-top:4px;';
-  var hMin = document.createElement('span');
-  hMin.style.cssText = 'font-size:0.68rem;color:var(--text3);';
-  hMin.textContent = '5';
-  var hMax = document.createElement('span');
-  hMax.style.cssText = 'font-size:0.68rem;color:var(--text3);';
-  hMax.textContent = '100';
-  sliderHints.appendChild(hMin);
-  sliderHints.appendChild(hMax);
-  sliderWrap.appendChild(sliderHints);
-  pricingSection.appendChild(sliderWrap);
-
-  /* Layout: component grid + summary panel */
-  var pricingLayout = document.createElement('div');
-  pricingLayout.style.cssText = 'display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;';
-
-  /* Component toggles grid */
-  var compGrid = document.createElement('div');
-  compGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;';
-
-  pricingComponents.forEach(function(comp, idx) {
-    var cc = document.createElement('div');
-    var selBorder = selected[idx] ? 'border-color:var(--green-bright,#34d399);box-shadow:0 0 0 1px rgba(52,211,153,.2);' : 'border-color:var(--border);';
-    cc.style.cssText = 'background:var(--bg2);border:1.5px solid;border-radius:8px;padding:12px 14px;cursor:pointer;position:relative;transition:border-color .15s,box-shadow .15s;' + selBorder;
-
-    /* Checkmark */
-    var check = document.createElement('div');
-    var checkStyle = selected[idx]
-      ? 'background:var(--green-bright,#34d399);color:#000;'
-      : 'background:var(--border);color:transparent;';
-    check.style.cssText = 'position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;' + checkStyle;
-    check.textContent = '\u2713';
-    cc.appendChild(check);
-
-    var topArea = document.createElement('div');
-    topArea.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-right:20px;';
-
-    var eIcon = document.createElement('span');
-    eIcon.style.cssText = 'font-size:1.1rem;';
-    eIcon.textContent = comp.emoji;
-    topArea.appendChild(eIcon);
-
-    var cname = document.createElement('span');
-    cname.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--text);line-height:1.3;';
-    cname.textContent = comp.name;
-    topArea.appendChild(cname);
-
-    cc.appendChild(topArea);
-
-    var priceRow = document.createElement('div');
-    priceRow.style.cssText = 'display:flex;flex-direction:column;gap:1px;';
-
-    var setupLine = document.createElement('div');
-    setupLine.style.cssText = 'font-size:0.68rem;color:var(--text3);';
-    setupLine.textContent = sgd(comp.setup) + ' setup';
-
-    var monthLine = document.createElement('div');
-    monthLine.style.cssText = 'font-size:0.72rem;color:var(--text2);font-weight:600;';
-    monthLine.textContent = sgd(comp.perUser) + '/user/mo';
-
-    priceRow.appendChild(setupLine);
-    priceRow.appendChild(monthLine);
-    cc.appendChild(priceRow);
-
-    cc.addEventListener('click', function() {
-      selected[idx] = !selected[idx];
-      if (selected[idx]) {
-        cc.style.borderColor = 'var(--green-bright,#34d399)';
-        cc.style.boxShadow = '0 0 0 1px rgba(52,211,153,.2)';
-        check.style.background = 'var(--green-bright,#34d399)';
-        check.style.color = '#000';
-      } else {
-        cc.style.borderColor = 'var(--border)';
-        cc.style.boxShadow = 'none';
-        check.style.background = 'var(--border)';
-        check.style.color = 'transparent';
-      }
-      updateSummary();
-    });
-
-    compGrid.appendChild(cc);
-  });
-
-  pricingLayout.appendChild(compGrid);
-
-  /* Summary panel */
-  var summaryPanel = document.createElement('div');
-  summaryPanel.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px;position:sticky;top:16px;';
-
-  var sumTitle = document.createElement('div');
-  sumTitle.style.cssText = 'font-size:0.84rem;font-weight:700;color:var(--text);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);';
-  sumTitle.textContent = 'Your Plan';
-  summaryPanel.appendChild(sumTitle);
-
-  var sumModuleList = document.createElement('div');
-  sumModuleList.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:14px;min-height:60px;';
-  summaryPanel.appendChild(sumModuleList);
-
-  var sumDivider = document.createElement('div');
-  sumDivider.style.cssText = 'border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px;';
-  summaryPanel.appendChild(sumDivider);
-
-  var sumSetupRow = document.createElement('div');
-  sumSetupRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
-  var sumSetupLabel = document.createElement('span');
-  sumSetupLabel.style.cssText = 'font-size:0.76rem;color:var(--text2);';
-  sumSetupLabel.textContent = 'One-time setup';
-  var sumSetupVal = document.createElement('span');
-  sumSetupVal.style.cssText = 'font-size:0.8rem;font-weight:600;color:var(--text);';
-  sumSetupRow.appendChild(sumSetupLabel);
-  sumSetupRow.appendChild(sumSetupVal);
-  sumDivider.appendChild(sumSetupRow);
-
-  var sumMonthlyRow = document.createElement('div');
-  sumMonthlyRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:rgba(52,211,153,.07);border-radius:6px;padding:8px 10px;margin-top:2px;';
-  var sumMonthlyLabel = document.createElement('span');
-  sumMonthlyLabel.style.cssText = 'font-size:0.8rem;font-weight:600;color:var(--text2);';
-  sumMonthlyLabel.textContent = 'Monthly total';
-  var sumMonthlyVal = document.createElement('span');
-  sumMonthlyVal.style.cssText = 'font-size:1.1rem;font-weight:800;color:var(--green-bright,#34d399);';
-  sumMonthlyRow.appendChild(sumMonthlyLabel);
-  sumMonthlyRow.appendChild(sumMonthlyVal);
-  sumDivider.appendChild(sumMonthlyRow);
-
-  var sumPerDay = document.createElement('div');
-  sumPerDay.style.cssText = 'font-size:0.7rem;color:var(--text3);text-align:center;margin-top:2px;';
-  sumDivider.appendChild(sumPerDay);
-
-  var sumNote = document.createElement('div');
-  sumNote.style.cssText = 'font-size:0.68rem;color:var(--text3);text-align:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);line-height:1.6;';
-  sumNote.textContent = '14-day free trial \u00B7 No long-term contract';
-  summaryPanel.appendChild(sumNote);
-
-  pricingLayout.appendChild(summaryPanel);
-  pricingSection.appendChild(pricingLayout);
-  tab1Container.appendChild(pricingSection);
-
-  /* Update summary function */
-  function updateSummary() {
-    var totalSetup   = 0;
-    var totalPerUser = 0;
-    var activeModules = [];
-
-    pricingComponents.forEach(function(comp, idx) {
-      if (selected[idx]) {
-        totalSetup   += comp.setup;
-        totalPerUser += comp.perUser;
-        activeModules.push(comp);
-      }
-    });
-
-    var monthly = totalPerUser * teamSize;
-
-    /* Clear and rebuild module list using DOM methods */
-    clearChildren(sumModuleList);
-    if (activeModules.length === 0) {
-      var empty = document.createElement('div');
-      empty.style.cssText = 'font-size:0.74rem;color:var(--text3);font-style:italic;';
-      empty.textContent = 'No modules selected';
-      sumModuleList.appendChild(empty);
-    } else {
-      activeModules.forEach(function(m) {
-        var row = document.createElement('div');
-        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
-        var ml = document.createElement('span');
-        ml.style.cssText = 'font-size:0.72rem;color:var(--text2);';
-        ml.textContent = m.emoji + ' ' + m.name;
-        var mr = document.createElement('span');
-        mr.style.cssText = 'font-size:0.72rem;color:var(--text);font-weight:600;';
-        mr.textContent = sgd(m.perUser * teamSize) + '/mo';
-        row.appendChild(ml);
-        row.appendChild(mr);
-        sumModuleList.appendChild(row);
-      });
-    }
-
-    sumSetupVal.textContent   = sgd(totalSetup);
-    sumMonthlyVal.textContent = sgd(monthly);
-
-    var perConPerDay = monthly > 0 ? (monthly / teamSize / 30).toFixed(2) : '0.00';
-    sumPerDay.textContent = '$' + perConPerDay + ' per consultant per day';
+  panes.forEach(function(p) { container.appendChild(p); });
+
+  /* Spinner animation */
+  if (!document.getElementById('trackerSpinStyle')) {
+    var style = document.createElement('style');
+    style.id = 'trackerSpinStyle';
+    style.textContent = '@keyframes trackerSpin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
   }
 
-  /* Wire slider */
-  slider.addEventListener('input', function() {
-    teamSize = parseInt(this.value, 10);
-    sliderVal.textContent = teamSize + ' consultant' + (teamSize === 1 ? '' : 's');
-    updateSummary();
-  });
-
-  /* Initial render */
-  updateSummary();
-
-  /* ================================================================
-     SECTION 4: PLATFORM COMPARISON
-     ================================================================ */
-  var compSection = document.createElement('div');
-  compSection.style.cssText = 'margin-bottom:12px;';
-
-  var ch3 = document.createElement('h3');
-  ch3.style.cssText = 'font-size:1rem;font-weight:700;color:var(--text);margin:0 0 12px;';
-  ch3.textContent = 'Platform Comparison';
-  compSection.appendChild(ch3);
-
-  var tableWrap = document.createElement('div');
-  tableWrap.style.cssText = 'overflow-x:auto;border-radius:10px;border:1px solid var(--border);';
-
-  var table = document.createElement('table');
-  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.78rem;';
-
-  var thead = document.createElement('thead');
-  var hrow = document.createElement('tr');
-  var headers = ['Feature', 'ActivityTracker', 'Spreadsheets', 'Generic CRM'];
-  headers.forEach(function(h, i) {
-    var th = document.createElement('th');
-    th.style.cssText = [
-      'padding:10px 14px',
-      'text-align:' + (i === 0 ? 'left' : 'center'),
-      'font-size:0.74rem',
-      'font-weight:700',
-      'color:' + (i === 1 ? 'var(--green-bright,#34d399)' : 'var(--text2)'),
-      'background:var(--bg2)',
-      'border-bottom:1px solid var(--border)',
-      i > 0 ? 'border-left:1px solid var(--border)' : '',
-    ].join(';');
-    th.textContent = h;
-    hrow.appendChild(th);
-  });
-  thead.appendChild(hrow);
-  table.appendChild(thead);
-
-  var tbody = document.createElement('tbody');
-  var compRows = [
-    ['Real-time activity feed',        '\u2713', '\u2717', '\u2717'],
-    ['Gamification & leaderboards',    '\u2713', '\u2717', '\u2717'],
-    ['Built for financial advisory',   '\u2713', '\u2717', '\u2717'],
-    ['AI coaching feedback',           '\u2713', '\u2717', '\u2717'],
-    ['GPS activity verification',      '\u2713', '\u2717', '\u2717'],
-    ['FYC goal reverse-engineering',   '\u2713', '\u2717', '\u2717'],
-  ];
-
-  compRows.forEach(function(row, ri) {
-    var tr = document.createElement('tr');
-    if (ri % 2 !== 0) { tr.style.background = 'rgba(255,255,255,.02)'; }
-    row.forEach(function(cell, ci) {
-      var td = document.createElement('td');
-      var isCheck = cell === '\u2713';
-      td.style.cssText = [
-        'padding:9px 14px',
-        'color:' + (ci === 0 ? 'var(--text2)' : (isCheck ? 'var(--green-bright,#34d399)' : '#ef4444')),
-        'text-align:' + (ci === 0 ? 'left' : 'center'),
-        'font-weight:' + (ci === 0 ? '400' : '700'),
-        'font-size:' + (ci === 0 ? '0.78rem' : '1rem'),
-        ci > 0 ? 'border-left:1px solid var(--border)' : '',
-        ri < compRows.length - 1 ? 'border-bottom:1px solid var(--border)' : '',
-      ].join(';');
-      td.textContent = cell;
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-
-  table.appendChild(tbody);
-  tableWrap.appendChild(table);
-  compSection.appendChild(tableWrap);
-  tab1Container.appendChild(compSection);
-
-  /* ================================================================
-     TAB 2: LIVE DASHBOARD PREVIEW
-     ================================================================ */
-  var tab2Container = tab2Pane;
-  tab2Container.style.cssText = 'font-family:inherit;';
-
-  /* -- 4 Top Stat Cards -- */
-  var statsData = [
-    { icon: '\uD83D\uDD25', label: '14 Day Streak',     value: '14',     unit: 'days',   color: '#f97316', bg: 'rgba(249,115,22,.1)',  border: 'rgba(249,115,22,.3)'  },
-    { icon: '\uD83E\uDE99', label: 'Credits',            value: '1,250',  unit: 'credits', color: '#a78bfa', bg: 'rgba(167,139,250,.1)', border: 'rgba(167,139,250,.3)' },
-    { icon: '\uD83C\uDFAF', label: 'Weekly Goal',        value: '45/60',  unit: 'acts',   color: '#3b82f6', bg: 'rgba(59,130,246,.1)',  border: 'rgba(59,130,246,.3)',  progress: 75 },
-    { icon: '\u2B50',       label: 'Level 8',            value: 'Lv.8',   unit: 'rank',   color: '#6b9bdb', bg: 'rgba(107,155,219,.1)', border: 'rgba(107,155,219,.3)' },
-  ];
-
-  var statsGrid = document.createElement('div');
-  statsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;';
-
-  statsData.forEach(function(s) {
-    var card = document.createElement('div');
-    card.style.cssText = [
-      'background:' + s.bg,
-      'border:1px solid ' + s.border,
-      'border-radius:10px',
-      'padding:14px 16px',
-      'display:flex',
-      'flex-direction:column',
-      'gap:4px',
-    ].join(';');
-
-    var iconLabel = document.createElement('div');
-    iconLabel.style.cssText = 'font-size:0.7rem;color:var(--text3);display:flex;align-items:center;gap:5px;margin-bottom:2px;';
-    var iconSpan = document.createElement('span');
-    iconSpan.textContent = s.icon;
-    iconSpan.style.fontSize = '0.9rem';
-    var labelSpan = document.createElement('span');
-    labelSpan.textContent = s.label;
-    iconLabel.appendChild(iconSpan);
-    iconLabel.appendChild(labelSpan);
-    card.appendChild(iconLabel);
-
-    var valEl = document.createElement('div');
-    valEl.style.cssText = 'font-size:1.35rem;font-weight:800;color:' + s.color + ';line-height:1;';
-    valEl.textContent = s.value;
-    card.appendChild(valEl);
-
-    if (s.progress !== undefined) {
-      var progWrap = document.createElement('div');
-      progWrap.style.cssText = 'height:4px;background:rgba(59,130,246,.2);border-radius:99px;margin-top:4px;overflow:hidden;';
-      var progFill = document.createElement('div');
-      progFill.style.cssText = 'height:100%;width:' + s.progress + '%;background:#3b82f6;border-radius:99px;';
-      progWrap.appendChild(progFill);
-      card.appendChild(progWrap);
-    }
-
-    statsGrid.appendChild(card);
-  });
-  tab2Container.appendChild(statsGrid);
-
-  /* -- Activity Feed Section -- */
-  var feedSection = document.createElement('div');
-  feedSection.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;';
-
-  var feedHeader = document.createElement('div');
-  feedHeader.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;';
-  var feedTitle = document.createElement('span');
-  feedTitle.style.cssText = 'font-size:0.7rem;font-weight:800;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;';
-  feedTitle.textContent = 'Team Activity';
-  var todayBadge = document.createElement('span');
-  todayBadge.style.cssText = 'font-size:0.68rem;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.25);';
-  todayBadge.textContent = 'Today';
-  feedHeader.appendChild(feedTitle);
-  feedHeader.appendChild(todayBadge);
-  feedSection.appendChild(feedHeader);
-
-  /* Activity types */
-  var activityTypes = {
-    'Set':       { icon: '\uD83D\uDCDE', color: '#9ca3af', bg: 'rgba(156,163,175,.15)' },
-    'Opening':   { icon: '\uD83E\uDD1D', color: '#60a5fa', bg: 'rgba(96,165,250,.15)'  },
-    'Closing':   { icon: '\uD83D\uDCDD', color: '#fbbf24', bg: 'rgba(251,191,36,.15)'  },
-    'Closed':    { icon: '\u2705',       color: '#34d399', bg: 'rgba(52,211,153,.15)'  },
-    'Referral':  { icon: '\uD83D\uDD17', color: '#c084fc', bg: 'rgba(192,132,252,.15)' },
-    'Servicing': { icon: '\uD83D\uDD27', color: '#2dd4bf', bg: 'rgba(45,212,191,.15)'  },
-    'Hangout':   { icon: '\u2615',       color: '#fb923c', bg: 'rgba(251,146,60,.15)'   },
-    'Story':     { icon: '\uD83D\uDCF1', color: '#a78bfa', bg: 'rgba(167,139,250,.15)'  },
-  };
-
-  /* Avatar colors by person */
-  var avatarColors = [
-    '#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16',
-  ];
-
-  function getInitials(name) {
-    var parts = name.split(' ');
-    return parts.length >= 2 ? parts[0][0] + parts[1][0] : parts[0].slice(0,2).toUpperCase();
-  }
-
-  var feedItems = [
-    { name: 'Sarah Lim',    type: 'Closed',    pts: 5,  time: '8m ago',  policy: 'AIA Pro Achiever II',  premium: '$4,200' },
-    { name: 'Marcus Tan',   type: 'Set',       pts: 1,  time: '12m ago' },
-    { name: 'Priya Nair',   type: 'Opening',   pts: 3,  time: '24m ago' },
-    { name: 'Jason Yeo',    type: 'Closed',    pts: 5,  time: '41m ago', policy: 'AIA HealthShield Gold', premium: '$1,800' },
-    { name: 'Wei Ling',     type: 'Referral',  pts: 1,  time: '1h ago'  },
-    { name: 'Darren Koh',   type: 'Closing',   pts: 4,  time: '1h ago'  },
-    { name: 'Aisha Binte',  type: 'Hangout',   pts: 2,  time: '2h ago'  },
-    { name: 'Tom Huang',    type: 'Story',     pts: 1,  time: '2h ago'  },
-    { name: 'Rachel Ng',    type: 'Servicing', pts: 2,  time: '3h ago'  },
-  ];
-
-  feedItems.forEach(function(item, idx) {
-    var at = activityTypes[item.type];
-    var isClosed = item.type === 'Closed';
-
-    var row = document.createElement('div');
-    var rowStyle = [
-      'display:flex',
-      'align-items:flex-start',
-      'gap:10px',
-      'padding:10px',
-      'border-radius:8px',
-      'margin-bottom:' + (idx < feedItems.length - 1 ? '6px' : '0'),
-    ];
-    if (isClosed) {
-      rowStyle.push('background:linear-gradient(90deg,rgba(52,211,153,.06),rgba(251,191,36,.04))');
-      rowStyle.push('border:1px solid rgba(52,211,153,.2)');
-      rowStyle.push('box-shadow:inset 3px 0 0 rgba(52,211,153,.4)');
-    } else {
-      rowStyle.push('background:rgba(255,255,255,.02)');
-      rowStyle.push('border:1px solid transparent');
-    }
-    row.style.cssText = rowStyle.join(';');
-
-    /* Avatar */
-    var avatar = document.createElement('div');
-    var aColor = avatarColors[idx % avatarColors.length];
-    avatar.style.cssText = [
-      'width:32px', 'height:32px', 'border-radius:50%', 'flex-shrink:0',
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'font-size:0.65rem', 'font-weight:800', 'color:#fff',
-      'background:' + aColor,
-    ].join(';');
-    avatar.textContent = getInitials(item.name);
-    row.appendChild(avatar);
-
-    /* Main content */
-    var main = document.createElement('div');
-    main.style.cssText = 'flex:1;min-width:0;';
-
-    var topLine = document.createElement('div');
-    topLine.style.cssText = 'display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:' + (isClosed && item.policy ? '4px' : '0') + ';';
-
-    var nameEl = document.createElement('span');
-    nameEl.style.cssText = 'font-size:0.82rem;font-weight:700;color:var(--text);';
-    nameEl.textContent = item.name;
-    topLine.appendChild(nameEl);
-
-    var typeBadge = document.createElement('span');
-    typeBadge.style.cssText = [
-      'font-size:0.65rem', 'font-weight:700', 'padding:1px 7px',
-      'border-radius:99px', 'color:' + at.color,
-      'background:' + at.bg, 'white-space:nowrap',
-    ].join(';');
-    typeBadge.textContent = at.icon + ' ' + item.type;
-    topLine.appendChild(typeBadge);
-
-    main.appendChild(topLine);
-
-    /* Closed deal detail row */
-    if (isClosed && item.policy) {
-      var policyRow = document.createElement('div');
-      policyRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:2px;';
-      var policyName = document.createElement('span');
-      policyName.style.cssText = 'font-size:0.73rem;color:#fbbf24;font-weight:600;';
-      policyName.textContent = item.policy;
-      var premiumEl = document.createElement('span');
-      premiumEl.style.cssText = 'font-size:0.68rem;color:var(--text3);';
-      premiumEl.textContent = '\u00B7 AP ' + item.premium;
-      policyRow.appendChild(policyName);
-      policyRow.appendChild(premiumEl);
-      main.appendChild(policyRow);
-    }
-
-    row.appendChild(main);
-
-    /* Right side: pts + time */
-    var rightCol = document.createElement('div');
-    rightCol.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;';
-
-    var ptsEl = document.createElement('span');
-    ptsEl.style.cssText = 'font-size:0.72rem;font-weight:800;color:' + at.color + ';white-space:nowrap;';
-    ptsEl.textContent = '+' + item.pts + 'pt';
-    rightCol.appendChild(ptsEl);
-
-    var timeEl = document.createElement('span');
-    timeEl.style.cssText = 'font-size:0.65rem;color:var(--text3);white-space:nowrap;';
-    timeEl.textContent = item.time;
-    rightCol.appendChild(timeEl);
-
-    row.appendChild(rightCol);
-    feedSection.appendChild(row);
-  });
-
-  tab2Container.appendChild(feedSection);
-
-  /* -- Isometric Forest Section -- */
-  var forestSection = document.createElement('div');
-  forestSection.style.cssText = 'background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;';
-
-  /* Forest header */
-  var forestHeader = document.createElement('div');
-  forestHeader.style.cssText = 'padding:14px 16px 0;display:flex;align-items:center;justify-content:space-between;';
-  var forestTitle = document.createElement('span');
-  forestTitle.style.cssText = 'font-size:0.7rem;font-weight:800;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;';
-  forestTitle.textContent = 'Your Forest \u2014 12 Trees Planted';
-  var forestStats = document.createElement('span');
-  forestStats.style.cssText = 'font-size:0.68rem;color:var(--text3);';
-  forestStats.textContent = '12 trees \u00B7 6 species \u00B7 3 rare+';
-  forestHeader.appendChild(forestTitle);
-  forestHeader.appendChild(forestStats);
-  forestSection.appendChild(forestHeader);
-
-  /* Forest scene */
-  var forestScene = document.createElement('div');
-  forestScene.style.cssText = [
-    'background:linear-gradient(180deg,#0f2d1a 0%,#1a4a2e 40%,#1e5c38 70%,#2a7a4a 100%)',
-    'padding:20px 16px',
-    'display:flex',
-    'flex-wrap:wrap',
-    'gap:8px',
-    'align-items:flex-end',
-    'justify-content:center',
-    'min-height:140px',
-    'position:relative',
-  ].join(';');
-
-  var treeSpecies = [
-    'cherry_blossom','mighty_oak','coconut_palm','apple_tree',
-    'lucky_bamboo','blue_spruce','banana_plant','plumeria',
-  ];
-
-  var treeBaseUrl = 'https://tree-showcase-omega.vercel.app/trees/stages/';
-
-  treeSpecies.forEach(function(species, idx) {
-    var treeWrap = document.createElement('div');
-    treeWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;';
-
-    var img = document.createElement('img');
-    img.src = treeBaseUrl + species + '_full.png';
-    img.alt = species.replace(/_/g, ' ');
-    img.style.cssText = 'width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));';
-    img.loading = 'lazy';
-    treeWrap.appendChild(img);
-
-    forestScene.appendChild(treeWrap);
-  });
-
-  forestSection.appendChild(forestScene);
-
-  /* Collection preview */
-  var collectionWrap = document.createElement('div');
-  collectionWrap.style.cssText = 'padding:12px 16px;border-top:1px solid var(--border);';
-
-  var collLabel = document.createElement('div');
-  collLabel.style.cssText = 'font-size:0.68rem;color:var(--text3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;';
-  collLabel.textContent = 'Collection';
-  collectionWrap.appendChild(collLabel);
-
-  var rarities = [
-    { label: 'Common',    color: '#9ca3af', species: 'lucky_bamboo'  },
-    { label: 'Uncommon',  color: '#34d399', species: 'banana_plant'  },
-    { label: 'Rare',      color: '#60a5fa', species: 'apple_tree'    },
-    { label: 'Epic',      color: '#a78bfa', species: 'cherry_blossom' },
-    { label: 'Legendary', color: '#fbbf24', species: 'mighty_oak'    },
-    { label: 'Mythic',    color: '#f472b6', species: 'plumeria'       },
-  ];
-
-  var collRow = document.createElement('div');
-  collRow.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;';
-
-  rarities.forEach(function(r) {
-    var item = document.createElement('div');
-    item.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;';
-
-    var thumb = document.createElement('img');
-    thumb.src = treeBaseUrl + r.species + '_full.png';
-    thumb.alt = r.species.replace(/_/g,' ');
-    thumb.style.cssText = 'width:32px;height:32px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:2px;';
-    thumb.loading = 'lazy';
-    item.appendChild(thumb);
-
-    var rarityDot = document.createElement('div');
-    rarityDot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:' + r.color + ';';
-    item.appendChild(rarityDot);
-
-    var rarityLabel = document.createElement('span');
-    rarityLabel.style.cssText = 'font-size:0.58rem;color:var(--text3);white-space:nowrap;';
-    rarityLabel.textContent = r.label;
-    item.appendChild(rarityLabel);
-
-    collRow.appendChild(item);
-  });
-
-  collectionWrap.appendChild(collRow);
-  forestSection.appendChild(collectionWrap);
-  tab2Container.appendChild(forestSection);
-
-  /* ================================================================
-     ACTIVATE DEFAULT TAB
-     ================================================================ */
+  /* Activate first tab */
   switchTrackerTab(0);
 };
 
