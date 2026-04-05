@@ -2,7 +2,6 @@
 
 ## High Priority
 
-- [ ] US-002: Product Compass -- Remove roleplay/quiz, add course catalog
 - [ ] US-003: Product Compass -- Add scripts library section
 - [ ] US-004: Calculator -- Rebuild as investment illustrator
 
@@ -17,6 +16,7 @@
 ## Completed
 - [x] Project enabled for Ralph
 - [x] US-001: Activity Tracker -- Replaced with 4 tabbed iframes (Activity, Leaderboard, Calculator, Forest). Lazy-loading, spinner, fallback links, sticky tab bar.
+- [x] US-002: Product Compass -- Replaced roleplay, quiz, coverage (~700 lines) with 6-course catalog grid. Expandable detail view with video placeholder, module outline, resources, Skool-style comments.
 
 ## Notes
 - Focus on MVP functionality first

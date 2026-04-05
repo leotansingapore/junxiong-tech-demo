@@ -47,8 +47,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "This replaces ~700 lines (roleplay + quiz) with course catalog. Use realistic course names from the insurance/financial advisory domain. The course detail view should feel like a real LMS."
+      "passes": true,
+      "notes": "Replaced roleplay, quiz, and coverage sections (~700 lines) with 6-course catalog grid. Each card expands to detail view with video placeholder, module outline with progress checkmarks, resource downloads, and Skool-style discussion comments. Mobile responsive via CSS media query."
     },
     {
       "id": "US-003",

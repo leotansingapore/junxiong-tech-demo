@@ -1655,759 +1655,395 @@ DEMO_RENDERERS.compass = function(container) {
   })();
 
   /* ================================================================
-     SECTION 3: INTERACTIVE DEMO — AI ROLEPLAY
-     ================================================================ */
-  (function() {
-    /* Section header */
-    var demoHeader = mk('div', 'margin-bottom:16px;');
-    var demoLabel = mk('div',
-      'display:inline-block;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;' +
-      'background:rgba(16,185,129,0.12);color:#34d399;border:1px solid rgba(16,185,129,0.25);' +
-      'border-radius:99px;padding:3px 10px;margin-bottom:8px;',
-      'Try It \u2014 AI Roleplay');
-    demoHeader.appendChild(demoLabel);
-    demoHeader.appendChild(mk('div',
-      'font-size:0.78rem;color:var(--text2);line-height:1.5;',
-      'Choose a scenario and respond as the advisor. Get scored on communication, listening, product knowledge, and compliance.'));
-    container.appendChild(demoHeader);
-
-    var pane = mk('div',
-      'border:1px solid rgba(16,185,129,0.2);border-radius:14px;padding:16px;' +
-      'background:rgba(16,185,129,0.03);margin-bottom:32px;');
-    container.appendChild(pane);
-
-    var scenarios = [
-      {
-        id: 'investment',
-        title: 'Investment Consultation',
-        difficulty: 'Beginner',
-        diffColor: '#10b981',
-        duration: '10-15 min',
-        client: { name: 'Ms. Tan', age: 28, occupation: 'Software Engineer', background: 'Single, first job, no prior investment experience', concerns: ['Starting to save', 'Understanding risk', 'Long-term growth'] },
-      },
-      {
-        id: 'retirement',
-        title: 'Retirement Planning',
-        difficulty: 'Intermediate',
-        diffColor: '#f59e0b',
-        duration: '15-20 min',
-        client: { name: 'Mr. & Mrs. Lee', age: 42, occupation: 'Civil Servant & Teacher', background: 'Married, 2 kids in primary school, $200k savings + CPF', concerns: ['Retirement adequacy', "Children's education", 'Insurance gaps'] },
-      },
-      {
-        id: 'objection',
-        title: 'Objection Handling',
-        difficulty: 'Advanced',
-        diffColor: '#ef4444',
-        duration: '10-15 min',
-        client: { name: 'Mr. Wong', age: 55, occupation: 'Business Owner', background: 'Skeptical about insurance, had bad experience previously', concerns: ['Transparency of fees', 'Policy flexibility', 'Return vs. cost'] },
-      },
-    ];
-
-    var selectedScenarioIdx = 1;
-    var chatAnswered = false;
-
-    var responseOptions = [
-      {
-        text: "That's great that you have $200,000 in savings! Have you considered diversifying into investment-linked policies?",
-        label: 'A',
-        score: 6,
-        feedback: "You jumped to product recommendations too quickly. Always start by fully understanding the client's retirement timeline, risk appetite, and monthly expenses before suggesting solutions.",
-      },
-      {
-        text: "I understand your concern. Let's first figure out how much you'll actually need in retirement. Based on your current lifestyle, what monthly income would feel comfortable for both of you at age 65?",
-        label: 'B',
-        score: 9,
-        feedback: 'Excellent! You used a discovery question to understand their retirement income goal. This is exactly the right approach \u2014 understand need before presenting solution. Great active listening and compliance with FNA requirements.',
-      },
-      {
-        text: "Don't worry, your CPF alone might be enough. Let me explain the CPF LIFE scheme.",
-        label: 'C',
-        score: 4,
-        feedback: 'Downplaying the concern without proper fact-finding is a compliance risk. Never reassure clients without first conducting a proper Financial Needs Analysis (FNA). This could lead to under-insurance.',
-      },
-    ];
-
-    function renderScenarioCards() {
-      clr(scenarioRow);
-      scenarios.forEach(function(sc, idx) {
-        var isSelected = idx === selectedScenarioIdx;
-        var card = mk('div',
-          'flex:1;min-width:160px;border-radius:12px;padding:14px;cursor:pointer;transition:all .15s;' +
-          (isSelected
-            ? 'background:rgba(59,130,246,0.12);border:2px solid #3b82f6;'
-            : 'background:var(--bg2);border:2px solid var(--border);'));
-        card.addEventListener('click', function() {
-          selectedScenarioIdx = idx;
-          chatAnswered = false;
-          renderScenarioCards();
-          renderExpandedProfile();
-          renderChat();
-        });
-
-        var diffBadge = mk('div',
-          'display:inline-block;font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:99px;margin-bottom:6px;' +
-          'background:' + sc.diffColor + '22;color:' + sc.diffColor + ';',
-          sc.difficulty);
-        card.appendChild(diffBadge);
-        card.appendChild(mk('div', 'font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:4px;', sc.title));
-        card.appendChild(mk('div', 'font-size:0.65rem;color:var(--text3);margin-bottom:2px;', 'Duration: ' + sc.duration));
-        card.appendChild(mk('div', 'font-size:0.65rem;color:var(--text3);', 'Client: ' + sc.client.name + ', ' + sc.client.age));
-        scenarioRow.appendChild(card);
-      });
-    }
-
-    function renderExpandedProfile() {
-      clr(profileArea);
-      var sc = scenarios[selectedScenarioIdx];
-      var cl = sc.client;
-
-      var wrap = mk('div',
-        'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;');
-
-      var profileCard = mk('div',
-        'background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;');
-      profileCard.appendChild(mk('div',
-        'font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;',
-        'Client Profile'));
-      var rows = [
-        ['Name',       cl.name],
-        ['Age',        String(cl.age)],
-        ['Occupation', cl.occupation],
-        ['Background', cl.background],
-      ];
-      rows.forEach(function(r) {
-        var row = mk('div', 'display:flex;gap:6px;margin-bottom:4px;');
-        row.appendChild(mk('span', 'font-size:0.68rem;color:var(--text3);min-width:72px;flex-shrink:0;', r[0] + ':'));
-        row.appendChild(mk('span', 'font-size:0.68rem;color:var(--text);', r[1]));
-        profileCard.appendChild(row);
-      });
-
-      var rubricCard = mk('div',
-        'background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;');
-      rubricCard.appendChild(mk('div',
-        'font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;',
-        'Scoring Criteria'));
-      var criteria = [
-        { name: 'Communication',      weight: 25, color: '#3b82f6' },
-        { name: 'Active Listening',   weight: 25, color: '#10b981' },
-        { name: 'Product Knowledge',  weight: 25, color: '#8b5cf6' },
-        { name: 'Compliance',         weight: 25, color: '#f59e0b' },
-      ];
-      criteria.forEach(function(c) {
-        var row = mk('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;');
-        row.appendChild(mk('span', 'font-size:0.7rem;color:var(--text);', c.name));
-        var badge = mk('div',
-          'font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:99px;' +
-          'background:' + c.color + '22;color:' + c.color + ';',
-          c.weight + '%');
-        row.appendChild(badge);
-        rubricCard.appendChild(row);
-      });
-
-      wrap.appendChild(profileCard);
-      wrap.appendChild(rubricCard);
-      profileArea.appendChild(wrap);
-    }
-
-    function renderChat() {
-      clr(chatArea);
-
-      /* Client bubble */
-      var clientMsg = mk('div', 'display:flex;gap:10px;margin-bottom:16px;align-items:flex-start;');
-      var avatar = mk('div',
-        'width:32px;height:32px;border-radius:50%;background:rgba(59,130,246,0.2);' +
-        'display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.7rem;font-weight:700;color:#3b82f6;',
-        scenarios[selectedScenarioIdx].client.name.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2));
-      var bubble = mk('div',
-        'background:var(--bg3);border:1px solid var(--border);border-radius:10px;border-top-left-radius:2px;' +
-        'padding:12px;font-size:0.78rem;color:var(--text);line-height:1.55;max-width:520px;');
-      bubble.textContent = "We're both 42 and have two kids in primary school. We've been meaning to plan for retirement but never got around to it. We have about $200,000 in savings and our CPF, but we're not sure if that's enough.";
-      clientMsg.appendChild(avatar);
-      clientMsg.appendChild(bubble);
-      chatArea.appendChild(clientMsg);
-
-      if (!chatAnswered) {
-        /* Response options */
-        var optLabel = mk('div',
-          'font-size:0.68rem;font-weight:700;color:var(--text3);margin-bottom:8px;',
-          'Choose your response:');
-        chatArea.appendChild(optLabel);
-
-        responseOptions.forEach(function(opt) {
-          var btn = mk('div',
-            'display:flex;gap:10px;align-items:flex-start;background:var(--bg2);border:1px solid var(--border);' +
-            'border-radius:10px;padding:12px;cursor:pointer;margin-bottom:8px;transition:border-color .15s;');
-          btn.addEventListener('mouseenter', function() { btn.style.borderColor = '#3b82f6'; });
-          btn.addEventListener('mouseleave', function() { btn.style.borderColor = ''; });
-          btn.addEventListener('click', function() {
-            chatAnswered = true;
-            selectedResponse = opt;
-            renderChat();
-          });
-          var lbl = mk('div',
-            'width:24px;height:24px;border-radius:50%;background:rgba(59,130,246,0.15);' +
-            'display:flex;align-items:center;justify-content:center;flex-shrink:0;' +
-            'font-size:0.68rem;font-weight:700;color:#60a5fa;',
-            opt.label);
-          var txt = mk('div', 'font-size:0.75rem;color:var(--text);line-height:1.5;', opt.text);
-          btn.appendChild(lbl);
-          btn.appendChild(txt);
-          chatArea.appendChild(btn);
-        });
-      } else {
-        /* Show chosen response + AI feedback */
-        var resp = selectedResponse;
-
-        /* Advisor bubble */
-        var advRow = mk('div', 'display:flex;gap:10px;margin-bottom:16px;align-items:flex-start;flex-direction:row-reverse;');
-        var advBubble = mk('div',
-          'background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);border-radius:10px;border-top-right-radius:2px;' +
-          'padding:12px;font-size:0.78rem;color:var(--text);line-height:1.55;max-width:520px;',
-          resp.text);
-        var advAvatar = mk('div',
-          'width:32px;height:32px;border-radius:50%;background:rgba(59,130,246,0.2);' +
-          'display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.7rem;font-weight:700;color:#3b82f6;',
-          'You');
-        advRow.appendChild(advAvatar);
-        advRow.appendChild(advBubble);
-        chatArea.appendChild(advRow);
-
-        /* Score feedback card */
-        var isGood = resp.score >= 7;
-        var fbCard = mk('div',
-          'background:' + (isGood ? 'rgba(52,211,153,0.06)' : 'rgba(245,158,11,0.06)') + ';' +
-          'border:1px solid ' + (isGood ? 'rgba(52,211,153,0.3)' : 'rgba(245,158,11,0.3)') + ';' +
-          'border-radius:12px;padding:16px;');
-
-        var fbHeader = mk('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;');
-        fbHeader.appendChild(mk('div', 'font-size:0.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;', 'AI Coach Feedback'));
-
-        /* Overall score */
-        var overallBadge = mk('div',
-          'display:flex;align-items:center;gap:6px;');
-        var bigScore = mk('div',
-          'width:44px;height:44px;border-radius:50%;border:3px solid ' + (isGood ? '#34d399' : '#f59e0b') + ';' +
-          'display:flex;align-items:center;justify-content:center;font-size:0.88rem;font-weight:800;' +
-          'color:' + (isGood ? '#34d399' : '#f59e0b') + ';',
-          resp.score + '/10');
-        overallBadge.appendChild(bigScore);
-        fbHeader.appendChild(overallBadge);
-        fbCard.appendChild(fbHeader);
-
-        /* Sub-scores grid */
-        var subScores = [
-          { label: 'Communication',    score: isGood ? 9 : 5 },
-          { label: 'Active Listening', score: isGood ? 7 : 4 },
-          { label: 'Product Knowledge',score: isGood ? 8 : 4 },
-          { label: 'Compliance',       score: isGood ? 8 : 5 },
-        ];
-        var scoreGrid = mk('div', 'display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;');
-        subScores.forEach(function(ss) {
-          var sc2 = mk('div', 'text-align:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 4px;');
-          var col = ss.score >= 7 ? '#34d399' : ss.score >= 5 ? '#f59e0b' : '#ef4444';
-          sc2.appendChild(mk('div', 'font-size:0.88rem;font-weight:800;color:' + col + ';', ss.score + '/10'));
-          sc2.appendChild(mk('div', 'font-size:0.6rem;color:var(--text3);line-height:1.3;margin-top:2px;', ss.label));
-          scoreGrid.appendChild(sc2);
-        });
-        fbCard.appendChild(scoreGrid);
-
-        /* Coaching point */
-        var coachRow = mk('div', 'display:flex;gap:8px;align-items:flex-start;');
-        var coachIcon = mk('div',
-          'width:20px;height:20px;border-radius:50%;background:rgba(59,130,246,0.2);' +
-          'display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.65rem;color:#60a5fa;font-weight:700;',
-          'i');
-        var coachText = mk('div', 'font-size:0.72rem;color:var(--text2);line-height:1.55;', resp.feedback);
-        coachRow.appendChild(coachIcon);
-        coachRow.appendChild(coachText);
-        fbCard.appendChild(coachRow);
-
-        chatArea.appendChild(fbCard);
-
-        /* Try again button */
-        var retryBtn = mk('button',
-          'margin-top:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--border);' +
-          'background:transparent;color:var(--text2);font-size:0.75rem;cursor:pointer;',
-          'Try a different response');
-        retryBtn.addEventListener('click', function() {
-          chatAnswered = false;
-          selectedResponse = null;
-          renderChat();
-        });
-        chatArea.appendChild(retryBtn);
-      }
-    }
-
-    var selectedResponse = null;
-
-    /* Scenario selector row */
-    pane.appendChild(mk('div',
-      'font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;',
-      'Select Scenario'));
-    var scenarioRow = mk('div', 'display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;');
-    pane.appendChild(scenarioRow);
-
-    /* Expanded profile area */
-    var profileArea = mk('div', '');
-    pane.appendChild(profileArea);
-
-    /* Chat interface */
-    var chatWrap = mk('div',
-      'background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;');
-    chatWrap.appendChild(mk('div',
-      'font-size:0.65rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;',
-      'Practice Session'));
-    var chatArea = mk('div', '');
-    chatWrap.appendChild(chatArea);
-    pane.appendChild(chatWrap);
-
-    renderScenarioCards();
-    renderExpandedProfile();
-    renderChat();
-  })();
-
-  /* ================================================================
-     SECTION 4: INTERACTIVE DEMO — QUESTION BANK
-     ================================================================ */
-  (function() {
-    /* Section header */
-    var demoHeader = mk('div', 'margin-bottom:16px;');
-    var demoLabel = mk('div',
-      'display:inline-block;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;' +
-      'background:rgba(139,92,246,0.12);color:#a78bfa;border:1px solid rgba(139,92,246,0.25);' +
-      'border-radius:99px;padding:3px 10px;margin-bottom:8px;',
-      'Try It \u2014 Exam Prep');
-    demoHeader.appendChild(demoLabel);
-    demoHeader.appendChild(mk('div',
-      'font-size:0.78rem;color:var(--text2);line-height:1.5;',
-      'Test your M9 Life Insurance knowledge. 10 real-format questions with instant feedback.'));
-    container.appendChild(demoHeader);
-
-    var pane = mk('div',
-      'border:1px solid rgba(139,92,246,0.2);border-radius:14px;padding:16px;' +
-      'background:rgba(139,92,246,0.03);margin-bottom:32px;');
-    container.appendChild(pane);
-
-    var modules = [
-      { id: 'm9',  label: 'M9 Life Insurance',      count: 426 },
-      { id: 'm9a', label: 'M9A General Insurance',  count: 248 },
-      { id: 'hi',  label: 'HI Health Insurance',    count: 186 },
-      { id: 'res5',label: 'RES5 Rules & Regulations', count: 164 },
-    ];
-
-    var allQuestions = [
-      {
-        module: 'm9', difficulty: 'Easy',
-        q: 'Under the Life Insurance Act, a policyholder must be given a free-look period of at least:',
-        options: ['7 days', '14 days', '21 days', '30 days'],
-        correct: 1,
-        explanation: 'MAS requires a minimum 14-day free-look period for life insurance policies, allowing policyholders to cancel and receive a full refund if they change their mind.',
-        category: 'Compliance',
-      },
-      {
-        module: 'm9', difficulty: 'Medium',
-        q: 'Which of the following is NOT a feature of a Participating (Par) policy?',
-        options: [
-          'Guaranteed sum assured',
-          'Non-guaranteed bonuses based on fund performance',
-          'Premiums are fixed and cannot change',
-          'Returns are explicitly linked to a specific market index',
-        ],
-        correct: 3,
-        explanation: "Par policies provide bonuses based on the insurer's par fund performance, not linked to a specific market index. Index-linked returns are a feature of Investment-Linked Policies (ILPs).",
-        category: 'Product Facts',
-      },
-      {
-        module: 'm9', difficulty: 'Medium',
-        q: "A prospect asks: \"What's the guaranteed returns on this whole life plan?\" The best response is:",
-        options: [
-          'Quote the projected returns from the benefit illustration at 4.75%',
-          'Explain that guaranteed values are the sum assured plus guaranteed bonuses, while projected values are non-guaranteed',
-          'Tell the client the plan will definitely grow at 3-4% per year',
-          'Avoid discussing guarantees to prevent confusion',
-        ],
-        correct: 1,
-        explanation: 'You must clearly distinguish guaranteed from non-guaranteed values. Quoting projected returns as guaranteed is a misrepresentation under MAS Notice FAA-N16.',
-        category: 'Sales Angles',
-      },
-      {
-        module: 'm9', difficulty: 'Hard',
-        q: 'Under MAS Notice FAA-N16, which document must be provided to a client BEFORE recommending a life insurance product?',
-        options: [
-          'Product Summary',
-          'Policy Contract',
-          'Benefit Illustration',
-          'Financial Needs Analysis (FNA)',
-        ],
-        correct: 3,
-        explanation: "A Financial Needs Analysis must be conducted and documented BEFORE any recommendation. This ensures the recommendation is suitable for the client's specific needs, financial situation, and risk tolerance.",
-        category: 'Compliance',
-      },
-      {
-        module: 'm9', difficulty: 'Easy',
-        q: 'What does "sum assured" refer to in a life insurance policy?',
-        options: [
-          'The total premiums paid over the policy term',
-          'The guaranteed lump sum payable upon a covered event',
-          'The projected maturity value including bonuses',
-          'The annual premium amount',
-        ],
-        correct: 1,
-        explanation: 'The sum assured is the guaranteed amount the insurer will pay upon a covered event (death, TPD, or maturity). It does not include non-guaranteed bonuses.',
-        category: 'Product Facts',
-      },
-      {
-        module: 'm9', difficulty: 'Medium',
-        q: "A client wants to surrender their whole life policy after 3 years. Which factor most significantly affects the surrender value?",
-        options: [
-          'Current market interest rates',
-          "The insurer's investment performance last year",
-          "The policy's cash value accumulated through premiums minus surrender charges",
-          'The original death benefit amount',
-        ],
-        correct: 2,
-        explanation: 'Surrender value is determined by the accumulated cash value minus any surrender charges. In early years, surrender charges are high, so surrender values may be significantly less than premiums paid.',
-        category: 'Product Facts',
-      },
-      {
-        module: 'm9', difficulty: 'Hard',
-        q: 'When recommending an ILP to a 55-year-old client nearing retirement, which consideration is MOST important?',
-        options: [
-          'Potential for higher returns compared to traditional policies',
-          'Flexibility to switch between sub-funds',
-          'Investment risk tolerance and time horizon may not be suitable for ILPs',
-          'The availability of regular premium top-ups',
-        ],
-        correct: 2,
-        explanation: 'Suitability is paramount. A client nearing retirement has limited time to recover from market downturns. ILPs carry investment risk, and the remaining investment horizon must be considered in the FNA.',
-        category: 'Objection Handling',
-      },
-      {
-        module: 'm9', difficulty: 'Medium',
-        q: 'Which of the following best describes the difference between "term" and "whole life" insurance?',
-        options: [
-          'Term insurance builds cash value; whole life does not',
-          'Whole life covers a fixed period; term covers lifelong',
-          'Term provides coverage for a defined period; whole life provides lifelong coverage with a savings component',
-          'There is no meaningful difference between the two',
-        ],
-        correct: 2,
-        explanation: 'Term insurance provides pure protection for a specified term at lower premiums. Whole life provides lifelong coverage and accumulates cash value through the savings component.',
-        category: 'Product Facts',
-      },
-      {
-        module: 'm9', difficulty: 'Easy',
-        q: 'What is the primary purpose of Critical Illness (CI) insurance?',
-        options: [
-          'To replace income lost due to unemployment',
-          'To pay for overseas medical treatment only',
-          'To provide a lump sum upon diagnosis of a covered critical illness',
-          'To cover all medical expenses including outpatient visits',
-        ],
-        correct: 2,
-        explanation: 'CI insurance pays a lump sum upon diagnosis of a covered critical illness (e.g., cancer, heart attack, stroke). The client can use the funds for treatment, income replacement, or lifestyle adjustments.',
-        category: 'Product Facts',
-      },
-      {
-        module: 'm9', difficulty: 'Medium',
-        q: "A prospect objects: \"I'm young and healthy \u2014 I don't need insurance.\" The most effective sales angle is:",
-        options: [
-          "Agree and suggest they come back when they're older",
-          'Being young and healthy is exactly when premiums are lowest and insurability is guaranteed',
-          'Insurance is compulsory for all working adults in Singapore',
-          'You should buy as much coverage as possible while you can',
-        ],
-        correct: 1,
-        explanation: 'The best reframe is that youth and good health lock in lower premiums and guaranteed coverage. Waiting risks health changes that could make coverage unaffordable or unavailable.',
-        category: 'Objection Handling',
-      },
-    ];
-
-    var currentModule = 'm9';
-    var currentQIdx   = 0;
-    var answeredQuestions = [];
-    var quizComplete = false;
-
-    function getModuleQuestions() {
-      return allQuestions.filter(function(q) { return q.module === currentModule; }).slice(0, 10);
-    }
-
-    /* Module selector */
-    var moduleRow = mk('div', 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;');
-    pane.appendChild(moduleRow);
-
-    function renderModulePills() {
-      clr(moduleRow);
-      modules.forEach(function(m) {
-        var active = m.id === currentModule;
-        var pill = mk('button',
-          'padding:6px 14px;border-radius:99px;border:1px solid;cursor:pointer;font-size:0.72rem;font-weight:600;transition:all .15s;' +
-          (active
-            ? 'background:rgba(59,130,246,0.15);border-color:#3b82f6;color:#60a5fa;'
-            : 'background:transparent;border-color:var(--border);color:var(--text3);'),
-          m.label + ' (' + m.count + ')');
-        pill.addEventListener('click', function() {
-          currentModule = m.id;
-          currentQIdx = 0;
-          answeredQuestions = [];
-          quizComplete = false;
-          renderModulePills();
-          renderQuestion();
-        });
-        moduleRow.appendChild(pill);
-      });
-    }
-
-    /* Question area */
-    var questionArea = mk('div', '');
-    pane.appendChild(questionArea);
-
-    function renderQuestion() {
-      clr(questionArea);
-
-      if (quizComplete) {
-        renderSummary();
-        return;
-      }
-
-      var qs = getModuleQuestions();
-      var q = qs[currentQIdx];
-      var answered = answeredQuestions[currentQIdx];
-
-      /* Header row */
-      var headerRow = mk('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;');
-      var qLabel = mk('div', 'font-size:0.72rem;font-weight:700;color:var(--text3);',
-        'Question ' + (currentQIdx + 1) + ' of ' + qs.length + ' \u2014 ' + modules.find(function(m) { return m.id === currentModule; }).label.split(' ').slice(0,2).join(' '));
-      var diffColor = q.difficulty === 'Easy' ? '#10b981' : q.difficulty === 'Medium' ? '#f59e0b' : '#ef4444';
-      var diffBadge = mk('span',
-        'font-size:0.6rem;font-weight:700;padding:2px 8px;border-radius:99px;' +
-        'background:' + diffColor + '22;color:' + diffColor + ';',
-        q.difficulty);
-      headerRow.appendChild(qLabel);
-      headerRow.appendChild(diffBadge);
-      questionArea.appendChild(headerRow);
-
-      /* Progress bar */
-      var pbBg = mk('div', 'background:rgba(255,255,255,0.08);border-radius:99px;height:4px;margin-bottom:16px;');
-      var pbFill = mk('div',
-        'height:4px;border-radius:99px;background:#3b82f6;transition:width .4s;' +
-        'width:' + Math.round((currentQIdx / qs.length) * 100) + '%;');
-      pbBg.appendChild(pbFill);
-      questionArea.appendChild(pbBg);
-
-      /* Question text */
-      questionArea.appendChild(mk('div',
-        'font-size:0.88rem;font-weight:700;color:var(--text);line-height:1.55;margin-bottom:16px;',
-        q.q));
-
-      /* Options */
-      var letters = ['A', 'B', 'C', 'D'];
-      q.options.forEach(function(opt, i) {
-        var isCorrect = i === q.correct;
-        var isChosen  = answered !== undefined && answered === i;
-        var bgStyle   = '';
-        var borderStyle = 'var(--border)';
-        var textColor   = 'var(--text)';
-
-        if (answered !== undefined) {
-          if (isCorrect) {
-            bgStyle = 'rgba(52,211,153,0.1)';
-            borderStyle = '#34d399';
-            textColor = '#34d399';
-          } else if (isChosen) {
-            bgStyle = 'rgba(239,68,68,0.1)';
-            borderStyle = '#ef4444';
-            textColor = '#ef4444';
-          }
-        }
-
-        var optBtn = mk('div',
-          'display:flex;gap:10px;align-items:flex-start;background:' + (bgStyle || 'var(--bg2)') + ';' +
-          'border:1px solid ' + borderStyle + ';border-radius:10px;padding:12px;' +
-          'cursor:' + (answered !== undefined ? 'default' : 'pointer') + ';margin-bottom:8px;transition:all .15s;');
-
-        if (answered === undefined) {
-          optBtn.addEventListener('mouseenter', function() { optBtn.style.borderColor = '#3b82f6'; });
-          optBtn.addEventListener('mouseleave', function() { optBtn.style.borderColor = 'var(--border)'; });
-          optBtn.addEventListener('click', function() {
-            answeredQuestions[currentQIdx] = i;
-            renderQuestion();
-          });
-        }
-
-        var ltrCircle = mk('div',
-          'width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;' +
-          'font-size:0.65rem;font-weight:700;' +
-          (answered !== undefined && (isCorrect || isChosen)
-            ? 'background:' + (isCorrect ? '#34d399' : '#ef4444') + ';color:#0a0f1a;'
-            : 'background:rgba(255,255,255,0.08);color:var(--text2);'),
-          letters[i]);
-        var optText = mk('div', 'font-size:0.75rem;color:' + textColor + ';line-height:1.5;', opt);
-        optBtn.appendChild(ltrCircle);
-        optBtn.appendChild(optText);
-        questionArea.appendChild(optBtn);
-      });
-
-      /* Explanation box */
-      if (answered !== undefined) {
-        var correct = answered === q.correct;
-        var expBox = mk('div',
-          'margin-top:4px;margin-bottom:12px;padding:12px;border-radius:10px;' +
-          'background:' + (correct ? 'rgba(52,211,153,0.06)' : 'rgba(239,68,68,0.06)') + ';' +
-          'border:1px solid ' + (correct ? 'rgba(52,211,153,0.25)' : 'rgba(239,68,68,0.25)') + ';');
-        var expTitle = mk('div',
-          'font-size:0.68rem;font-weight:700;margin-bottom:4px;' +
-          'color:' + (correct ? '#34d399' : '#ef4444') + ';',
-          correct ? 'Correct!' : 'Incorrect');
-        var expText = mk('div', 'font-size:0.73rem;color:var(--text2);line-height:1.55;', q.explanation);
-        expBox.appendChild(expTitle);
-        expBox.appendChild(expText);
-        questionArea.appendChild(expBox);
-
-        /* Next button */
-        var nextBtn = mk('button',
-          'padding:8px 20px;border-radius:8px;border:none;background:#3b82f6;color:#fff;' +
-          'font-size:0.78rem;font-weight:700;cursor:pointer;margin-top:4px;',
-          currentQIdx + 1 < qs.length ? 'Next Question \u2192' : 'See Results');
-        nextBtn.addEventListener('click', function() {
-          if (currentQIdx + 1 < qs.length) {
-            currentQIdx++;
-            renderQuestion();
-          } else {
-            quizComplete = true;
-            renderQuestion();
-          }
-        });
-        questionArea.appendChild(nextBtn);
-      }
-    }
-
-    function renderSummary() {
-      var qs = getModuleQuestions();
-      var correct = answeredQuestions.filter(function(a, i) { return a === qs[i].correct; }).length;
-      var total = qs.length;
-      var pct = Math.round((correct / total) * 100);
-      var grade = pct >= 90 ? 'Excellent!' : pct >= 70 ? 'Good Work' : pct >= 50 ? 'Keep Practising' : 'Needs Review';
-      var gradeColor = pct >= 90 ? '#34d399' : pct >= 70 ? '#3b82f6' : pct >= 50 ? '#f59e0b' : '#ef4444';
-
-      var wrap = mk('div', 'text-align:center;margin-bottom:24px;');
-
-      /* Score circle */
-      var circle = mk('div',
-        'width:96px;height:96px;border-radius:50%;border:4px solid ' + gradeColor + ';' +
-        'display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 12px;');
-      circle.appendChild(mk('div', 'font-size:1.6rem;font-weight:900;color:' + gradeColor + ';line-height:1;', correct + '/' + total));
-      circle.appendChild(mk('div', 'font-size:0.6rem;color:var(--text3);', pct + '%'));
-      wrap.appendChild(circle);
-      wrap.appendChild(mk('div', 'font-size:1.1rem;font-weight:700;color:' + gradeColor + ';margin-bottom:4px;', grade));
-      wrap.appendChild(mk('div', 'font-size:0.72rem;color:var(--text3);', 'Module: ' + modules.find(function(m) { return m.id === currentModule; }).label));
-      questionArea.appendChild(wrap);
-
-      /* Category breakdown */
-      var bdTitle = mk('div',
-        'font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;',
-        'Category Breakdown');
-      questionArea.appendChild(bdTitle);
-
-      var catTotals = {};
-      var catCorrect = {};
-      qs.forEach(function(q, i) {
-        catTotals[q.category] = (catTotals[q.category] || 0) + 1;
-        if (answeredQuestions[i] === q.correct) {
-          catCorrect[q.category] = (catCorrect[q.category] || 0) + 1;
-        }
-      });
-
-      var bdGrid = mk('div', 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;');
-      Object.keys(catTotals).forEach(function(cat) {
-        var c = catCorrect[cat] || 0;
-        var t = catTotals[cat];
-        var ok = c >= t;
-        var catCard = mk('div',
-          'background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px;' +
-          'display:flex;justify-content:space-between;align-items:center;');
-        catCard.appendChild(mk('div', 'font-size:0.72rem;color:var(--text);', cat));
-        var scoreBadge = mk('div',
-          'font-size:0.72rem;font-weight:800;padding:2px 8px;border-radius:6px;' +
-          'background:' + (ok ? 'rgba(52,211,153,0.15)' : 'rgba(245,158,11,0.15)') + ';' +
-          'color:' + (ok ? '#34d399' : '#f59e0b') + ';',
-          c + '/' + t);
-        catCard.appendChild(scoreBadge);
-        bdGrid.appendChild(catCard);
-      });
-      questionArea.appendChild(bdGrid);
-
-      /* Retry button */
-      var retryBtn = mk('button',
-        'padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:transparent;' +
-        'color:var(--text2);font-size:0.78rem;cursor:pointer;',
-        'Try Again');
-      retryBtn.addEventListener('click', function() {
-        currentQIdx = 0;
-        answeredQuestions = [];
-        quizComplete = false;
-        renderQuestion();
-      });
-      questionArea.appendChild(retryBtn);
-    }
-
-    renderModulePills();
-    renderQuestion();
-  })();
-
-  /* ================================================================
-     SECTION 5: PLATFORM COVERAGE
+     SECTION 3: COURSE LIBRARY
      ================================================================ */
   (function() {
     var sectionLabel = mk('div',
       'font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;' +
       'color:var(--text3);margin-bottom:12px;',
-      'Platform Coverage');
+      'Course Library');
     container.appendChild(sectionLabel);
 
-    var coverageWrap = mk('div',
-      'background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;');
-
-    var coverageRows = [
-      { module: 'CMFAS M9',         subject: 'Life Insurance',        count: '426 questions', color: '#3b82f6' },
-      { module: 'CMFAS M9A',        subject: 'General Insurance',     count: '248 questions', color: '#3b82f6' },
-      { module: 'CMFAS HI',         subject: 'Health Insurance',      count: '186 questions', color: '#ec4899' },
-      { module: 'CMFAS RES5',       subject: 'Rules & Regulations',   count: '164 questions', color: '#f59e0b' },
-      { module: 'Product Training', subject: 'AIA Products',          count: '200+ lessons',  color: '#10b981' },
+    var courses = [
+      {
+        id: 'ilp-fundamentals',
+        title: 'ILP Fundamentals',
+        modules: 8,
+        duration: '4.5 hours',
+        progress: 100,
+        color: '#3b82f6',
+        lessons: [
+          { title: 'What is an Investment-Linked Policy?', duration: '32 min', done: true },
+          { title: 'ILP Fund Types & Risk Profiles', duration: '28 min', done: true },
+          { title: 'Premium Allocation & Charges', duration: '35 min', done: true },
+          { title: 'Surrender Values & Switching', duration: '40 min', done: true },
+          { title: 'Client Suitability Assessment', duration: '30 min', done: true },
+        ],
+        resources: [
+          'ILP Product Comparison Chart (PDF)',
+          'Fund Performance Fact Sheet (PDF)',
+          'Client Presentation Template (PPTX)',
+        ],
+        comments: [
+          { name: 'Rachel Lim', time: '2 days ago', text: 'The fund switching module finally made sense after the walkthrough example. Really clear!' },
+          { name: 'David Tan', time: '5 days ago', text: 'Helped me explain ILP charges to a skeptical client. Closed the case the next week.' },
+        ],
+      },
+      {
+        id: 'protection-planning',
+        title: 'Protection Planning',
+        modules: 6,
+        duration: '3 hours',
+        progress: 65,
+        color: '#10b981',
+        lessons: [
+          { title: 'Needs-Based Analysis Framework', duration: '25 min', done: true },
+          { title: 'Income Replacement Method', duration: '30 min', done: true },
+          { title: 'Critical Illness vs Early CI', duration: '35 min', done: true },
+          { title: 'Group vs Individual Coverage', duration: '28 min', done: false },
+          { title: 'Presenting the Protection Gap', duration: '32 min', done: false },
+        ],
+        resources: [
+          'FNA Worksheet Template (PDF)',
+          'Protection Gap Calculator (XLSX)',
+          'CI Coverage Comparison Guide (PDF)',
+        ],
+        comments: [
+          { name: 'Sarah Chen', time: '1 week ago', text: 'The protection gap presentation template is gold. Used it in 3 client meetings already.' },
+          { name: 'James Ng', time: '2 weeks ago', text: 'Module 3 on CI vs Early CI cleared up confusion I had for months.' },
+        ],
+      },
+      {
+        id: 'retirement-solutions',
+        title: 'Retirement Solutions',
+        modules: 7,
+        duration: '3.5 hours',
+        progress: 40,
+        color: '#f59e0b',
+        lessons: [
+          { title: 'CPF LIFE & Retirement Adequacy', duration: '30 min', done: true },
+          { title: 'Retirement Income Layering', duration: '35 min', done: true },
+          { title: 'Annuity Products Deep Dive', duration: '40 min', done: false },
+          { title: 'SRS & Tax-Efficient Strategies', duration: '28 min', done: false },
+          { title: 'Presenting Retirement Plans', duration: '32 min', done: false },
+        ],
+        resources: [
+          'Retirement Needs Calculator (PDF)',
+          'CPF LIFE Payout Estimator (XLSX)',
+          'Retirement Planning Script (PDF)',
+        ],
+        comments: [
+          { name: 'Michelle Ong', time: '3 days ago', text: 'CPF LIFE module was eye-opening. Now I can confidently discuss retirement adequacy with older clients.' },
+          { name: 'Kevin Tan', time: '1 week ago', text: 'The income layering concept is a game-changer for presentations.' },
+        ],
+      },
+      {
+        id: 'critical-illness',
+        title: 'Critical Illness',
+        modules: 5,
+        duration: '2.5 hours',
+        progress: 20,
+        color: '#ec4899',
+        lessons: [
+          { title: 'CI Definition & Coverage Scope', duration: '25 min', done: true },
+          { title: 'Early vs Late Stage CI', duration: '30 min', done: false },
+          { title: 'Multi-Pay CI Products', duration: '35 min', done: false },
+          { title: 'CI Riders vs Standalone Plans', duration: '28 min', done: false },
+        ],
+        resources: [
+          'CI Product Comparison Matrix (PDF)',
+          'Claims Statistics Report (PDF)',
+          'Client Objection Handling Guide (PDF)',
+        ],
+        comments: [
+          { name: 'Amanda Wong', time: '4 days ago', text: 'The claims statistics really help when clients ask "do I really need CI coverage?"' },
+          { name: 'Patrick Lee', time: '1 week ago', text: 'Multi-pay CI module was exactly what I needed for my upcoming product presentation.' },
+        ],
+      },
+      {
+        id: 'ilp-products',
+        title: 'Investment-Linked Products',
+        modules: 9,
+        duration: '5 hours',
+        progress: 0,
+        color: '#8b5cf6',
+        lessons: [
+          { title: 'ILP Market Landscape in Singapore', duration: '30 min', done: false },
+          { title: 'Regular vs Single Premium ILPs', duration: '35 min', done: false },
+          { title: 'Fund Selection & Asset Allocation', duration: '40 min', done: false },
+          { title: 'ILP Charges Breakdown', duration: '32 min', done: false },
+          { title: 'Suitability & Risk Profiling', duration: '28 min', done: false },
+        ],
+        resources: [
+          'ILP Fund Fact Sheets Collection (PDF)',
+          'Risk Profiling Questionnaire (PDF)',
+          'ILP vs Unit Trust Comparison (PDF)',
+        ],
+        comments: [
+          { name: 'Vincent Teo', time: '2 weeks ago', text: 'Looking forward to starting this one. The ILP Fundamentals course was great prep.' },
+        ],
+      },
+      {
+        id: 'compliance-ethics',
+        title: 'Compliance & Ethics',
+        modules: 6,
+        duration: '3 hours',
+        progress: 85,
+        color: '#64748b',
+        lessons: [
+          { title: 'MAS Regulatory Framework', duration: '30 min', done: true },
+          { title: 'FAA-N16 & Fair Dealing', duration: '35 min', done: true },
+          { title: 'Anti-Money Laundering (AML)', duration: '28 min', done: true },
+          { title: 'Data Protection (PDPA)', duration: '32 min', done: true },
+          { title: 'Social Media Compliance', duration: '25 min', done: false },
+        ],
+        resources: [
+          'MAS Guidelines Quick Reference (PDF)',
+          'Compliance Checklist for Advisors (PDF)',
+          'PDPA Consent Form Template (PDF)',
+        ],
+        comments: [
+          { name: 'Grace Loh', time: '6 days ago', text: 'The AML module saved me during a compliance audit. Knew exactly what to look for.' },
+          { name: 'Bryan Koh', time: '2 weeks ago', text: 'Social media compliance is surprisingly tricky. Glad this is covered.' },
+        ],
+      },
     ];
 
-    coverageRows.forEach(function(r, idx) {
-      var row = mk('div',
-        'display:flex;align-items:center;padding:12px 16px;' +
-        (idx < coverageRows.length - 1 ? 'border-bottom:1px solid var(--border);' : '') +
-        'gap:12px;');
+    var expandedCourse = null;
 
-      var dot = mk('div',
-        'width:8px;height:8px;border-radius:50%;flex-shrink:0;background:' + r.color + ';');
-      row.appendChild(dot);
+    var gridWrap = mk('div', '');
+    container.appendChild(gridWrap);
 
-      var modLabel = mk('div',
-        'font-size:0.75rem;font-weight:700;color:var(--text);min-width:130px;flex-shrink:0;',
-        r.module);
-      row.appendChild(modLabel);
+    function renderCourseGrid() {
+      clr(gridWrap);
 
-      var subjLabel = mk('div',
-        'font-size:0.72rem;color:var(--text3);flex:1;',
-        r.subject);
-      row.appendChild(subjLabel);
+      var grid = mk('div',
+        'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:32px;');
 
-      var countBadge = mk('div',
-        'font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:99px;flex-shrink:0;' +
-        'background:' + r.color + '18;color:' + r.color + ';',
-        r.count);
-      row.appendChild(countBadge);
+      courses.forEach(function(course) {
+        var isExpanded = expandedCourse === course.id;
 
-      coverageWrap.appendChild(row);
-    });
+        var card = mk('div',
+          'background:var(--bg2);border:1px solid ' + (isExpanded ? course.color : 'var(--border)') + ';' +
+          'border-radius:12px;overflow:hidden;transition:border-color .15s;' +
+          (isExpanded ? 'grid-column:1/-1;' : 'cursor:pointer;'));
 
-    container.appendChild(coverageWrap);
+        if (!isExpanded) {
+          card.addEventListener('mouseenter', function() { card.style.borderColor = course.color; });
+          card.addEventListener('mouseleave', function() { card.style.borderColor = ''; });
+          card.addEventListener('click', function() {
+            expandedCourse = course.id;
+            renderCourseGrid();
+          });
+        }
+
+        /* Card header - always shown */
+        var header = mk('div', 'padding:16px;');
+
+        /* Thumbnail placeholder */
+        var thumb = mk('div',
+          'height:' + (isExpanded ? '0' : '100') + 'px;background:linear-gradient(135deg,' + course.color + '22,' + course.color + '08);' +
+          'border-radius:8px;margin-bottom:' + (isExpanded ? '0' : '12') + 'px;display:flex;align-items:center;justify-content:center;' +
+          (isExpanded ? 'overflow:hidden;' : ''));
+        if (!isExpanded) {
+          var thumbIcon = mk('div',
+            'width:40px;height:40px;border-radius:50%;background:' + course.color + '33;' +
+            'display:flex;align-items:center;justify-content:center;');
+          var playTriangle = mk('div',
+            'width:0;height:0;border-style:solid;border-width:8px 0 8px 14px;' +
+            'border-color:transparent transparent transparent ' + course.color + ';margin-left:2px;');
+          thumbIcon.appendChild(playTriangle);
+          thumb.appendChild(thumbIcon);
+        }
+        header.appendChild(thumb);
+
+        var titleRow = mk('div', 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;');
+        titleRow.appendChild(mk('div', 'font-size:0.85rem;font-weight:700;color:var(--text);', course.title));
+        var metaBadge = mk('div',
+          'font-size:0.62rem;font-weight:600;color:' + course.color + ';background:' + course.color + '18;' +
+          'padding:2px 8px;border-radius:99px;white-space:nowrap;',
+          course.modules + ' modules');
+        titleRow.appendChild(metaBadge);
+        header.appendChild(titleRow);
+
+        var metaRow = mk('div', 'display:flex;gap:12px;margin-bottom:10px;');
+        metaRow.appendChild(mk('span', 'font-size:0.68rem;color:var(--text3);', course.duration));
+        metaRow.appendChild(mk('span', 'font-size:0.68rem;color:var(--text3);',
+          course.progress === 0 ? 'Not started' : course.progress === 100 ? 'Completed' : course.progress + '% complete'));
+        header.appendChild(metaRow);
+
+        /* Progress bar */
+        var barOuter = mk('div',
+          'height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;');
+        var barInner = mk('div',
+          'height:100%;width:' + course.progress + '%;background:' + course.color + ';border-radius:2px;transition:width .3s;');
+        barOuter.appendChild(barInner);
+        header.appendChild(barOuter);
+        card.appendChild(header);
+
+        /* Expanded detail view */
+        if (isExpanded) {
+          var detail = mk('div', 'padding:0 16px 16px;');
+
+          /* Close button */
+          var closeBtn = mk('button',
+            'display:block;margin-bottom:16px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);' +
+            'background:transparent;color:var(--text2);font-size:0.72rem;cursor:pointer;',
+            'Close');
+          closeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            expandedCourse = null;
+            renderCourseGrid();
+          });
+          detail.appendChild(closeBtn);
+
+          /* Two-column layout: video + module outline */
+          var detailGrid = mk('div',
+            'display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:20px;');
+
+          /* Video player placeholder */
+          var videoWrap = mk('div', '');
+          var videoPlaceholder = mk('div',
+            'aspect-ratio:16/9;background:#0a0e17;border-radius:10px;display:flex;align-items:center;' +
+            'justify-content:center;border:1px solid var(--border);position:relative;overflow:hidden;');
+          var playBtn = mk('div',
+            'width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.1);' +
+            'display:flex;align-items:center;justify-content:center;cursor:pointer;' +
+            'border:2px solid rgba(255,255,255,0.2);transition:background .15s;');
+          playBtn.addEventListener('mouseenter', function() { playBtn.style.background = 'rgba(255,255,255,0.2)'; });
+          playBtn.addEventListener('mouseleave', function() { playBtn.style.background = 'rgba(255,255,255,0.1)'; });
+          var playIcon = mk('div',
+            'width:0;height:0;border-style:solid;border-width:12px 0 12px 20px;' +
+            'border-color:transparent transparent transparent rgba(255,255,255,0.8);margin-left:4px;');
+          playBtn.appendChild(playIcon);
+          videoPlaceholder.appendChild(playBtn);
+          videoWrap.appendChild(videoPlaceholder);
+
+          /* Progress bar for detail */
+          var detailProgress = mk('div', 'margin-top:12px;');
+          detailProgress.appendChild(mk('div',
+            'font-size:0.68rem;color:var(--text3);margin-bottom:6px;display:flex;justify-content:space-between;'));
+          detailProgress.lastChild.appendChild(mk('span', '', 'Course Progress'));
+          detailProgress.lastChild.appendChild(mk('span', 'color:' + course.color + ';font-weight:700;', course.progress + '%'));
+          var dpBar = mk('div', 'height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;');
+          var dpFill = mk('div', 'height:100%;width:' + course.progress + '%;background:' + course.color + ';border-radius:3px;');
+          dpBar.appendChild(dpFill);
+          detailProgress.appendChild(dpBar);
+          videoWrap.appendChild(detailProgress);
+          detailGrid.appendChild(videoWrap);
+
+          /* Module outline sidebar */
+          var sidebar = mk('div',
+            'background:var(--bg3,rgba(255,255,255,0.02));border:1px solid var(--border);border-radius:10px;padding:14px;' +
+            'max-height:400px;overflow-y:auto;');
+          sidebar.appendChild(mk('div',
+            'font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;',
+            'Module Outline'));
+
+          course.lessons.forEach(function(lesson, idx) {
+            var lessonRow = mk('div',
+              'display:flex;align-items:flex-start;gap:10px;padding:10px 0;' +
+              (idx < course.lessons.length - 1 ? 'border-bottom:1px solid var(--border);' : ''));
+
+            var checkmark = mk('div',
+              'width:18px;height:18px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;' +
+              'font-size:0.6rem;margin-top:1px;' +
+              (lesson.done
+                ? 'background:' + course.color + ';color:#fff;'
+                : 'border:1.5px solid var(--border);color:var(--text3);'));
+            checkmark.textContent = lesson.done ? '\u2713' : String(idx + 1);
+            lessonRow.appendChild(checkmark);
+
+            var lessonInfo = mk('div', 'flex:1;min-width:0;');
+            lessonInfo.appendChild(mk('div',
+              'font-size:0.72rem;font-weight:600;color:' + (lesson.done ? 'var(--text2)' : 'var(--text)') + ';line-height:1.3;' +
+              (lesson.done ? 'text-decoration:line-through;opacity:0.6;' : ''),
+              lesson.title));
+            lessonInfo.appendChild(mk('div', 'font-size:0.62rem;color:var(--text3);margin-top:2px;', lesson.duration));
+            lessonRow.appendChild(lessonInfo);
+            sidebar.appendChild(lessonRow);
+          });
+
+          detailGrid.appendChild(sidebar);
+          detail.appendChild(detailGrid);
+
+          /* Resources panel */
+          var resSection = mk('div', 'margin-bottom:20px;');
+          resSection.appendChild(mk('div',
+            'font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;',
+            'Resources'));
+          var resList = mk('div', 'display:flex;flex-direction:column;gap:6px;');
+          course.resources.forEach(function(res) {
+            var resItem = mk('div',
+              'display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3,rgba(255,255,255,0.02));' +
+              'border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .15s;');
+            resItem.addEventListener('mouseenter', function() { resItem.style.borderColor = course.color; });
+            resItem.addEventListener('mouseleave', function() { resItem.style.borderColor = ''; });
+            var pdfIcon = mk('div',
+              'width:28px;height:28px;border-radius:6px;background:' + course.color + '18;' +
+              'display:flex;align-items:center;justify-content:center;flex-shrink:0;' +
+              'font-size:0.6rem;font-weight:800;color:' + course.color + ';',
+              res.match(/\((\w+)\)/)?.[1] || 'PDF');
+            resItem.appendChild(pdfIcon);
+            resItem.appendChild(mk('div', 'font-size:0.72rem;color:var(--text);', res.replace(/\s*\(\w+\)$/, '')));
+            resList.appendChild(resItem);
+          });
+          resSection.appendChild(resList);
+          detail.appendChild(resSection);
+
+          /* Community comments - Skool-style */
+          var commSection = mk('div', '');
+          commSection.appendChild(mk('div',
+            'font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;',
+            'Discussion'));
+
+          course.comments.forEach(function(comment) {
+            var commentRow = mk('div',
+              'display:flex;gap:10px;align-items:flex-start;padding:12px;' +
+              'background:var(--bg3,rgba(255,255,255,0.02));border:1px solid var(--border);' +
+              'border-radius:10px;margin-bottom:8px;');
+
+            var avatar = mk('div',
+              'width:32px;height:32px;border-radius:50%;background:' + course.color + '22;' +
+              'display:flex;align-items:center;justify-content:center;flex-shrink:0;' +
+              'font-size:0.65rem;font-weight:700;color:' + course.color + ';',
+              comment.name.split(' ').map(function(w) { return w[0]; }).join(''));
+            commentRow.appendChild(avatar);
+
+            var commentBody = mk('div', 'flex:1;min-width:0;');
+            var commentHeader = mk('div', 'display:flex;gap:8px;align-items:baseline;margin-bottom:4px;');
+            commentHeader.appendChild(mk('span', 'font-size:0.72rem;font-weight:700;color:var(--text);', comment.name));
+            commentHeader.appendChild(mk('span', 'font-size:0.6rem;color:var(--text3);', comment.time));
+            commentBody.appendChild(commentHeader);
+            commentBody.appendChild(mk('div', 'font-size:0.72rem;color:var(--text2);line-height:1.5;', comment.text));
+            commentRow.appendChild(commentBody);
+            commSection.appendChild(commentRow);
+          });
+
+          detail.appendChild(commSection);
+          card.appendChild(detail);
+        }
+
+        grid.appendChild(card);
+      });
+
+      gridWrap.appendChild(grid);
+    }
+
+    /* Responsive: collapse detail grid on mobile */
+    if (!document.getElementById('compassDetailStyle')) {
+      var style = document.createElement('style');
+      style.id = 'compassDetailStyle';
+      style.textContent = '@media(max-width:640px){#compassDemo [style*="grid-template-columns:1fr 300px"]{grid-template-columns:1fr !important;}}';
+      document.head.appendChild(style);
+    }
+
+    renderCourseGrid();
   })();
 };
+
+
+/* OLD_COMPASS_SECTIONS_REMOVED — see git history for roleplay, quiz, and coverage sections */
 
 
 /* ============================================================
