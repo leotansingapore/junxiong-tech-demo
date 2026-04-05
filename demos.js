@@ -873,7 +873,7 @@ DEMO_RENDERERS.tracker = function(container) {
 
   /* ---- Tab bar ---- */
   var tabBar = document.createElement('div');
-  tabBar.style.cssText = 'display:flex;gap:4px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:24px;position:sticky;top:60px;z-index:50;';
+  tabBar.style.cssText = 'display:flex;gap:2px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:24px;position:sticky;top:60px;z-index:50;overflow-x:auto;';
 
   var panes = [];
   var iframes = [];
@@ -883,9 +883,9 @@ DEMO_RENDERERS.tracker = function(container) {
     panes.forEach(function(p, i) { p.style.display = i === idx ? 'block' : 'none'; });
     tabBar.querySelectorAll('.tracker-tab-btn').forEach(function(btn, i) {
       if (i === idx) {
-        btn.style.cssText = 'flex:1;padding:10px 16px;border-radius:7px;font-size:0.82rem;font-weight:700;cursor:pointer;border:none;background:var(--primary,#3b82f6);color:#fff;transition:background .15s;white-space:nowrap;';
+        btn.style.cssText = 'flex:1;padding:10px 8px;border-radius:7px;font-size:0.78rem;font-weight:700;cursor:pointer;border:none;background:var(--primary,#3b82f6);color:#fff;transition:background .15s;white-space:nowrap;';
       } else {
-        btn.style.cssText = 'flex:1;padding:10px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;white-space:nowrap;';
+        btn.style.cssText = 'flex:1;padding:10px 8px;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;white-space:nowrap;';
       }
     });
     /* Lazy-load: set iframe src only when tab is first activated */
@@ -900,7 +900,7 @@ DEMO_RENDERERS.tracker = function(container) {
     var btn = document.createElement('button');
     btn.className = 'tracker-tab-btn';
     btn.textContent = td.label;
-    btn.style.cssText = 'flex:1;padding:10px 16px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;white-space:nowrap;';
+    btn.style.cssText = 'flex:1;padding:10px 8px;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);transition:background .15s;white-space:nowrap;';
     btn.addEventListener('click', function() { switchTrackerTab(idx); });
     tabBar.appendChild(btn);
 
@@ -3064,6 +3064,7 @@ DEMO_RENDERERS.financehub = function(container) {
 
   plannerPanel.appendChild(goalsTimeline);
 
+  container.appendChild(plannerPanel);
 
   // ============================================================
   // SECTION 5: SINGAPORE-SPECIFIC
