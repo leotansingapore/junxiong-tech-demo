@@ -2040,6 +2040,270 @@ DEMO_RENDERERS.compass = function(container) {
 
     renderCourseGrid();
   })();
+
+  /* ================================================================
+     SECTION 4: SCRIPTS LIBRARY
+     ================================================================ */
+  (function() {
+    var sectionLabel = mk('div',
+      'font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;' +
+      'color:var(--text3);margin-bottom:6px;margin-top:8px;',
+      'Scripts Library');
+    container.appendChild(sectionLabel);
+    container.appendChild(mk('div',
+      'font-size:0.78rem;color:var(--text2);margin-bottom:18px;line-height:1.5;',
+      'Proven scripts for every stage of the client journey. Filter by category and audience, then copy what works.'));
+
+    var scripts = [
+      {
+        title: 'The Warm Referral Opener',
+        category: 'Prospecting',
+        audience: 'Working Professional',
+        preview: 'Hi [Name], [Mutual Contact] mentioned you might be reviewing your financial plans. I help professionals like yourself...',
+        full: 'Hi [Name], [Mutual Contact] mentioned you might be reviewing your financial plans this year. I help professionals like yourself create a clear roadmap for retirement, protection, and wealth growth.\n\nI\'m not here to sell anything today -- I\'d just love to share a quick framework that\'s helped many of my clients feel more confident about their finances. Would you be open to a 15-minute coffee chat this week?',
+        highlights: ['not here to sell anything', '15-minute coffee chat', 'clear roadmap'],
+      },
+      {
+        title: 'Post-Meeting Follow-Up',
+        category: 'Follow-Up',
+        audience: 'Working Professional',
+        preview: 'Hi [Name], thank you for taking the time to meet with me today. I really enjoyed learning about your goals...',
+        full: 'Hi [Name], thank you for taking the time to meet with me today. I really enjoyed learning about your goals for [specific goal discussed].\n\nAs promised, I\'ve attached the personalized illustration we discussed. The key takeaway: by starting with $[amount]/month now, you\'re looking at a projected maturity value of $[value] by age [age].\n\nI\'ll follow up on [day] to answer any questions. In the meantime, feel free to share this with your spouse so you can discuss together.',
+        highlights: ['personalized illustration', 'projected maturity value', 'share this with your spouse'],
+      },
+      {
+        title: 'Young Adult First Policy',
+        category: 'Prospecting',
+        audience: 'Young Adult',
+        preview: 'Hey [Name], I know insurance isn\'t the most exciting topic at 25, but here\'s why starting now is actually...',
+        full: 'Hey [Name], I know insurance isn\'t the most exciting topic at 25, but here\'s why starting now is actually a smart financial move:\n\n1. Your premiums are locked at today\'s rate -- the younger you are, the cheaper it is\n2. You build cash value that grows tax-free over decades\n3. A basic protection plan costs less than your Netflix subscription\n\nI help young professionals set up a simple starter plan that covers the essentials without breaking the bank. Want me to show you what $100/month can do over 30 years?',
+        highlights: ['premiums are locked', 'less than your Netflix subscription', '$100/month can do over 30 years'],
+      },
+      {
+        title: '"I Already Have Insurance" Response',
+        category: 'Objection Handling',
+        audience: 'Working Professional',
+        preview: 'That\'s great that you already have coverage! Many of my clients felt the same way, until we did a quick gap analysis...',
+        full: 'That\'s great that you already have coverage! Many of my clients felt the same way, until we did a quick gap analysis and found they were underinsured by 40-60%.\n\nHere\'s what typically happens: you got your first policy years ago when your income was lower and you had fewer responsibilities. But now you have a mortgage, maybe kids, and your lifestyle costs more.\n\nI offer a free 10-minute coverage review -- no obligations. We\'ll just check if your current plans still match where you are today. Sound fair?',
+        highlights: ['underinsured by 40-60%', 'free 10-minute coverage review', 'no obligations'],
+      },
+      {
+        title: 'Retirement Planning for Retirees',
+        category: 'Prospecting',
+        audience: 'Retiree',
+        preview: 'Hi [Name], congratulations on your retirement! This is an exciting chapter. Many of my clients in a similar stage...',
+        full: 'Hi [Name], congratulations on your retirement! This is an exciting chapter. Many of my clients in a similar stage have shared one common concern: "Will my money last?"\n\nThe truth is, with rising healthcare costs and longer life expectancies, a proper drawdown strategy can mean the difference between comfortable living and constant worry.\n\nI specialize in helping retirees like yourself create a sustainable income plan that covers medical expenses, daily living, and even legacy goals. Would you be open to a no-pressure conversation over tea?',
+        highlights: ['Will my money last?', 'sustainable income plan', 'no-pressure conversation'],
+      },
+      {
+        title: 'Business Owner Protection',
+        category: 'Prospecting',
+        audience: 'Business Owner',
+        preview: 'Hi [Name], as a business owner, you\'ve built something incredible. But have you thought about what happens to your...',
+        full: 'Hi [Name], as a business owner, you\'ve built something incredible. But have you thought about what happens to your business if something unexpected happens to you?\n\nI work with business owners to set up three critical safety nets:\n1. Key person insurance -- so your business survives if you can\'t work\n2. Buy-sell agreements funded by insurance -- smooth ownership transitions\n3. Personal protection separate from business assets -- because your family\'s security shouldn\'t depend on your P&L\n\nMost business owners I meet haven\'t separated personal and business risk. A 20-minute review could save your family and partners a lot of uncertainty.',
+        highlights: ['Key person insurance', 'Buy-sell agreements', 'separated personal and business risk'],
+      },
+      {
+        title: 'The "Too Expensive" Objection',
+        category: 'Objection Handling',
+        audience: 'Young Adult',
+        preview: 'I totally understand -- money is tight. But let me reframe the question: can you afford NOT to have protection?',
+        full: 'I totally understand -- money is tight. But let me reframe the question: can you afford NOT to have protection?\n\nHere\'s a real scenario: a hospitalization for dengue fever in Singapore costs $5,000-$15,000. Without coverage, that\'s your emergency fund wiped out.\n\nThe good news: we can start with a basic hospital plan for as little as $30/month, and your Medisave can cover most of it. As your income grows, we upgrade your coverage.\n\nThink of it as a financial safety net -- you hope you never need it, but you\'ll be glad it\'s there.',
+        highlights: ['$5,000-$15,000', '$30/month', 'Medisave can cover most of it'],
+      },
+      {
+        title: 'Annual Review Follow-Up',
+        category: 'Follow-Up',
+        audience: 'Retiree',
+        preview: 'Hi [Name], it\'s been a year since we last reviewed your portfolio. A lot can change in 12 months...',
+        full: 'Hi [Name], it\'s been a year since we last reviewed your portfolio. A lot can change in 12 months -- interest rates, CPF policies, and your personal circumstances.\n\nI\'d love to do a quick 30-minute check-in to make sure:\n- Your coverage still matches your needs\n- Your investment allocations are on track\n- You\'re taking advantage of any new tax benefits or policy riders\n\nI have availability on [Day 1] or [Day 2]. Which works better for you? And if anything has changed on your end -- new grandchildren, health updates, property changes -- let me know so I can prepare accordingly.',
+        highlights: ['30-minute check-in', 'new tax benefits', 'prepare accordingly'],
+      },
+    ];
+
+    var categoryColors = {
+      'Prospecting': '#3b82f6',
+      'Follow-Up': '#10b981',
+      'Closing': '#f59e0b',
+      'Objection Handling': '#ef4444',
+    };
+
+    var activeCat = 'All';
+    var activeAud = 'All';
+    var expandedScript = null;
+
+    /* Filter bar */
+    var filterBar = mk('div',
+      'display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;');
+
+    var catSelect = document.createElement('select');
+    catSelect.style.cssText = 'padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.78rem;font-weight:600;cursor:pointer;';
+    ['All', 'Prospecting', 'Follow-Up', 'Closing', 'Objection Handling'].forEach(function(c) {
+      var opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = 'Category: ' + c;
+      catSelect.appendChild(opt);
+    });
+    catSelect.addEventListener('change', function() { activeCat = this.value; renderScripts(); });
+    filterBar.appendChild(catSelect);
+
+    var audSelect = document.createElement('select');
+    audSelect.style.cssText = 'padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.78rem;font-weight:600;cursor:pointer;';
+    ['All', 'Young Adult', 'Working Professional', 'Retiree', 'Business Owner'].forEach(function(a) {
+      var opt = document.createElement('option');
+      opt.value = a;
+      opt.textContent = 'Audience: ' + a;
+      audSelect.appendChild(opt);
+    });
+    audSelect.addEventListener('change', function() { activeAud = this.value; renderScripts(); });
+    filterBar.appendChild(audSelect);
+    container.appendChild(filterBar);
+
+    var scriptGrid = mk('div', '');
+    container.appendChild(scriptGrid);
+
+    /* Build highlighted text using safe DOM methods */
+    function buildHighlightedText(text, highlights, color) {
+      var container = document.createDocumentFragment();
+      var remaining = text;
+      /* Sort highlights by position in text so we process left-to-right */
+      var sorted = highlights.slice().sort(function(a, b) {
+        return remaining.indexOf(a) - remaining.indexOf(b);
+      });
+      sorted.forEach(function(phrase) {
+        var idx = remaining.indexOf(phrase);
+        if (idx === -1) return;
+        /* Text before the highlight */
+        if (idx > 0) {
+          container.appendChild(document.createTextNode(remaining.substring(0, idx)));
+        }
+        /* The highlighted span */
+        var span = mk('span', 'color:' + color + ';font-weight:600;', phrase);
+        container.appendChild(span);
+        remaining = remaining.substring(idx + phrase.length);
+      });
+      /* Remaining text after last highlight */
+      if (remaining) {
+        container.appendChild(document.createTextNode(remaining));
+      }
+      return container;
+    }
+
+    function renderScripts() {
+      clr(scriptGrid);
+      var grid = mk('div',
+        'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:32px;');
+
+      var filtered = scripts.filter(function(s) {
+        var catOk = activeCat === 'All' || s.category === activeCat;
+        var audOk = activeAud === 'All' || s.audience === activeAud;
+        return catOk && audOk;
+      });
+
+      if (filtered.length === 0) {
+        grid.appendChild(mk('div',
+          'grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text3);font-size:0.82rem;',
+          'No scripts match the selected filters.'));
+      }
+
+      filtered.forEach(function(script) {
+        var isExpanded = expandedScript === script.title;
+        var catColor = categoryColors[script.category] || '#64748b';
+
+        var card = mk('div',
+          'background:var(--bg2);border:1px solid ' + (isExpanded ? catColor : 'var(--border)') + ';' +
+          'border-radius:12px;padding:16px;transition:border-color .15s;' +
+          (isExpanded ? 'grid-column:1/-1;' : ''));
+
+        if (!isExpanded) {
+          card.addEventListener('mouseenter', function() { card.style.borderColor = catColor; });
+          card.addEventListener('mouseleave', function() { card.style.borderColor = ''; });
+        }
+
+        /* Title */
+        card.appendChild(mk('div',
+          'font-size:0.85rem;font-weight:700;color:var(--text);margin-bottom:8px;',
+          script.title));
+
+        /* Badges row */
+        var badges = mk('div', 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;');
+        var catBadge = mk('span',
+          'font-size:0.62rem;font-weight:700;padding:3px 9px;border-radius:99px;' +
+          'background:' + catColor + '22;color:' + catColor + ';',
+          script.category);
+        badges.appendChild(catBadge);
+        var audBadge = mk('span',
+          'font-size:0.62rem;font-weight:600;padding:3px 9px;border-radius:99px;' +
+          'background:rgba(255,255,255,0.06);color:var(--text3);border:1px solid var(--border);',
+          script.audience);
+        badges.appendChild(audBadge);
+        card.appendChild(badges);
+
+        if (!isExpanded) {
+          /* Preview */
+          card.appendChild(mk('div',
+            'font-size:0.72rem;color:var(--text2);line-height:1.6;margin-bottom:12px;',
+            script.preview));
+
+          /* View button */
+          var viewBtn = mk('button',
+            'padding:6px 14px;border-radius:8px;border:1px solid ' + catColor + ';' +
+            'background:transparent;color:' + catColor + ';font-size:0.72rem;font-weight:600;cursor:pointer;' +
+            'transition:background .15s;',
+            'View Full Script');
+          viewBtn.addEventListener('mouseenter', function() { viewBtn.style.background = catColor + '18'; });
+          viewBtn.addEventListener('mouseleave', function() { viewBtn.style.background = 'transparent'; });
+          viewBtn.addEventListener('click', function() {
+            expandedScript = script.title;
+            renderScripts();
+          });
+          card.appendChild(viewBtn);
+        } else {
+          /* Expanded: full script with highlighted phrases using safe DOM */
+          var fullText = mk('div',
+            'font-size:0.78rem;color:var(--text);line-height:1.8;margin-bottom:16px;' +
+            'white-space:pre-line;padding:16px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid var(--border);');
+          fullText.appendChild(buildHighlightedText(script.full, script.highlights, catColor));
+          card.appendChild(fullText);
+
+          /* Action buttons */
+          var actions = mk('div', 'display:flex;gap:10px;flex-wrap:wrap;');
+
+          var copyBtn = mk('button',
+            'padding:8px 18px;border-radius:8px;border:none;background:' + catColor + ';' +
+            'color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;transition:opacity .15s;',
+            'Copy Script');
+          copyBtn.addEventListener('click', function() {
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(script.full).then(function() {
+                showToast('Script copied to clipboard');
+              });
+            } else {
+              showToast('Copy not supported in this browser');
+            }
+          });
+          actions.appendChild(copyBtn);
+
+          var closeBtn = mk('button',
+            'padding:8px 18px;border-radius:8px;border:1px solid var(--border);' +
+            'background:transparent;color:var(--text2);font-size:0.75rem;font-weight:600;cursor:pointer;',
+            'Close');
+          closeBtn.addEventListener('click', function() {
+            expandedScript = null;
+            renderScripts();
+          });
+          actions.appendChild(closeBtn);
+          card.appendChild(actions);
+        }
+
+        grid.appendChild(card);
+      });
+
+      scriptGrid.appendChild(grid);
+    }
+
+    renderScripts();
+  })();
 };
 
 

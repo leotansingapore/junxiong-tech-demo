@@ -69,8 +69,8 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": "This adds ~200-300 lines to the compass renderer. Use realistic script data — follow-up messages, prospecting openers, objection handlers for insurance/investment products."
+      "passes": true,
+      "notes": "Added ~270 lines. 8 scripts across Prospecting, Follow-Up, Objection Handling categories for Young Adult, Working Professional, Retiree, Business Owner audiences. Dual-dropdown filters, expandable cards with DOM-safe highlighted phrases, copy-to-clipboard with toast."
     },
     {
       "id": "US-004",
