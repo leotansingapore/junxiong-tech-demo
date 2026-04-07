@@ -627,6 +627,7 @@ function checkmarkSVG() {
 function renderHero() {
   const heroEl = document.getElementById('hero');
   if (!heroEl) return;
+  if (heroEl.children.length > 0) return;
 
   const badge = document.createElement('div');
   badge.className = 'hero-badge';
@@ -684,6 +685,7 @@ function renderHero() {
 function renderPlatformGrid() {
   const platformsEl = document.getElementById('platforms');
   if (!platformsEl) return;
+  if (platformsEl.children.length > 0) return;
 
   const heading = document.createElement('div');
   heading.className = 'platforms-heading';
